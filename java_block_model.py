@@ -5,6 +5,45 @@ import comment_json
 from api.block import Block
 import numpy
 
+cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
+	'down': [0, 2, 6, 4],
+	'up': [1, 5, 7, 3],
+	'north': [6, 2, 3, 7],  # TODO: work out the correct order of these last four
+	'east': [4, 6, 7, 5],
+	'south': [0, 4, 5, 1],
+	'west': [2, 0, 1, 3]
+}
+
+cube_vert_lut = {  # This maps from vertex index to index in [minx, miny, minz, maxx, maxy, maxz]
+	0: [0, 1, 5],
+	1: [0, 4, 5],
+	2: [0, 1, 2],
+	3: [0, 4, 2],
+	4: [3, 1, 5],
+	5: [3, 4, 5],
+	6: [3, 1, 2],
+	7: [3, 4, 2],
+}
+
+# combines the above two to map from face to index in [minx, miny, minz, maxx, maxy, maxz]. Used to index a numpy array
+# The above two have been kept separate because the merged result is unintuitive and difficult to edit.
+cube_lut = {
+	face_dir_: [
+		vert_coord_ for vert_ in vert_index_ for vert_coord_ in cube_vert_lut[vert_]
+	]
+	for face_dir_, vert_index_ in cube_face_lut.items()
+}
+
+uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
+
+# tvert_lut = {  # TODO: implement this for the cases where the UV is not defined
+# 	'down': [],
+# 	'up': [],
+# 	'north': [],
+# 	'east': [],
+# 	'south': [],
+# 	'west': []
+# }
 
 class MinecraftJavaModelHandler:
 	properties_regex = re.compile(r"(?:,(?P<name>[a-z0-9_]+)=(?P<value>[a-z0-9_]+))")
@@ -24,7 +63,13 @@ class MinecraftJavaModelHandler:
 
 	@staticmethod
 	def _missing_no():
-		return {'missing':'no'}
+		return {
+			'verts': {side: numpy.zeros((0, 3), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+			'texture_verts': {side: numpy.zeros((0, 2), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+			'faces': {side: numpy.zeros((0, 3), numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
+			'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
+			'texture_list': []
+		}
 
 	def _parse_model(self, namespace: str, base_name: str, properties: Dict[str, str]) -> dict:
 		for asset_dir in reversed(self._asset_dirs):
@@ -43,8 +88,8 @@ class MinecraftJavaModelHandler:
 								except:
 									pass
 							else:
-								properties_match = self.properties_regex.finditer(variant)
-								if all(properties.get(match.group("name"), None) == match.group("value") for match in properties_match):
+								properties_match = self.properties_regex.finditer(f',{variant}')
+								if all(properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
 									try:
 										return self._load_block_model(namespace, blockstate['variants'][variant])
 									except:
@@ -69,89 +114,57 @@ class MinecraftJavaModelHandler:
 		java_model = self._recursive_load_block_model(namespace, model_path)
 
 		triangle_model = {
-			'verts': [],
-			'texture_verts': [],
-			'faces': [],  # [[v1, v2, v3, t],]
-			'textures': []
+			'verts': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+			'texture_verts': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+			'faces': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
+			'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
+			'texture_list': []
 		}
-		textures = {}
-		texture_count = 1
+		texture_list = {}
+		texture_count = 0
 
-		# cube_face_lookup = {
-		# 	'down': (0, 2, 6, 4),
-		# 	'up': (1, 5, 7, 3),
-		# 	'north': (6, 2, 3, 7),  # TODO: work out the correct order of these last four
-		# 	'east': (4, 6, 7, 5),
-		# 	'south': (0, 4, 5, 1),
-		# 	'west': (0, 1, 3, 2)
-		# }
-		#
-		# cube_vert_lookup = {
-		# 	0: (0, 1, 2),
-		# 	1: (0, 4, 2),
-		# 	2: (0, 1, 5),
-		# 	3: (0, 4, 5),
-		# 	4: (3, 1, 2),
-		# 	5: (3, 4, 2),
-		# 	6: (3, 1, 5),
-		# 	7: (3, 4, 5),
-		# }
-
-		cube_lut = {
-			'down': ((0, 1, 2), (0, 1, 5), (3, 1, 5), (3, 1, 2)),
-			'up': ((0, 4, 2), (3, 4, 2), (3, 4, 5), (0, 4, 5)),
-			'north': ((3, 1, 5), (0, 1, 5), (0, 4, 5), (3, 4, 5)),
-			'east': ((3, 1, 2), (3, 1, 5), (3, 4, 5), (3, 4, 2)),
-			'south': ((0, 1, 2), (3, 1, 2), (3, 4, 2), (0, 4, 2)),
-			'west': ((0, 1, 2), (0, 4, 2), (0, 4, 5), (0, 1, 5))
-		}
-
-		vert_count = 0
-		for element in java_model['elements']:
-			element_vert_count = 0
-			element_tri_count = 0
+		vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+		for element in java_model.get('elements', {}):
 			element_faces = element.get('faces', {})
-			quad_count = sum(face in element_faces for face in ('down', 'up', 'north', 'east', 'south', 'west'))
-			verts = numpy.zeros((quad_count * 4, 3), numpy.float)
-			faces = numpy.zeros((quad_count * 2, 4), numpy.uint32)
 
-			corner1 = element.get('to', [0, 0, 0])
-			corner2 = element.get('from', [0, 0, 0])
-			corners = [
-				min(corner1[0], corner2[0]),
-				min(corner1[1], corner2[1]),
-				min(corner1[2], corner2[2]),
-				max(corner1[0], corner2[0]),
-				max(corner1[1], corner2[1]),
-				max(corner1[2], corner2[2]),
-			]
+			corners = numpy.sort(numpy.array([element.get('to', [1, 0, 2]), element.get('from', [0, 1, 0])], numpy.float)/16, 0).ravel()
 
-			for face_dir, face_verts in cube_lut.items():
-				if face_dir in element_faces:
-					verts[element_vert_count:element_vert_count+4, :] = [[corners[ind] for ind in vert] for vert in face_verts]
+			for face_dir in element_faces:
+				if face_dir in cube_lut:
+					cull_dir = element_faces[face_dir].get('cullface', None)
+
+					triangle_model['verts'][cull_dir].append(corners[cube_lut[face_dir]].reshape((-1, 3)))
+
 					tex = element_faces[face_dir].get('texture', None)
 					while isinstance(tex, str) and tex.startswith('#'):
 						tex = java_model['textures'].get(tex[1:], None)
-					if tex not in textures:
-						textures[tex] = texture_count
-						triangle_model['textures'].append(tex)
+					tex = os.path.join('assets', namespace, 'textures', tex)
+					if tex not in texture_list:
+						texture_list[tex] = texture_count
+						triangle_model['texture_list'].append(tex)
 						texture_count += 1
+					triangle_model['textures'][cull_dir] += [texture_list[tex]] * 4
 
-					faces[element_tri_count:element_tri_count+2, :] = [[0, 1, 2, texture_count-1], [0, 2, 3, texture_count-1]]
-					faces[element_tri_count:element_tri_count + 2, :-1] += element_vert_count + vert_count
-					element_vert_count += 4
-					element_tri_count += 2
+					texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float)/16
+					texture_rotation = element_faces[face_dir].get('rotation', 0)
+					uv_slice = uv_lut[int(texture_rotation/45):] + uv_lut[:int(texture_rotation/45)]
+					triangle_model['texture_verts'][cull_dir].append(texture_uv[uv_slice].reshape((-1, 2)))
 
-			triangle_model['verts'].append(verts)
-			triangle_model['faces'].append(faces)
-			vert_count += element_vert_count
+					faces = numpy.array([[0, 1, 2], [0, 2, 3]], numpy.uint32)
+					faces += vert_count[cull_dir]
+					triangle_model['faces'][cull_dir].append(faces)
 
-		if len(triangle_model['verts']) == 0:
-			triangle_model['verts'] = numpy.zeros((0, 3), numpy.float)
-			triangle_model['faces'] = numpy.zeros((0, 4), numpy.uint32)
-		else:
-			triangle_model['verts'] = numpy.concatenate(triangle_model['verts'])
-			triangle_model['faces'] = numpy.concatenate(triangle_model['faces'])
+					vert_count[cull_dir] += 4
+
+		for cull_dir in ('down', 'up', 'north', 'east', 'south', 'west', None):
+			if len(triangle_model['verts'][cull_dir]) == 0:
+				triangle_model['verts'][cull_dir] = numpy.zeros((0, 3), numpy.float)
+				triangle_model['faces'][cull_dir] = numpy.zeros((0, 3), numpy.uint32)
+				triangle_model['texture_verts'][cull_dir] = numpy.zeros((0, 2), numpy.float)
+			else:
+				triangle_model['verts'][cull_dir] = numpy.vstack(triangle_model['verts'][cull_dir])
+				triangle_model['faces'][cull_dir] = numpy.vstack(triangle_model['faces'][cull_dir])
+				triangle_model['texture_verts'][cull_dir] = numpy.vstack(triangle_model['texture_verts'][cull_dir])
 
 		return triangle_model
 
@@ -175,4 +188,4 @@ class MinecraftJavaModelHandler:
 
 if __name__ == '__main__':
 	java_model_handler = MinecraftJavaModelHandler(['assets'])
-	print(java_model_handler.get_model('minecraft:brown_carpet'))
+	print(java_model_handler.get_model('minecraft:end_portal_frame[eye=true,facing=west]'))
