@@ -6,7 +6,7 @@ from api.block import Block
 import numpy
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
-	'down': [0, 2, 6, 4],
+	'down': [2, 6, 4, 0],
 	'up': [1, 5, 7, 3],
 	'north': [6, 2, 3, 7],  # TODO: work out the correct order of these last four
 	'east': [4, 6, 7, 5],
