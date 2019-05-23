@@ -5,6 +5,7 @@ import comment_json
 from api.block import Block
 import numpy
 import copy
+import math
 
 
 def empty_model():
@@ -17,6 +18,21 @@ def empty_model():
 			'texture_list': []
 		}
 	)
+
+
+def rotate_3d(verts, x, y, z, dx, dy, dz):
+	sb, cb = math.sin(math.radians(x)), math.cos(math.radians(x))
+	sh, ch = math.sin(math.radians(y)), math.cos(math.radians(y))
+	sa, ca = math.sin(math.radians(z)), math.cos(math.radians(z))
+	trmtx = numpy.array(
+		[
+			[ch * ca, -ch * sa * cb + sh * sb, ch * sa * sb + sh * cb],
+			[sa, ca * cb, -ca * sb],
+			[-sh * ca, sh * sa * cb + ch * sb, -sh * sa * sb + ch * cb]
+		]
+	)
+	origin = numpy.array([dx, dy, dz])
+	return numpy.matmul(verts - origin, trmtx) + origin
 
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
@@ -189,7 +205,9 @@ class MinecraftJavaModelHandler:
 				if face_dir in cube_lut:
 					cull_dir = element_faces[face_dir].get('cullface', None)
 
-					triangle_model['verts'][cull_dir].append(corners[cube_lut[face_dir]].reshape((-1, 3)))
+					triangle_model['verts'][cull_dir].append(
+						corners[cube_lut[face_dir]].reshape((-1, 3))
+					)
 
 					tex = element_faces[face_dir].get('texture', None)
 					while isinstance(tex, str) and tex.startswith('#'):
@@ -219,7 +237,7 @@ class MinecraftJavaModelHandler:
 				triangle_model['texture_verts'][cull_dir] = numpy.zeros((0, 2), numpy.float)
 				triangle_model['textures'][cull_dir] = numpy.zeros((0,), numpy.uint32)
 			else:
-				triangle_model['verts'][cull_dir] = numpy.vstack(triangle_model['verts'][cull_dir])  # TODO: rotate model based on uv_lock
+				triangle_model['verts'][cull_dir] = rotate_3d(numpy.vstack(triangle_model['verts'][cull_dir]), rotx, roty, 0, 0.5, 0.5, 0.5)  # TODO: rotate model based on uv_lock
 				triangle_model['faces'][cull_dir] = numpy.vstack(triangle_model['faces'][cull_dir])
 				triangle_model['texture_verts'][cull_dir] = numpy.vstack(triangle_model['texture_verts'][cull_dir])
 				triangle_model['textures'][cull_dir] = numpy.array(triangle_model['textures'][cull_dir], numpy.uint32)
@@ -246,4 +264,4 @@ class MinecraftJavaModelHandler:
 
 if __name__ == '__main__':
 	java_model_handler = MinecraftJavaModelHandler(['assets', r"PureBDcraft 512x MC113\assets"])
-	print(java_model_handler.get_model('minecraft:oak_stairs'))
+	print(java_model_handler.get_model('minecraft:oak_stairs[facing=south,half=top,shape=straight,waterlogged=true]'))
