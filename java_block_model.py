@@ -89,7 +89,7 @@ class MinecraftJavaModelHandler:
 	def get_model(self, blockstate_str: str) -> dict:
 		if blockstate_str not in self._models:
 			self._models[blockstate_str] = self._parse_blockstate_link(*Block.parse_blockstate_string(blockstate_str))
-		return self._models[blockstate_str]
+		return copy.deepcopy(self._models[blockstate_str])
 
 	@staticmethod
 	def _missing_no():
