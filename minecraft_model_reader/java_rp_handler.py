@@ -1,45 +1,11 @@
 import os
 import json
-from typing import List, Dict
+from typing import List, Union
+from .api import base_api
 
 default_pack_icon = None
 
-
-class BaseRP:
-	def __init__(self):
-		self._valid_pack = False
-		self._root_dir = None
-		self._pack_format = None
-		self._pack_description = ''
-		self._pack_icon = default_pack_icon
-		self._files = {}
-
-	@property
-	def valid_pack(self) -> bool:
-		return self._valid_pack
-
-	@property
-	def root_dir(self) -> str:
-		return self._root_dir
-
-	@property
-	def pack_format(self) -> int:
-		return self._pack_format
-
-	@property
-	def pack_description(self) -> str:
-		return self._pack_description
-
-	@property
-	def pack_icon(self) -> str:
-		return self._pack_icon
-
-	@property
-	def files(self) -> Dict[str, str]:
-		return self._files
-
-
-class JavaRP(BaseRP):
+class JavaRP(base_api.BaseRP):
 	def __init__(self, resource_pack_path: str):
 		BaseRP.__init__(self)
 		self._root_dir = resource_pack_path
