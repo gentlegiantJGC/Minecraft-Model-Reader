@@ -1,8 +1,11 @@
 import os
 import re
 from typing import List, Dict, Union
-import comment_json
-from api.block import Block
+from .api import comment_json
+try:
+	from amulet.api.block import Block
+except:
+	from .api.block import Block
 import numpy
 import copy
 import math
