@@ -3,11 +3,15 @@ import json
 from typing import List, Union
 from .api import base_api
 
-default_pack_icon = None
 
 class JavaRP(base_api.BaseRP):
+	"""
+	A class to hold the bare bones information about the resource pack.
+	Holds the pack format, description and if the pack is valid.
+	This information can be used in a viewer to display the packs to the user.
+	"""
 	def __init__(self, resource_pack_path: str):
-		BaseRP.__init__(self)
+		base_api.BaseRP.__init__(self)
 		self._root_dir = resource_pack_path
 		try:
 			if os.path.isfile(os.path.join(resource_pack_path, 'pack.mcmeta')):
@@ -23,9 +27,6 @@ class JavaRP(base_api.BaseRP):
 			if os.path.isfile(os.path.join(resource_pack_path, 'pack.png')):
 				self._pack_icon = os.path.join(resource_pack_path, 'pack.png')
 
-			for root, _, files in os.walk(self._root_dir):
-				for f in files:
-					self._files[os.path.relpath(os.path.join(root, f), self._root_dir)] = f
 
 	def __iadd__(self, extend_resource_pack: 'JavaRP'):
 		assert isinstance(extend_resource_pack, JavaRP), 'The extending instance must be a JavaRP instance'
