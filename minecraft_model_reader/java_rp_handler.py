@@ -28,9 +28,40 @@ class JavaRP(base_api.BaseRP):
 				self._pack_icon = os.path.join(resource_pack_path, 'pack.png')
 
 
-	def __iadd__(self, extend_resource_pack: 'JavaRP'):
-		assert isinstance(extend_resource_pack, JavaRP), 'The extending instance must be a JavaRP instance'
-		if extend_resource_pack.valid_pack and extend_resource_pack.pack_format == self.pack_format:
-			for rel_path, abs_path in extend_resource_pack.files.items():
-				self._files[rel_path] = abs_path
-		# TODO: perhaps add some logging here to make the user aware a pack has failed to load
+class JavaRPHandler(base_api.BaseRPHandler):
+	"""
+	A class to load and handle the data from the packs.
+	Packs are given as a list with the later packs overwriting the earlier ones.
+	"""
+	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
+		base_api.BaseRPHandler.__init__(self)
+		if isinstance(resource_packs, list) and all(isinstance(path, JavaRP) for path in resource_packs):
+			self._packs = resource_packs
+		elif isinstance(resource_packs, JavaRP):
+			self._packs = [resource_packs]
+
+	def reload(self):
+		self.unload()
+
+		for pack in self._packs:
+
+			"""
+			pack_format=2 textures/blocks, textures/items - case sensitive
+			pack_format=3 textures/blocks, textures/items - lower case
+			pack_format=4 textures/block, textures/item
+			"""
+
+			if pack.valid_pack and os.path.isdir(os.path.join(pack.root_dir, 'assets')):
+				for namespace in os.listdir(os.path.join(pack.root_dir, 'assets')):
+					if pack.pack_format >= 2:
+
+						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
+							for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
+								for f in files:
+									rel_path = os.path.relpath(os.path.join(root, f), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
+									if pack.pack_format >= 3:
+										rel_path = rel_path.lower()
+									self._textures[rel_path] = os.path.join(root, f)
+
+	def unload(self):
+		self._textures.clear()
