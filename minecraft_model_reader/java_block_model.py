@@ -1,7 +1,7 @@
 import os
 import re
 from typing import List, Dict, Union
-from .api import comment_json
+from .lib import comment_json
 try:
 	from amulet.api.block import Block
 except:
