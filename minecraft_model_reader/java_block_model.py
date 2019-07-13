@@ -1,7 +1,6 @@
 import os
-import re
 from typing import List, Dict, Union
-from .lib import comment_json
+from .api.base_api import MinecraftMesh
 try:
 	from amulet.api.block import Block
 except:
@@ -11,7 +10,7 @@ import copy
 import math
 
 
-def empty_model():
+def empty_model():  # TODO: make this use MinecraftMesh
 	return copy.deepcopy(
 		{
 			'verts': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
@@ -21,6 +20,16 @@ def empty_model():
 			'texture_list': []
 		}
 	)
+
+
+def _missing_no():  # TODO: make this use MinecraftMesh
+	return {
+		'verts': {side: numpy.zeros((0, 3), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+		'texture_verts': {side: numpy.zeros((0, 2), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
+		'faces': {side: numpy.zeros((0, 3), numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
+		'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
+		'texture_list': []
+	}
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -78,180 +87,154 @@ uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
 # 	'west': []
 # }
 
-class MinecraftJavaModelHandler:
-	properties_regex = re.compile(r"(?:,(?P<name>[a-z0-9_]+)=(?P<value>[a-z0-9_]+))")
 
-	def __init__(self, asset_dirs: List[str]):
-		self._models = {}
-		self._asset_dirs = asset_dirs
-
-	def reload_resources(self, asset_dirs: List[str]):
-		self._models.clear()
-		self._asset_dirs = asset_dirs
-
-	def get_model(self, blockstate_str: str) -> dict:
-		if blockstate_str not in self._models:
-			self._models[blockstate_str] = self._parse_blockstate_link(*Block.parse_blockstate_string(blockstate_str))
-		return copy.deepcopy(self._models[blockstate_str])
-
-	@staticmethod
-	def _missing_no():
-		return {
-			'verts': {side: numpy.zeros((0, 3), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-			'texture_verts': {side: numpy.zeros((0, 2), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-			'faces': {side: numpy.zeros((0, 3), numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
-			'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
-			'texture_list': []
-		}
-
-	def _parse_blockstate_link(self, namespace: str, base_name: str, properties: Dict[str, str]) -> dict:
-		for asset_dir in reversed(self._asset_dirs):
-			if namespace in os.listdir(asset_dir):
-				if f'{base_name}.json' in os.listdir(os.path.join(asset_dir, namespace, 'blockstates')):
+def _parse_blockstate_file(self, resource_pack, block: Block) -> dict:
+	if (block.namespace, block.base_name) in resource_pack.blockstate_files:
+		blockstate: dict = resource_pack.blockstate_files[(block.namespace, block.base_name)]
+		if 'variants' in blockstate:
+			for variant in blockstate['variants']:
+				if variant == '':
 					try:
-						blockstate = comment_json.from_file(os.path.join(asset_dir, namespace, 'blockstates', f'{base_name}.json'))
+						return _load_block_model(resource_pack, block, blockstate['variants'][variant])
 					except:
-						continue
+						pass
+				else:
+					properties_match = Block.parameters_regex.finditer(f',{variant}')
+					if all(block.properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
+						try:
+							return _load_block_model(resource_pack, block, blockstate['variants'][variant])
+						except:
+							pass
 
-					if 'variants' in blockstate:
-						for variant in blockstate['variants']:
-							if variant == '':
-								try:
-									return self._load_block_model(namespace, blockstate['variants'][variant])
-								except:
-									pass
-							else:
-								properties_match = self.properties_regex.finditer(f',{variant}')
-								if all(properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
-									try:
-										return self._load_block_model(namespace, blockstate['variants'][variant])
-									except:
-										pass
+		elif 'multipart' in blockstate:
+			multi_model = empty_model()
+			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			texture_count = 0
+			for case in blockstate['multipart']:
+				try:
+					if 'when' in case:
+						if 'OR' in case['when']:
+							if not any(
+								all(
+									block.properties.get(prop, None) in val.split('|') for prop, val in prop_match.items()
+								) for prop_match in case['when']['OR']
+							):
+								continue
+						elif not all(
+							block.properties.get(prop, None) in val.split('|') for prop, val in case['when'].items()
+						):
+							continue
 
-					elif 'multipart' in blockstate:
-						multi_model = empty_model()
-						vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-						texture_count = 0
-						for case in blockstate['multipart']:
-							try:
-								if 'when' in case:
-									if 'OR' in case['when']:
-										if not any(
-											all(
-												properties.get(prop, None) in val.split('|') for prop, val in prop_match.items()
-											) for prop_match in case['when']['OR']
-										):
-											continue
-									elif not all(
-										properties.get(prop, None) in val.split('|') for prop, val in case['when'].items()
-									):
-										continue
+					if 'apply' in case:
+						try:
+							temp_model = _load_block_model(resource_pack, block, case['apply'])
+							for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
+								multi_model['verts'][face].append(temp_model['verts'][face])
+								multi_model['texture_verts'][face].append(temp_model['texture_verts'][face])
+								multi_model['faces'][face].append(temp_model['faces'][face] + vert_count[face])
+								vert_count[face] += len(temp_model['verts'][face])
+								multi_model['textures'][face].append(temp_model['textures'][face] + texture_count)
+							multi_model['texture_list'] += temp_model['texture_list']
+							texture_count += len(temp_model['texture_list'])
 
-								if 'apply' in case:
-									try:
-										temp_model = self._load_block_model(namespace, case['apply'])
-										for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
-											multi_model['verts'][face].append(temp_model['verts'][face])
-											multi_model['texture_verts'][face].append(temp_model['texture_verts'][face])
-											multi_model['faces'][face].append(temp_model['faces'][face] + vert_count[face])
-											vert_count[face] += len(temp_model['verts'][face])
-											multi_model['textures'][face].append(temp_model['textures'][face] + texture_count)
-										multi_model['texture_list'] += temp_model['texture_list']
-										texture_count += len(temp_model['texture_list'])
+						except:
+							pass
+				except:
+					pass
 
-									except:
-										pass
-							except:
-								pass
+			out_model = empty_model()
+			for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
+				for attr, shape, dtype in (('verts', (0, 3), numpy.float), ('texture_verts', (0, 2), numpy.float), ('faces', (0, 3), numpy.uint32)):
+					try:
+						out_model[attr][face] = numpy.vstack(multi_model[attr][face])
+					except:
+						out_model[attr][face] = numpy.zeros(shape, dtype)
 
-						out_model = empty_model()
-						for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
-							for attr, shape, dtype in (('verts', (0, 3), numpy.float), ('texture_verts', (0, 2), numpy.float), ('faces', (0, 3), numpy.uint32)):
-								try:
-									out_model[attr][face] = numpy.vstack(multi_model[attr][face])
-								except:
-									out_model[attr][face] = numpy.zeros(shape, dtype)
+				texture_list, inverse = numpy.unique(multi_model['texture_list'], return_inverse=True)
+				out_model['texture_list'] = list(texture_list)
+				try:
+					out_model['textures'][face] = inverse[numpy.hstack(multi_model['textures'][face])]
+				except:
+					out_model['textures'][face] = numpy.zeros((0,), numpy.uint32)
+			return out_model
 
-							texture_list, inverse = numpy.unique(multi_model['texture_list'], return_inverse=True)
-							out_model['texture_list'] = list(texture_list)
-							try:
-								out_model['textures'][face] = inverse[numpy.hstack(multi_model['textures'][face])]
-							except:
-								out_model['textures'][face] = numpy.zeros((0,), numpy.uint32)
-						return out_model
+	return self._missing_no()
 
-		return self._missing_no()
 
-	def _load_block_model(self, namespace: str, blockstate: Union[dict, list]) -> dict:
-		if isinstance(blockstate, list):
-			blockstate = blockstate[0]
-		if 'model' not in blockstate:
-			raise Exception
-		model_path = blockstate['model']
-		rotx = blockstate.get('x', 0)
-		roty = blockstate.get('y', 0)
-		# uvlock = blockstate.get('uvlock', False)
+def _load_block_model(resource_pack, block: Block, blockstate: Union[dict, list]) -> dict:
+	if isinstance(blockstate, list):
+		blockstate = blockstate[0]
+	if 'model' not in blockstate:
+		return _missing_no()
+	model_path = blockstate['model']
+	rotx = blockstate.get('x', 0)
+	roty = blockstate.get('y', 0)
+	# uvlock = blockstate.get('uvlock', False)
 
-		java_model = self._recursive_load_block_model(namespace, model_path)
+	java_model = _recursive_load_block_model(resource_pack, block, model_path)
 
-		triangle_model = empty_model()
-		texture_list = {}
-		texture_count = 0
+	triangle_model = empty_model()
+	texture_list = {}
+	texture_count = 0
 
-		vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-		for element in java_model.get('elements', {}):
-			element_faces = element.get('faces', {})
+	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	for element in java_model.get('elements', {}):
+		element_faces = element.get('faces', {})
 
-			corners = numpy.sort(numpy.array([element.get('to', [1, 0, 2]), element.get('from', [0, 1, 0])], numpy.float)/16, 0).ravel()
+		corners = numpy.sort(numpy.array([element.get('to', [1, 0, 2]), element.get('from', [0, 1, 0])], numpy.float)/16, 0).ravel()
 
-			for face_dir in element_faces:
-				if face_dir in cube_lut:
-					cull_dir = element_faces[face_dir].get('cullface', None)
+		for face_dir in element_faces:
+			if face_dir in cube_lut:
+				cull_dir = element_faces[face_dir].get('cullface', None)
 
-					triangle_model['verts'][cull_dir].append(
-						corners[cube_lut[face_dir]].reshape((-1, 3))
-					)
+				triangle_model['verts'][cull_dir].append(
+					corners[cube_lut[face_dir]].reshape((-1, 3))
+				)
 
-					tex = element_faces[face_dir].get('texture', None)
-					while isinstance(tex, str) and tex.startswith('#'):
-						tex = java_model['textures'].get(tex[1:], None)
-					tex = os.path.join('assets', namespace, 'textures', tex)
-					if tex not in texture_list:
-						texture_list[tex] = texture_count
-						triangle_model['texture_list'].append(tex)
-						texture_count += 1
-					triangle_model['textures'][cull_dir] += [texture_list[tex]] * 4
+				tex = element_faces[face_dir].get('texture', None)
+				while isinstance(tex, str) and tex.startswith('#'):
+					tex = java_model['textures'].get(tex[1:], None)
+				tex = os.path.join('assets', block.namespace, 'textures', tex)
+				if tex not in texture_list:
+					texture_list[tex] = texture_count
+					triangle_model['texture_list'].append(tex)
+					texture_count += 1
+				triangle_model['textures'][cull_dir] += [texture_list[tex]] * 4
 
-					texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float)/16  # TODO: get the uv based on box location if not defined
-					texture_rotation = element_faces[face_dir].get('rotation', 0)
-					uv_slice = uv_lut[2 * int(texture_rotation/90):] + uv_lut[:2 * int(texture_rotation/90)]
-					triangle_model['texture_verts'][cull_dir].append(texture_uv[uv_slice].reshape((-1, 2)))
+				texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float)/16  # TODO: get the uv based on box location if not defined
+				texture_rotation = element_faces[face_dir].get('rotation', 0)
+				uv_slice = uv_lut[2 * int(texture_rotation/90):] + uv_lut[:2 * int(texture_rotation/90)]
+				triangle_model['texture_verts'][cull_dir].append(texture_uv[uv_slice].reshape((-1, 2)))
 
-					faces = numpy.array([[0, 1, 2], [0, 2, 3]], numpy.uint32)
-					faces += vert_count[cull_dir]
-					triangle_model['faces'][cull_dir].append(faces)
+				faces = numpy.array([[0, 1, 2], [0, 2, 3]], numpy.uint32)
+				faces += vert_count[cull_dir]
+				triangle_model['faces'][cull_dir].append(faces)
 
-					vert_count[cull_dir] += 4
+				vert_count[cull_dir] += 4
 
-		for cull_dir in ('down', 'up', 'north', 'east', 'south', 'west', None):
-			if len(triangle_model['verts'][cull_dir]) == 0:
-				triangle_model['verts'][cull_dir] = numpy.zeros((0, 3), numpy.float)
-				triangle_model['faces'][cull_dir] = numpy.zeros((0, 3), numpy.uint32)
-				triangle_model['texture_verts'][cull_dir] = numpy.zeros((0, 2), numpy.float)
-				triangle_model['textures'][cull_dir] = numpy.zeros((0,), numpy.uint32)
-			else:
-				triangle_model['verts'][cull_dir] = rotate_3d(numpy.vstack(triangle_model['verts'][cull_dir]), rotx, roty, 0, 0.5, 0.5, 0.5)  # TODO: rotate model based on uv_lock
-				triangle_model['faces'][cull_dir] = numpy.vstack(triangle_model['faces'][cull_dir])
-				triangle_model['texture_verts'][cull_dir] = numpy.vstack(triangle_model['texture_verts'][cull_dir])
-				triangle_model['textures'][cull_dir] = numpy.array(triangle_model['textures'][cull_dir], numpy.uint32)
+	for cull_dir in ('down', 'up', 'north', 'east', 'south', 'west', None):
+		if len(triangle_model['verts'][cull_dir]) == 0:
+			triangle_model['verts'][cull_dir] = numpy.zeros((0, 3), numpy.float)
+			triangle_model['faces'][cull_dir] = numpy.zeros((0, 3), numpy.uint32)
+			triangle_model['texture_verts'][cull_dir] = numpy.zeros((0, 2), numpy.float)
+			triangle_model['textures'][cull_dir] = numpy.zeros((0,), numpy.uint32)
+		else:
+			triangle_model['verts'][cull_dir] = rotate_3d(numpy.vstack(triangle_model['verts'][cull_dir]), rotx, roty, 0, 0.5, 0.5, 0.5)  # TODO: rotate model based on uv_lock
+			triangle_model['faces'][cull_dir] = numpy.vstack(triangle_model['faces'][cull_dir])
+			triangle_model['texture_verts'][cull_dir] = numpy.vstack(triangle_model['texture_verts'][cull_dir])
+			triangle_model['textures'][cull_dir] = numpy.array(triangle_model['textures'][cull_dir], numpy.uint32)
 
-		return triangle_model
+	return triangle_model
 
-	def _recursive_load_block_model(self, namespace: str, model_path: str) -> dict:
-		asset_dir = next(asset_dir_ for asset_dir_ in self._asset_dirs if os.path.isfile(os.path.join(asset_dir_, namespace, 'models', f'{model_path}.json')))
-		model = comment_json.from_file(os.path.join(asset_dir, namespace, 'models', f'{model_path}.json'))
+
+def _recursive_load_block_model(resource_pack, block: Block, model_path: str) -> dict:
+	if (block.namespace, model_path) in resource_pack.model_files:
+		model = resource_pack.model_files[(block.namespace, model_path)]
+		if isinstance(model_path, MinecraftMesh):
+			return model
+
 		if 'parent' in model:
-			parent_model = self._recursive_load_block_model(namespace, model['parent'])
+			parent_model = _recursive_load_block_model(resource_pack, block, model['parent'])
 		else:
 			parent_model = {}
 		if 'textures' in model:
@@ -263,6 +246,9 @@ class MinecraftJavaModelHandler:
 			parent_model['elements'] = model['elements']
 
 		return parent_model
+
+	else:
+		return _missing_no()
 
 
 if __name__ == '__main__':
