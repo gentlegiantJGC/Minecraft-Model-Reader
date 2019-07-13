@@ -1,15 +1,17 @@
 import os
 import json
-from typing import List, Union
+from typing import List, Union, Dict, Tuple
 from .api import base_api
+try:
+	from amulet.api.block import Block
+except:
+	from .api.block import Block
 
 
 class JavaRP(base_api.BaseRP):
-	"""
-	A class to hold the bare bones information about the resource pack.
+	"""A class to hold the bare bones information about the resource pack.
 	Holds the pack format, description and if the pack is valid.
-	This information can be used in a viewer to display the packs to the user.
-	"""
+	This information can be used in a viewer to display the packs to the user."""
 	def __init__(self, resource_pack_path: str):
 		base_api.BaseRP.__init__(self)
 		self._root_dir = resource_pack_path
@@ -29,10 +31,8 @@ class JavaRP(base_api.BaseRP):
 
 
 class JavaRPHandler(base_api.BaseRPHandler):
-	"""
-	A class to load and handle the data from the packs.
-	Packs are given as a list with the later packs overwriting the earlier ones.
-	"""
+	"""A class to load and handle the data from the packs.
+	Packs are given as a list with the later packs overwriting the earlier ones."""
 	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
 		base_api.BaseRPHandler.__init__(self)
 		if isinstance(resource_packs, list) and all(isinstance(path, JavaRP) for path in resource_packs):
@@ -41,15 +41,17 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			self._packs = [resource_packs]
 
 	def reload(self):
+		"""Reload the resources from the resource packs.
+		This clears all memory and repopulates it."""
 		self.unload()
 
-		for pack in self._packs:
+		blockstate_file_paths: Dict[Tuple[str, str], str] = {}
+		model_file_paths: Dict[Tuple[str, str], str] = {}
 
-			"""
-			pack_format=2 textures/blocks, textures/items - case sensitive
-			pack_format=3 textures/blocks, textures/items - lower case
-			pack_format=4 textures/block, textures/item
-			"""
+		for pack in self._packs:
+			# pack_format=2 textures/blocks, textures/items - case sensitive
+			# pack_format=3 textures/blocks, textures/items - lower case
+			# pack_format=4 textures/block, textures/item
 
 			if pack.valid_pack and os.path.isdir(os.path.join(pack.root_dir, 'assets')):
 				for namespace in os.listdir(os.path.join(pack.root_dir, 'assets')):
@@ -58,10 +60,34 @@ class JavaRPHandler(base_api.BaseRPHandler):
 						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
 							for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
 								for f in files:
-									rel_path = os.path.relpath(os.path.join(root, f), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
-									if pack.pack_format >= 3:
-										rel_path = rel_path.lower()
-									self._textures[rel_path] = os.path.join(root, f)
+									if f.endswith('.png'):
+										rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
+									else:
+										continue
+									self._textures[(namespace, rel_path)] = os.path.join(root, f)
 
-	def unload(self):
-		self._textures.clear()
+						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
+							for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
+								if f.endswith('.json'):
+									blockstate_file_paths[(namespace, f[:-5])] = os.path.join(pack.root_dir, 'assets', namespace, 'blockstates', f)
+
+						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
+							for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
+								for f in files:
+									if f.endswith('.json'):
+										rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
+										blockstate_file_paths[(namespace, rel_path)] = os.path.join(root, f)
+
+		for key, path in blockstate_file_paths.items():
+			with open(path) as fi:
+				self._blockstate_files[key] = json.load(fi)
+
+		for key, path in model_file_paths.items():
+			with open(path) as fi:
+				self._model_files[key] = json.load(fi)
+
+	def get_model(self, block: Block):
+		# TODO: add some logic here to convert the block to Java blockstate format if it is not already
+		if block.blockstate not in self._cached_models:
+			self._cached_models[block.blockstate] = self._parse_blockstate_file(*Block.parse_blockstate_string(blockstate_str))
+		return copy.deepcopy(self._cached_models[block.blockstate])
