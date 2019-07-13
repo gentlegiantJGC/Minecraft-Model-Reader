@@ -1,14 +1,24 @@
-from typing import Dict
+from typing import Dict, Tuple
 import os
+import copy
+try:
+	from amulet.api.block import Block
+except:
+	from .block import Block
 
 default_pack_icon = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_pack_java.png')
 missing_no = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_no.png')
 
 
+class MinecraftMesh:
+	def __init__(self):
+		self._verts = []
+		self._tverts = []
+		self._faces = []
+
+
 class BaseRP:
-	"""
-	The base class that all resource packs must inherit from. Defines the base api.
-	"""
+	"""The base class that all resource packs must inherit from. Defines the base api."""
 	def __init__(self):
 		self._valid_pack = False
 		self._root_dir = None
@@ -43,16 +53,54 @@ class BaseRP:
 
 
 class BaseRPHandler:
-	"""
-	The base class that all resource pack handlers must inherit from. Defines the base api.
-	"""
+	"""The base class that all resource pack handlers must inherit from. Defines the base api."""
 	def __init__(self):
 		self._packs = []
-		self._textures = {}
 		self._missing_no = missing_no
+		self._textures: Dict[Tuple[str, str], str] = {}
+		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
+		self._model_files: Dict[Tuple[str, str], dict] = {}
+		self._cached_models = {}
 
-	def get_texture(self, path: str):
+	def unload(self):
+		"""Clear all loaded resources."""
+		self._textures.clear()
+		self._blockstate_files.clear()
+		self._model_files.clear()
+		self._cached_models.clear()
+
+	@property
+	def missing_no(self) -> str:
+		"""The path to the missing_no image"""
+		return self._missing_no
+
+	@property
+	def textures(self) -> Dict[Tuple[str, str], str]:
+		"""Returns a deepcopy of self._textures.
+		Keys are a tuple of (namespace, relative paths used in models)
+		Values are the absolute path to the texture"""
+		return copy.deepcopy(self._textures)
+
+	@property
+	def blockstate_files(self) -> Dict[Tuple[str, str], dict]:
+		"""Returns self._blockstate_files.
+		Keys are a tuple of (namespace, relative paths used in models)
+		Values are the blockstate files themselves (should be a dictionary)"""
+		return self._blockstate_files
+
+	@property
+	def model_files(self) -> Dict[Tuple[str, str], dict]:
+		"""Returns self._model_files.
+		Keys are a tuple of (namespace, relative paths used in models)
+		Values are the model files themselves (should be a dictionary)"""
+		return self._model_files
+
+	def get_texture(self, namespace: str, path: str) -> str:
+		"""Get the absolute texture path from the relative path"""
 		if path in self._textures:
-			return self._textures[path]
+			return self._textures[(namespace, path)]
 		else:
 			return self._missing_no
+
+	def get_model(self, block: Block):
+		raise NotImplemented
