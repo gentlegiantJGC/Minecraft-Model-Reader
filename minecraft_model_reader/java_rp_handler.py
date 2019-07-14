@@ -1,11 +1,13 @@
 import os
 import json
+import copy
 from typing import List, Union, Dict, Tuple
 from .api import base_api
 try:
 	from amulet.api.block import Block
 except:
 	from .api.block import Block
+from . import java_block_model
 
 
 class JavaRP(base_api.BaseRP):
@@ -86,8 +88,8 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			with open(path) as fi:
 				self._model_files[key] = json.load(fi)
 
-	def get_model(self, block: Block):
+	def get_model(self, block: Block, face_mode: int = 3):
 		# TODO: add some logic here to convert the block to Java blockstate format if it is not already
 		if block.blockstate not in self._cached_models:
-			self._cached_models[block.blockstate] = self._parse_blockstate_file(*Block.parse_blockstate_string(blockstate_str))
+			self._cached_models[block.blockstate_without_waterlogged] = java_block_model.get_model(self, block, face_mode)
 		return copy.deepcopy(self._cached_models[block.blockstate])
