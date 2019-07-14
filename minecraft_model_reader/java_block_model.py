@@ -1,35 +1,13 @@
-import os
-from typing import List, Dict, Union
+from typing import Union
+import itertools
 from .api.base_api import MinecraftMesh
+from .missing_no import missing_no_tris, missing_no_quads
 try:
 	from amulet.api.block import Block
 except:
 	from .api.block import Block
 import numpy
-import copy
 import math
-
-
-def empty_model():  # TODO: make this use MinecraftMesh
-	return copy.deepcopy(
-		{
-			'verts': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-			'texture_verts': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-			'faces': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
-			'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
-			'texture_list': []
-		}
-	)
-
-
-def _missing_no():  # TODO: make this use MinecraftMesh
-	return {
-		'verts': {side: numpy.zeros((0, 3), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-		'texture_verts': {side: numpy.zeros((0, 2), numpy.float) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},
-		'faces': {side: numpy.zeros((0, 3), numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [[v1, v2, v3],]
-		'textures': {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)},  # [t,]
-		'texture_list': []
-	}
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -47,48 +25,11 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
 	return numpy.matmul(verts - origin, trmtx) + origin
 
 
-cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
-	'down': [2, 6, 4, 0],
-	'up': [1, 5, 7, 3],
-	'north': [6, 2, 3, 7],  # TODO: work out the correct order of these last four
-	'east': [4, 6, 7, 5],
-	'south': [0, 4, 5, 1],
-	'west': [2, 0, 1, 3]
-}
-
-cube_vert_lut = {  # This maps from vertex index to index in [minx, miny, minz, maxx, maxy, maxz]
-	0: [0, 1, 5],
-	1: [0, 4, 5],
-	2: [0, 1, 2],
-	3: [0, 4, 2],
-	4: [3, 1, 5],
-	5: [3, 4, 5],
-	6: [3, 1, 2],
-	7: [3, 4, 2],
-}
-
-# combines the above two to map from face to index in [minx, miny, minz, maxx, maxy, maxz]. Used to index a numpy array
-# The above two have been kept separate because the merged result is unintuitive and difficult to edit.
-cube_lut = {
-	face_dir_: [
-		vert_coord_ for vert_ in vert_index_ for vert_coord_ in cube_vert_lut[vert_]
-	]
-	for face_dir_, vert_index_ in cube_face_lut.items()
-}
-
-uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
-
-# tvert_lut = {  # TODO: implement this for the cases where the UV is not defined
-# 	'down': [],
-# 	'up': [],
-# 	'north': [],
-# 	'east': [],
-# 	'south': [],
-# 	'west': []
-# }
-
-
-def _parse_blockstate_file(self, resource_pack, block: Block) -> dict:
+def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
+	"""A function to load the model for a block from a resource pack.
+	Needs a JavaRPHandler and Block.
+	See get_model in JavaRPHandler if you are trying to use from an external application."""
+	assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
 	if (block.namespace, block.base_name) in resource_pack.blockstate_files:
 		blockstate: dict = resource_pack.blockstate_files[(block.namespace, block.base_name)]
 		if 'variants' in blockstate:
@@ -107,9 +48,12 @@ def _parse_blockstate_file(self, resource_pack, block: Block) -> dict:
 							pass
 
 		elif 'multipart' in blockstate:
-			multi_model = empty_model()
-			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			textures = []
 			texture_count = 0
+			vert_count = 0
+			verts = []
+			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+
 			for case in blockstate['multipart']:
 				try:
 					if 'when' in case:
@@ -128,113 +72,210 @@ def _parse_blockstate_file(self, resource_pack, block: Block) -> dict:
 					if 'apply' in case:
 						try:
 							temp_model = _load_block_model(resource_pack, block, case['apply'])
-							for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
-								multi_model['verts'][face].append(temp_model['verts'][face])
-								multi_model['texture_verts'][face].append(temp_model['texture_verts'][face])
-								multi_model['faces'][face].append(temp_model['faces'][face] + vert_count[face])
-								vert_count[face] += len(temp_model['verts'][face])
-								multi_model['textures'][face].append(temp_model['textures'][face] + texture_count)
-							multi_model['texture_list'] += temp_model['texture_list']
-							texture_count += len(temp_model['texture_list'])
+							verts.append(temp_model.verts)
+							for cull_dir in temp_model.faces.keys():
+								face_table = temp_model.faces[cull_dir].copy()
+								face_table[:, :-1] += vert_count
+								face_table[:, -1] += texture_count
+								faces[cull_dir].append(face_table)
+
+								vert_count += temp_model.verts.shape[0]
+
+							textures += temp_model.textures
+							texture_count += len(temp_model.textures)
 
 						except:
 							pass
 				except:
 					pass
 
-			out_model = empty_model()
-			for face in ('down', 'up', 'north', 'east', 'south', 'west', None):
-				for attr, shape, dtype in (('verts', (0, 3), numpy.float), ('texture_verts', (0, 2), numpy.float), ('faces', (0, 3), numpy.uint32)):
-					try:
-						out_model[attr][face] = numpy.vstack(multi_model[attr][face])
-					except:
-						out_model[attr][face] = numpy.zeros(shape, dtype)
+			verts = numpy.vstack(verts)
+			textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
+			textures = list(zip(textures.T[0], textures.T[1]))
+			for cull_dir, face_table in faces.items():
+				face_table[:, -1] = texture_index_map[face_table[:, -1]]
+				faces[cull_dir] = numpy.vstack(face_table)
 
-				texture_list, inverse = numpy.unique(multi_model['texture_list'], return_inverse=True)
-				out_model['texture_list'] = list(texture_list)
-				try:
-					out_model['textures'][face] = inverse[numpy.hstack(multi_model['textures'][face])]
-				except:
-					out_model['textures'][face] = numpy.zeros((0,), numpy.uint32)
-			return out_model
+			return MinecraftMesh(verts, faces, textures)
 
-	return self._missing_no()
+	if face_mode == 4:
+		return missing_no_quads
+	else:
+		return missing_no_tris
 
 
-def _load_block_model(resource_pack, block: Block, blockstate: Union[dict, list]) -> dict:
-	if isinstance(blockstate, list):
-		blockstate = blockstate[0]
-	if 'model' not in blockstate:
-		return _missing_no()
-	model_path = blockstate['model']
-	rotx = blockstate.get('x', 0)
-	roty = blockstate.get('y', 0)
+cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
+	'down': numpy.array([0, 4, 5, 1]),
+	'up': numpy.array([2, 7, 6, 2]),
+	'north': numpy.array([4, 0, 2, 6]),  # TODO: work out the correct order of these last four
+	'east': numpy.array([5, 4, 6, 7]),
+	'south': numpy.array([1, 5, 7, 3]),
+	'west': numpy.array([0, 1, 3, 2])
+}
+tri_face = numpy.array([[0, 1, 2, 0], [0, 2, 3, 0]], numpy.uint32)
+quad_face = numpy.array([[0, 1, 2, 3, 0]], numpy.uint32)
+
+# cube_vert_lut = {  # This maps from vertex index to index in [minx, miny, minz, maxx, maxy, maxz]
+# 	1: [0, 1, 5],
+# 	3: [0, 4, 5],
+# 	0: [0, 1, 2],
+# 	2: [0, 4, 2],
+# 	5: [3, 1, 5],
+# 	7: [3, 4, 5],
+# 	4: [3, 1, 2],
+# 	6: [3, 4, 2],
+# }
+#
+# # combines the above two to map from face to index in [minx, miny, minz, maxx, maxy, maxz]. Used to index a numpy array
+# # The above two have been kept separate because the merged result is unintuitive and difficult to edit.
+# cube_lut = {
+# 	face_dir_: [
+# 		vert_coord_ for vert_ in vert_index_ for vert_coord_ in cube_vert_lut[vert_]
+# 	]
+# 	for face_dir_, vert_index_ in cube_face_lut.items()
+# }
+
+uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
+
+# tvert_lut = {  # TODO: implement this for the cases where the UV is not defined
+# 	'down': [],
+# 	'up': [],
+# 	'north': [],
+# 	'east': [],
+# 	'south': [],
+# 	'west': []
+# }
+
+
+def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> MinecraftMesh:
+	assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
+	if isinstance(blockstate_value, list):
+		blockstate_value = blockstate_value[0]
+	if 'model' not in blockstate_value:
+		if face_mode == 4:
+			return missing_no_quads
+		else:
+			return missing_no_tris
+	model_path = blockstate_value['model']
+	rotx = blockstate_value.get('x', 0)
+	roty = blockstate_value.get('y', 0)
 	# uvlock = blockstate.get('uvlock', False)
 
-	java_model = _recursive_load_block_model(resource_pack, block, model_path)
+	# recursively load model files into one dictionary
+	java_model = _recursive_load_block_model(resource_pack, block, model_path, face_mode)
 
-	triangle_model = empty_model()
-	texture_list = {}
+	# return immediately if it is already a MinecraftMesh class. This could be because it is missing_no or a forge model if implemented
+	if isinstance(java_model, MinecraftMesh):
+		return java_model
+
+	# set up some variables
+	texture_dict = {}
+	textures = []
 	texture_count = 0
+	vert_count = 0
+	verts = []
+	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 
-	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	for element in java_model.get('elements', {}):
+		# iterate through elements (one cube per element)
 		element_faces = element.get('faces', {})
 
-		corners = numpy.sort(numpy.array([element.get('to', [1, 0, 2]), element.get('from', [0, 1, 0])], numpy.float)/16, 0).ravel()
+		# lower and upper box coordinates
+		corners = numpy.sort(
+			numpy.array(
+				[
+					element.get('to', [1, 0, 2]),
+					element.get('from', [0, 1, 0])
+				],
+				numpy.float
+			)/16,
+			0
+		)
+
+		# vertex coordinates of the box
+		box_coordinates = numpy.array(
+			list(
+				itertools.product(
+					corners[:, 0],
+					corners[:, 1],
+					corners[:, 2]
+				)
+			)
+		)
+		# TODO: box rotation
 
 		for face_dir in element_faces:
-			if face_dir in cube_lut:
+			if face_dir in cube_face_lut:
+				# get the cull direction. If there is an opaque block in this direction then cull this face
 				cull_dir = element_faces[face_dir].get('cullface', None)
 
-				triangle_model['verts'][cull_dir].append(
-					corners[cube_lut[face_dir]].reshape((-1, 3))
+				# get the relative texture path for the texture used
+				texture_path = element_faces[face_dir].get('texture', None)
+				while isinstance(texture_path, str) and texture_path.startswith('#'):
+					texture_path = java_model['textures'].get(texture_path[1:], None)
+
+				# get the texture
+				if texture_path not in texture_dict:
+					texture_dict[texture_path] = texture_count
+					textures.append((block.namespace, texture_path))
+					texture_count += 1
+
+				# texture index for the face
+				texture_index = texture_dict[texture_path]
+
+				# get the uv values for each vertex
+				# TODO: get the uv based on box location if not defined
+				texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float)/16
+				texture_rotation = element_faces[face_dir].get('rotation', 0)
+				uv_slice = uv_lut[2 * int(texture_rotation / 90):] + uv_lut[:2 * int(texture_rotation / 90)]
+
+				# merge the vertex coordinates and texture coordinates
+				verts.append(
+					numpy.hstack(
+						(
+							box_coordinates[cube_face_lut[face_dir]],  # vertex coordinates for this face
+							texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
+						)
+					)
 				)
 
-				tex = element_faces[face_dir].get('texture', None)
-				while isinstance(tex, str) and tex.startswith('#'):
-					tex = java_model['textures'].get(tex[1:], None)
-				tex = os.path.join('assets', block.namespace, 'textures', tex)
-				if tex not in texture_list:
-					texture_list[tex] = texture_count
-					triangle_model['texture_list'].append(tex)
-					texture_count += 1
-				triangle_model['textures'][cull_dir] += [texture_list[tex]] * 4
+				# merge the face indexes and texture index
+				if face_mode == 4:
+					face_table = quad_face + vert_count
+				else:
+					face_table = tri_face + vert_count
 
-				texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float)/16  # TODO: get the uv based on box location if not defined
-				texture_rotation = element_faces[face_dir].get('rotation', 0)
-				uv_slice = uv_lut[2 * int(texture_rotation/90):] + uv_lut[:2 * int(texture_rotation/90)]
-				triangle_model['texture_verts'][cull_dir].append(texture_uv[uv_slice].reshape((-1, 2)))
+				face_table[:, -1] = texture_index
 
-				faces = numpy.array([[0, 1, 2], [0, 2, 3]], numpy.uint32)
-				faces += vert_count[cull_dir]
-				triangle_model['faces'][cull_dir].append(faces)
+				# faces stored under cull direction because this is the criteria to render them or not
+				faces[cull_dir].append(face_table)
 
-				vert_count[cull_dir] += 4
+				vert_count += 4
 
-	for cull_dir in ('down', 'up', 'north', 'east', 'south', 'west', None):
-		if len(triangle_model['verts'][cull_dir]) == 0:
-			triangle_model['verts'][cull_dir] = numpy.zeros((0, 3), numpy.float)
-			triangle_model['faces'][cull_dir] = numpy.zeros((0, 3), numpy.uint32)
-			triangle_model['texture_verts'][cull_dir] = numpy.zeros((0, 2), numpy.float)
-			triangle_model['textures'][cull_dir] = numpy.zeros((0,), numpy.uint32)
+	if len(verts) > 0:
+		verts = numpy.vstack(verts)
+		# TODO: rotate model based on uv_lock
+		verts[:, :3] = rotate_3d(verts[:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
+	else:
+		verts = numpy.zeros((0, 5), numpy.float)
+
+	for cull_dir, face_array in faces:
+		if len(face_array) > 0:
+			faces[cull_dir] = numpy.vstack(face_array)
 		else:
-			triangle_model['verts'][cull_dir] = rotate_3d(numpy.vstack(triangle_model['verts'][cull_dir]), rotx, roty, 0, 0.5, 0.5, 0.5)  # TODO: rotate model based on uv_lock
-			triangle_model['faces'][cull_dir] = numpy.vstack(triangle_model['faces'][cull_dir])
-			triangle_model['texture_verts'][cull_dir] = numpy.vstack(triangle_model['texture_verts'][cull_dir])
-			triangle_model['textures'][cull_dir] = numpy.array(triangle_model['textures'][cull_dir], numpy.uint32)
+			del faces[cull_dir]
 
-	return triangle_model
+	return MinecraftMesh(verts, faces, textures)
 
 
-def _recursive_load_block_model(resource_pack, block: Block, model_path: str) -> dict:
+def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> Union[dict, MinecraftMesh]:
 	if (block.namespace, model_path) in resource_pack.model_files:
 		model = resource_pack.model_files[(block.namespace, model_path)]
 		if isinstance(model_path, MinecraftMesh):
 			return model
 
 		if 'parent' in model:
-			parent_model = _recursive_load_block_model(resource_pack, block, model['parent'])
+			parent_model = _recursive_load_block_model(resource_pack, block, model['parent'], face_mode)
 		else:
 			parent_model = {}
 		if 'textures' in model:
@@ -248,9 +289,7 @@ def _recursive_load_block_model(resource_pack, block: Block, model_path: str) ->
 		return parent_model
 
 	else:
-		return _missing_no()
-
-
-if __name__ == '__main__':
-	java_model_handler = MinecraftJavaModelHandler(['assets', r"PureBDcraft 512x MC113\assets"])
-	print(java_model_handler.get_model('minecraft:oak_stairs[facing=south,half=top,shape=straight,waterlogged=true]'))
+		if face_mode == 4:
+			return missing_no_quads
+		else:
+			return missing_no_tris
