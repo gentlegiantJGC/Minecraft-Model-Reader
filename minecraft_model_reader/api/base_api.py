@@ -1,6 +1,7 @@
-from typing import Dict, Tuple
+from typing import Dict, Tuple, List, Union
 import os
 import copy
+import numpy
 try:
 	from amulet.api.block import Block
 except:
@@ -9,12 +10,51 @@ except:
 default_pack_icon = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_pack_java.png')
 missing_no = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_no.png')
 
+face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
+
 
 class MinecraftMesh:
-	def __init__(self):
-		self._verts = []
-		self._tverts = []
-		self._faces = []
+	"""Class for storing model data"""
+	def __init__(self, verts: numpy.ndarray, faces: Dict[Union[str, None], numpy.ndarray], textures: List[Tuple[str, Union[None, str]]]):
+		assert isinstance(verts, numpy.ndarray) and verts.dtype == numpy.float and verts.ndim == 2 and verts.shape[1] == 5, 'Verts must be a numpy.ndarray float object of size (-1, 5)'
+
+		face_width = set(val.shape[1] for val in faces.values())
+
+		assert isinstance(faces, dict) and all(
+			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 2 and val.shape[1] in [4, 5] for key, val in faces.items()
+		) and len(face_width) == 1, 'The format of faces is incorrect'
+
+		assert isinstance(textures, list) and all(
+			isinstance(texture, tuple) and len(texture) == 2 and isinstance(texture[0], str) and (isinstance(texture[1], str) or texture[1] is None) for texture in textures
+		), 'The format of the textures is incorrect'
+
+		self._face_mode = face_width.pop() - 1
+		self._verts = verts
+		self._faces = faces
+		self._textures = textures
+
+	@property
+	def face_mode(self):
+		return self._face_mode
+
+	@property
+	def verts(self):
+		"""An n by 5 numpy array of vertex data.
+		x,y,z coordinates in the first three columns.
+		tx, ty in the last two columns"""
+		return self._verts
+
+	@property
+	def faces(self):
+		"""An N by 4 or 5 numpy array depending on face_mode.
+		First 3 or 4 columns index into the verts table.
+		Last column indexes into texture_list."""
+		return self._faces
+
+	@property
+	def textures(self) -> List[Tuple[str, Union[None, str]]]:
+		"""A list of all the texture paths."""
+		return self._textures
 
 
 class BaseRP:
