@@ -16,6 +16,7 @@ class JavaRP(base_api.BaseRP):
 	This information can be used in a viewer to display the packs to the user."""
 	def __init__(self, resource_pack_path: str):
 		base_api.BaseRP.__init__(self)
+		assert os.path.isdir(resource_pack_path), 'The given path must be a directory'
 		self._root_dir = resource_pack_path
 		try:
 			if os.path.isfile(os.path.join(resource_pack_path, 'pack.mcmeta')):
@@ -41,6 +42,7 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			self._packs = resource_packs
 		elif isinstance(resource_packs, JavaRP):
 			self._packs = [resource_packs]
+		self.reload()
 
 	def reload(self):
 		"""Reload the resources from the resource packs.
@@ -57,28 +59,28 @@ class JavaRPHandler(base_api.BaseRPHandler):
 
 			if pack.valid_pack and os.path.isdir(os.path.join(pack.root_dir, 'assets')):
 				for namespace in os.listdir(os.path.join(pack.root_dir, 'assets')):
-					if pack.pack_format >= 2:
+					if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace)):
+						if pack.pack_format >= 2:
+							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
+								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
+									for f in files:
+										if f.endswith('.png'):
+											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
+										else:
+											continue
+										self._textures[(namespace, rel_path)] = os.path.join(root, f)
 
-						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
-							for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
-								for f in files:
-									if f.endswith('.png'):
-										rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
-									else:
-										continue
-									self._textures[(namespace, rel_path)] = os.path.join(root, f)
-
-						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
-							for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
-								if f.endswith('.json'):
-									blockstate_file_paths[(namespace, f[:-5])] = os.path.join(pack.root_dir, 'assets', namespace, 'blockstates', f)
-
-						if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
-							for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
-								for f in files:
+							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
+								for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
 									if f.endswith('.json'):
-										rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
-										blockstate_file_paths[(namespace, rel_path)] = os.path.join(root, f)
+										blockstate_file_paths[(namespace, f[:-5])] = os.path.join(pack.root_dir, 'assets', namespace, 'blockstates', f)
+
+							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
+								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
+									for f in files:
+										if f.endswith('.json'):
+											rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
+											model_file_paths[(namespace, rel_path)] = os.path.join(root, f)
 
 		for key, path in blockstate_file_paths.items():
 			with open(path) as fi:
