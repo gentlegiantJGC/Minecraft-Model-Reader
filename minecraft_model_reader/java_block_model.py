@@ -60,12 +60,20 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 						if 'OR' in case['when']:
 							if not any(
 								all(
-									block.properties.get(prop, None) in val.split('|') for prop, val in prop_match.items()
+									block.properties.get(prop, None) in (
+											val.split('|') if isinstance(val, str)
+											else (['true'] if val else ['false']) if isinstance(val, bool)
+											else Exception
+									) for prop, val in prop_match.items()
 								) for prop_match in case['when']['OR']
 							):
 								continue
 						elif not all(
-							block.properties.get(prop, None) in val.split('|') for prop, val in case['when'].items()
+							block.properties.get(prop, None) in (
+								val.split('|') if isinstance(val, str)
+								else (['true'] if val else ['false']) if isinstance(val, bool)
+								else Exception
+							) for prop, val in case['when'].items()
 						):
 							continue
 
