@@ -6,7 +6,7 @@ import itertools
 
 
 import numpy
-from PyTexturePacker import Packer
+# from PyTexturePacker import Packer
 from direct.showbase.ShowBase import ShowBase, NodePath, GeomVertexArrayFormat, Geom, GeomVertexFormat, GeomVertexData, \
     GeomVertexWriter, GeomTriangles, Texture, SamplerState, GeomNode, Vec3, ModifierButtons, KeyboardButton, \
     MouseButton, Point3, TransparencyAttrib
@@ -15,10 +15,10 @@ from amulet.api import paths
 from amulet.api.block import Block
 from panda3d.bullet import BulletDebugNode, BulletWorld, BulletBoxShape, BulletRigidBodyNode
 
-from java_block_model import MinecraftJavaModelHandler
+import minecraft_model_reader
 
-paths.FORMATS_DIR = r"C:\Users\Ben\PycharmProjects\Unified-Minecraft-Editor\src\amulet\formats"
-paths.DEFINITIONS_DIR = r"C:\Users\Ben\PycharmProjects\Unified-Minecraft-Editor\src\amulet\version_definitions"
+paths.FORMATS_DIR = r"./amulet/formats"
+paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 
 from amulet import world_loader
 
@@ -26,7 +26,6 @@ NUM_BLOCKS = 25
 MOUSE_SENSITIVITY = 150
 SPEED = 0.35
 
-#print(world_loader.load_world(r"C:\Users\Ben\PycharmProjects\Unified-Minecraft-Editor\tests\worlds\1.13 World"))
 
 class App(ShowBase):
 
@@ -55,7 +54,7 @@ class App(ShowBase):
 
         array = GeomVertexArrayFormat()
         array.addColumn("vertex", 3, Geom.NTFloat64, Geom.CPoint)
-        array.addColumn("texcoord", 2, Geom.NTFloat64, Geom.CTexcoord)
+        # array.addColumn("texcoord", 2, Geom.NTFloat64, Geom.CTexcoord)
 
         vert_format = GeomVertexFormat()
         vert_format.addArray(array)
@@ -65,40 +64,38 @@ class App(ShowBase):
         #vdata.setNumRows(8 * 16 ** 2)
 
         vertex = GeomVertexWriter(vdata, 'vertex')
-        texcoord = GeomVertexWriter(vdata, 'texcoord')
+        # texcoord = GeomVertexWriter(vdata, 'texcoord')
         prim = GeomTriangles(Geom.UHStatic)
 
-        packer = Packer.create(max_width=2 ** 15, max_height=2 ** 15, bg_color=0x000000ff, border_padding=0,
-                               shape_padding=0, enable_rotated=False)
+        # packer = Packer.create(max_width=2 ** 15, max_height=2 ** 15, bg_color=0x000000ff, border_padding=0,
+        #                        shape_padding=0, enable_rotated=False)
         # packer.pack([os.path.join(r"C:\Users\james_000\Documents\GitHub\Minecraft-Model-Reader", f'{tex}.png') for tex in model['texture_list']], 'texture_atlas')
-        packer.pack(r"assets/minecraft/textures/block", 'texture_atlas')
+        # packer.pack(r"assets/minecraft/textures/block", 'texture_atlas')
 
-        java_model_handler = MinecraftJavaModelHandler(
-            [r"assets"])  # , r"C:\Users\james_000\Documents\GitHub\Minecraft-Model-Reader\3d_pack\assets"])
+        java_1_13_2_rp = minecraft_model_reader.JavaRP('./../../test_packs/Vanilla 1.13.2')
+        java_rp_handler = minecraft_model_reader.JavaRPHandler(java_1_13_2_rp)
         # model = java_model_handler.get_model('minecraft:end_portal_frame[eye=true,facing=west]')
         # model = java_model_handler.get_model('minecraft:magenta_glazed_terracotta')
         # model = java_model_handler.get_model('minecraft:crafting_table')
         # model = java_model_handler.get_model('minecraft:damaged_anvil')
         # model = java_model_handler.get_model('minecraft:oak_stairs[facing=north,half=bottom,shape=straight,waterlogged=true]')
 
-        with open('texture_atlas.plist', 'rb') as f:
-            texture_map = plistlib.load(f)
-        texture_name_to_path = {os.path.splitext(texture_path)[0]: texture_path for texture_path in
-                                texture_map['frames']}
-        atlas_size = numpy.array(texture_map['metadata']['size'].replace('{', '').replace('}', '').split(','),
-                                 numpy.float)
-        self.tex: Texture = self.loader.loadTexture("texture_atlas.png")
-        self.tex.setMagfilter(SamplerState.FT_nearest)
+        # with open('texture_atlas.plist', 'rb') as f:
+        #     texture_map = plistlib.load(f)
+        # texture_name_to_path = {os.path.splitext(texture_path)[0]: texture_path for texture_path in
+        #                         texture_map['frames']}
+        # atlas_size = numpy.array(texture_map['metadata']['size'].replace('{', '').replace('}', '').split(','),
+        #                          numpy.float)
+        # self.tex: Texture = self.loader.loadTexture("texture_atlas.png")
+        # self.tex.setMagfilter(SamplerState.FT_nearest)
 
         x = z = 0
-        with open(r"blocks.json") as f:
-            blockstates = json.load(f)
 
         vert_count = 0
+        cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': (1,0,0), 'south': (0,0,1), 'west': (-1,0,0)}
 
-        for x, z in itertools.product(range(8), range(8)):
-            for y in range(-255, 0):
-                y = abs(y)
+        for x, z in itertools.product(range(64), range(64)):
+            for y in reversed(range(0, 256)):
 
                 if world.get_block(x,y,z).blockstate == "minecraft:air":
                     continue
@@ -109,51 +106,36 @@ class App(ShowBase):
                     if block.properties:
                         block_string += f'[{",".join([f"{prop}={val}" for prop, val in block.properties.items()])}]'
 
-                    model = java_model_handler.get_model(block_string)
+                    model: minecraft_model_reader.MinecraftMesh = java_rp_handler.get_model(block)
 
-                    texture_scale = numpy.ones((len(model['texture_list']), 2), numpy.float)
-                    texture_offset = numpy.zeros((len(model['texture_list']), 2), numpy.float)
+                    # texture_scale = numpy.ones((len(model['texture_list']), 2), numpy.float)
+                    # texture_offset = numpy.zeros((len(model['texture_list']), 2), numpy.float)
 
-                    for index, texture_path in enumerate(model['texture_list']):
-                        texture_path2 = texture_name_to_path[os.path.basename(texture_path)]
-                        img_frame = texture_map['frames'][texture_path2]['frame'].replace('{', '').replace('}',
-                                                                                                           '').split(
-                            ',')
-                        texture_scale[index, :] = img_frame[2:]
-                        texture_offset[index, :] = img_frame[:2]
-                    texture_scale /= atlas_size
-                    texture_offset /= atlas_size
+                    # for index, texture_path in enumerate(model['texture_list']):
+                    #     texture_path2 = texture_name_to_path[os.path.basename(texture_path)]
+                    #     img_frame = texture_map['frames'][texture_path2]['frame'].replace('{', '').replace('}',
+                    #                                                                                        '').split(
+                    #         ',')
+                    #     texture_scale[index, :] = img_frame[2:]
+                    #     texture_offset[index, :] = img_frame[:2]
+                    # texture_scale /= atlas_size
+                    # texture_offset /= atlas_size
 
-                    for vert_group in model['verts'].values():
-                        for vert in vert_group:
-                            vertex.addData3f(vert[0] + z, -vert[2] + x, vert[1] + y)
+                    for cull_dir in model.faces.keys():
+                        if cull_dir is not None and y != 0 and y != 255:
+                            cull_offset = cull_offset_dict[cull_dir]
+                            if world.get_block(x+cull_offset[0], y+cull_offset[1], z+cull_offset[2]) == block:
+                                continue
+                        for vert in model.verts[cull_dir]:
+                            vertex.addData3f(vert[0] + x, -vert[2] - z, vert[1] + y)
+                            # calculate offsets
+                            # texcoord.addData2f(vert[3], vert[4])
 
-                    for face_dir in model['texture_verts'].keys():
-                        texture_slice = model['textures'][face_dir]
-                        tvert_group = model['texture_verts'][face_dir] * texture_scale[texture_slice] + texture_offset[
-                            texture_slice]
-                        tvert_group[:, 1] *= -1
-                        for tvert in tvert_group:
-                            texcoord.addData2f(*tvert)
-
-                    for face_group in model['faces'].values():
-                        if len(face_group) > 0:
-                            face_group += vert_count
-                            for face in face_group:
-                                try:
-                                    prim.addVertices(*face)
-                                except OverflowError as e:
-                                    print(prim)
-                                    print("++" * 16)
-                                    print(face)
-                                    print(x, y, z)
-                                    print(block_string)
-                                    raise e
-                            vert_count = face_group.max() + 1
+                        for face in model.faces[cull_dir]:
+                            prim.addVertices(*(face[:3] + vert_count))
+                        vert_count += len(model.verts[cull_dir])
 
                     self.block_map[(z, x, y)] = block_string
-
-                    break
 
         """
         for block_id in blockstates:
@@ -212,7 +194,7 @@ class App(ShowBase):
         node.addGeom(geom)
 
         nodePath = self.render.attachNewNode(node)
-        nodePath.setTexture(self.tex, 1)
+        # nodePath.setTexture(self.tex, 1)
         nodePath.setTransparency(TransparencyAttrib.MAlpha)
 
         # Start raycast changes
@@ -335,6 +317,5 @@ class App(ShowBase):
 
 
 if __name__ == "__main__":
-    #app = App(r"C:\Users\Ben\PycharmProjects\Unified-Minecraft-Editor\tests\worlds\1.13 World")
-    app = App(r"C:\Users\Ben\Saved Games\Minecraft\1.13\saves\Amulet Rendering Test")
+    app = App(r".\test_world")
     app.run()
