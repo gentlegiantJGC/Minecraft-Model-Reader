@@ -51,8 +51,8 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 		elif 'multipart' in blockstate:
 			textures = []
 			texture_count = 0
-			vert_count = 0
-			verts = []
+			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 
 			for case in blockstate['multipart']:
@@ -81,14 +81,15 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 					if 'apply' in case:
 						try:
 							temp_model = _load_blockstate_model(resource_pack, block, case['apply'])
-							verts.append(temp_model.verts)
+
 							for cull_dir in temp_model.faces.keys():
+								verts[cull_dir].append(temp_model.verts[cull_dir])
 								face_table = temp_model.faces[cull_dir].copy()
-								face_table[:, :-1] += vert_count
+								face_table[:, :-1] += vert_count[cull_dir]
 								face_table[:, -1] += texture_count
 								faces[cull_dir].append(face_table)
 
-								vert_count += temp_model.verts.shape[0]
+								vert_count[cull_dir] += temp_model.verts[cull_dir].shape[0]
 
 							textures += temp_model.textures
 							texture_count += len(temp_model.textures)
@@ -98,10 +99,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				except:
 					pass
 
-			if len(verts) > 0:
-				verts = numpy.vstack(verts)
-			else:
-				verts = numpy.zeros((0, 5), numpy.float)
+
 
 			if len(textures) > 0:
 				textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
@@ -111,6 +109,11 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 			remove_faces = []
 			for cull_dir, face_table in faces.items():
+				if len(verts[cull_dir]) > 0:
+					verts[cull_dir] = numpy.vstack(verts[cull_dir])
+				else:
+					verts[cull_dir] = numpy.zeros((0, 5), numpy.float)
+
 				if len(face_table) > 0:
 					faces[cull_dir] = numpy.vstack(face_table)
 					faces[cull_dir][:, -1] = texture_index_map[faces[cull_dir][:, -1]]
@@ -119,6 +122,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 			for cull_dir in remove_faces:
 				del faces[cull_dir]
+				del verts[cull_dir]
 
 			return MinecraftMesh(verts, faces, textures)
 
@@ -188,7 +192,8 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
 	model = _load_block_model(resource_pack, block, model_path, face_mode)
 
 	# TODO: rotate model based on uv_lock
-	model.verts[:, :3] = rotate_3d(model.verts[:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
+	for cull_dir in model.verts:
+		model.verts[cull_dir][:, :3] = rotate_3d(model.verts[cull_dir][:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
 	return model
 
 
@@ -205,8 +210,8 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	texture_dict = {}
 	textures = []
 	texture_count = 0
-	vert_count = 0
-	verts = []
+	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 
 	for element in java_model.get('elements', {}):
@@ -263,7 +268,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				uv_slice = uv_lut[2 * int(texture_rotation / 90):] + uv_lut[:2 * int(texture_rotation / 90)]
 
 				# merge the vertex coordinates and texture coordinates
-				verts.append(
+				verts[cull_dir].append(
 					numpy.hstack(
 						(
 							box_coordinates[cube_face_lut[face_dir]],  # vertex coordinates for this face
@@ -274,24 +279,24 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
 				# merge the face indexes and texture index
 				if face_mode == 4:
-					face_table = quad_face + vert_count
+					face_table = quad_face + vert_count[cull_dir]
 				else:
-					face_table = tri_face + vert_count
+					face_table = tri_face + vert_count[cull_dir]
 
 				face_table[:, -1] = texture_index
 
 				# faces stored under cull direction because this is the criteria to render them or not
 				faces[cull_dir].append(face_table)
 
-				vert_count += 4
-
-	if len(verts) > 0:
-		verts = numpy.vstack(verts)
-	else:
-		verts = numpy.zeros((0, 5), numpy.float)
+				vert_count[cull_dir] += 4
 
 	remove_faces = []
 	for cull_dir, face_array in faces.items():
+		if len(verts[cull_dir]) > 0:
+			verts[cull_dir] = numpy.vstack(verts[cull_dir])
+		else:
+			verts[cull_dir] = numpy.zeros((0, 5), numpy.float)
+
 		if len(face_array) > 0:
 			faces[cull_dir] = numpy.vstack(face_array)
 		else:
@@ -299,6 +304,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
 	for cull_dir in remove_faces:
 		del faces[cull_dir]
+		del verts[cull_dir]
 
 	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(verts, faces, textures)
 

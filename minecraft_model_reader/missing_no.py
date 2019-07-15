@@ -6,9 +6,9 @@ from .api.base_api import MinecraftMesh
 _box_coordinates = numpy.array(
 	list(
 		itertools.product(
-			[0,1],
-			[0,1],
-			[0,1]
+			[0, 1],
+			[0, 1],
+			[0, 1]
 		)
 	)
 )
@@ -27,13 +27,12 @@ _uv_slice = [0, 3, 2, 3, 2, 1, 0, 1]
 _tri_face = numpy.array([[0, 1, 2, 0], [0, 2, 3, 0]], numpy.uint32)
 _quad_face = numpy.array([[0, 1, 2, 3, 0]], numpy.uint32)
 
-_vert_count = 0
-_verts = []
+_verts = {}
 _tri_faces = {}
 _quad_faces = {}
 
 for _face_dir in _cube_face_lut:
-	_verts.append(
+	_verts[_face_dir] = (
 		numpy.hstack(
 			(
 				_box_coordinates[_cube_face_lut[_face_dir]],  # vertex coordinates for this face
@@ -41,15 +40,12 @@ for _face_dir in _cube_face_lut:
 			)
 		)
 	)
-	_quad_face_table: numpy.ndarray = _quad_face + _vert_count
-	_tri_face_table: numpy.ndarray = _tri_face + _vert_count
+	_quad_face_table: numpy.ndarray = _quad_face
+	_tri_face_table: numpy.ndarray = _tri_face
 	_tri_face_table[:, -1] = 0
 	_quad_face_table[:, -1] = 0
 	_tri_faces[_face_dir] = _tri_face_table
 	_quad_faces[_face_dir] = _quad_face_table
-	_vert_count += 4
-
-_verts = numpy.vstack(_verts)
 
 missing_no_tris = MinecraftMesh(
 	_verts,

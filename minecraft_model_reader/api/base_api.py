@@ -15,8 +15,10 @@ face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
 
 class MinecraftMesh:
 	"""Class for storing model data"""
-	def __init__(self, verts: numpy.ndarray, faces: Dict[Union[str, None], numpy.ndarray], textures: List[Tuple[str, Union[None, str]]]):
-		assert isinstance(verts, numpy.ndarray) and verts.dtype == numpy.float and verts.ndim == 2 and verts.shape[1] == 5, 'Verts must be a numpy.ndarray float object of size (-1, 5)'
+	def __init__(self, verts: Dict[Union[str, None], numpy.ndarray], faces: Dict[Union[str, None], numpy.ndarray], textures: List[Tuple[str, Union[None, str]]]):
+		assert isinstance(verts, dict) and all(
+			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.float and val.ndim == 2 and val.shape[1] == 5 for key, val in verts.items()
+		), 'The format for verts is incorrect'
 
 		face_width = set(val.shape[1] for val in faces.values())
 		if len(face_width) == 0:
@@ -36,21 +38,23 @@ class MinecraftMesh:
 		self._textures = textures
 
 	@property
-	def face_mode(self):
+	def face_mode(self) -> int:
 		return self._face_mode
 
 	@property
-	def verts(self):
-		"""An n by 5 numpy array of vertex data.
+	def verts(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary mapping face cull direction to the vertex table for that direction.
+		The vertex table is n n by 5 numpy array of vertex data.
 		x,y,z coordinates in the first three columns.
 		tx, ty in the last two columns"""
 		return self._verts
 
 	@property
-	def faces(self):
-		"""An N by 4 or 5 numpy array depending on face_mode.
+	def faces(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary mapping face cull direction to the face table for that direction.
+		The face table is an N by 4 or 5 numpy array depending on face_mode.
 		First 3 or 4 columns index into the verts table.
-		Last column indexes into texture_list."""
+		Last column indexes into textures."""
 		return self._faces
 
 	@property
