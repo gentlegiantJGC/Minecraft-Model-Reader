@@ -97,12 +97,27 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				except:
 					pass
 
-			verts = numpy.vstack(verts)
-			textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
-			textures = list(zip(textures.T[0], textures.T[1]))
+			if len(verts) > 0:
+				verts = numpy.vstack(verts)
+			else:
+				verts = numpy.zeros((0, 5), numpy.float)
+
+			if len(textures) > 0:
+				textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
+				textures = list(zip(textures.T[0], textures.T[1]))
+			else:
+				texture_index_map = numpy.array([], dtype=numpy.uint8)
+
+			remove_faces = []
 			for cull_dir, face_table in faces.items():
-				face_table[:, -1] = texture_index_map[face_table[:, -1]]
-				faces[cull_dir] = numpy.vstack(face_table)
+				if len(face_table) > 0:
+					faces[cull_dir] = numpy.vstack(face_table)
+					faces[cull_dir][:, -1] = texture_index_map[faces[cull_dir][:, -1]]
+				else:
+					remove_faces.append(cull_dir)
+
+			for cull_dir in remove_faces:
+				del faces[cull_dir]
 
 			return MinecraftMesh(verts, faces, textures)
 
@@ -267,11 +282,15 @@ def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict,
 	else:
 		verts = numpy.zeros((0, 5), numpy.float)
 
-	for cull_dir, face_array in faces:
+	remove_faces = []
+	for cull_dir, face_array in faces.items():
 		if len(face_array) > 0:
 			faces[cull_dir] = numpy.vstack(face_array)
 		else:
-			del faces[cull_dir]
+			remove_faces.append(cull_dir)
+
+	for cull_dir in remove_faces:
+		del faces[cull_dir]
 
 	return MinecraftMesh(verts, faces, textures)
 
