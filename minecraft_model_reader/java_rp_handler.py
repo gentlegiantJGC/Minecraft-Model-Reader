@@ -93,5 +93,5 @@ class JavaRPHandler(base_api.BaseRPHandler):
 	def get_model(self, block: Block, face_mode: int = 3):
 		# TODO: add some logic here to convert the block to Java blockstate format if it is not already
 		if block.blockstate not in self._cached_models:
-			self._cached_models[block.blockstate_without_waterlogged] = java_block_model.get_model(self, block, face_mode)
-		return copy.deepcopy(self._cached_models[block.blockstate])
+			self._cached_models[block] = java_block_model.get_model(self, block, face_mode)
+		return copy.deepcopy(self._cached_models[block])
