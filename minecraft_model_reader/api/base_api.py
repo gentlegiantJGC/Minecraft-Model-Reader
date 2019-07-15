@@ -134,7 +134,7 @@ class BaseRPHandler:
 	def model_files(self) -> Dict[Tuple[str, str], dict]:
 		"""Returns self._model_files.
 		Keys are a tuple of (namespace, relative paths used in models)
-		Values are the model files themselves (should be a dictionary)"""
+		Values are the model files themselves (should be a dictionary or MinecraftMesh)"""
 		return self._model_files
 
 	def get_texture(self, namespace: str, path: str) -> str:

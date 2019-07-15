@@ -8,6 +8,7 @@ except:
 	from .api.block import Block
 import numpy
 import math
+import copy
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -36,14 +37,14 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			for variant in blockstate['variants']:
 				if variant == '':
 					try:
-						return _load_block_model(resource_pack, block, blockstate['variants'][variant])
+						return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
 					except:
 						pass
 				else:
 					properties_match = Block.parameters_regex.finditer(f',{variant}')
 					if all(block.properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
 						try:
-							return _load_block_model(resource_pack, block, blockstate['variants'][variant])
+							return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
 						except:
 							pass
 
@@ -79,7 +80,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 					if 'apply' in case:
 						try:
-							temp_model = _load_block_model(resource_pack, block, case['apply'])
+							temp_model = _load_blockstate_model(resource_pack, block, case['apply'])
 							verts.append(temp_model.verts)
 							for cull_dir in temp_model.faces.keys():
 								face_table = temp_model.faces[cull_dir].copy()
@@ -170,7 +171,7 @@ uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
 # }
 
 
-def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> MinecraftMesh:
+def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> MinecraftMesh:
 	assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
 	if isinstance(blockstate_value, list):
 		blockstate_value = blockstate_value[0]
@@ -182,14 +183,23 @@ def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict,
 	model_path = blockstate_value['model']
 	rotx = blockstate_value.get('x', 0)
 	roty = blockstate_value.get('y', 0)
-	# uvlock = blockstate.get('uvlock', False)
+	uvlock = blockstate_value.get('uvlock', False)
+
+	model = _load_block_model(resource_pack, block, model_path, face_mode)
+
+	# TODO: rotate model based on uv_lock
+	model.verts[:, :3] = rotate_3d(model.verts[:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
+	return model
+
+
+def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> MinecraftMesh:
 
 	# recursively load model files into one dictionary
 	java_model = _recursive_load_block_model(resource_pack, block, model_path, face_mode)
 
 	# return immediately if it is already a MinecraftMesh class. This could be because it is missing_no or a forge model if implemented
 	if isinstance(java_model, MinecraftMesh):
-		return java_model
+		return copy.deepcopy(java_model)
 
 	# set up some variables
 	texture_dict = {}
@@ -277,8 +287,6 @@ def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict,
 
 	if len(verts) > 0:
 		verts = numpy.vstack(verts)
-		# TODO: rotate model based on uv_lock
-		verts[:, :3] = rotate_3d(verts[:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
 	else:
 		verts = numpy.zeros((0, 5), numpy.float)
 
@@ -292,7 +300,9 @@ def _load_block_model(resource_pack, block: Block, blockstate_value: Union[dict,
 	for cull_dir in remove_faces:
 		del faces[cull_dir]
 
-	return MinecraftMesh(verts, faces, textures)
+	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(verts, faces, textures)
+
+	return copy.deepcopy(model)
 
 
 def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> Union[dict, MinecraftMesh]:
