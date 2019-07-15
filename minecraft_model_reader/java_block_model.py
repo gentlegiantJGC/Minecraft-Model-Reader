@@ -134,8 +134,8 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
 	'down': numpy.array([0, 4, 5, 1]),
-	'up': numpy.array([2, 7, 6, 2]),
-	'north': numpy.array([4, 0, 2, 6]),  # TODO: work out the correct order of these last four
+	'up': numpy.array([3, 7, 6, 2]),
+	'north': numpy.array([4, 0, 2, 6]),
 	'east': numpy.array([5, 4, 6, 7]),
 	'south': numpy.array([1, 5, 7, 3]),
 	'west': numpy.array([0, 1, 3, 2])
