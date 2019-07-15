@@ -19,6 +19,8 @@ class MinecraftMesh:
 		assert isinstance(verts, numpy.ndarray) and verts.dtype == numpy.float and verts.ndim == 2 and verts.shape[1] == 5, 'Verts must be a numpy.ndarray float object of size (-1, 5)'
 
 		face_width = set(val.shape[1] for val in faces.values())
+		if len(face_width) == 0:
+			face_width = {4}
 
 		assert isinstance(faces, dict) and all(
 			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 2 and val.shape[1] in [4, 5] for key, val in faces.items()
