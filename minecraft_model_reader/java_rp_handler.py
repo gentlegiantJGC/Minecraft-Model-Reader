@@ -80,7 +80,7 @@ class JavaRPHandler(base_api.BaseRPHandler):
 									for f in files:
 										if f.endswith('.json'):
 											rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
-											model_file_paths[(namespace, rel_path)] = os.path.join(root, f)
+											model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = os.path.join(root, f)
 
 		for key, path in blockstate_file_paths.items():
 			with open(path) as fi:
