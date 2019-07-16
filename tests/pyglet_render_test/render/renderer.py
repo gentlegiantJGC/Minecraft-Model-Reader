@@ -4,29 +4,18 @@ from pyglet.window import key
 import itertools
 
 
-from .keys import key_map
+from render.keys import key_map
+from render.world import RenderWorld
 
 import minecraft_model_reader
 
-from amulet.api import paths
-from amulet.api.block import Block
-paths.FORMATS_DIR = r"./amulet/formats"
-paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
-from amulet import world_loader
+
 
 
 class Renderer(pyglet.window.Window):
 
 	def __init__(self, world_path: str, resource_packs: Union[str, List[str]]):
-		# Load the resource pack
-		if isinstance(resource_packs, str):
-			resource_packs = minecraft_model_reader.JavaRP(resource_packs)
-		elif isinstance(resource_packs, list):
-			resource_packs = [minecraft_model_reader.JavaRP(rp) for rp in resource_packs]
-		else:
-			raise Exception('resource_pack must be a string or list of strings')
-		resource_pack = minecraft_model_reader.JavaRPHandler(resource_packs)
-
+		self.render_world = RenderWorld(world_path, resource_packs)
 		super(Renderer, self).__init__(480, 270, 'Amulet', resizable=True)
 		self.set_minimum_size(240, 135)
 
@@ -43,9 +32,6 @@ class Renderer(pyglet.window.Window):
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
 
-		self.world = world_loader.load_world(world_path)
-		# for cx, cz in itertools.product(range(2), range(2)):
-		# 	self.world.get_chunk(cx, cz).blocks
 
 	def update(self, delta_time):
 
@@ -67,6 +53,7 @@ class Renderer(pyglet.window.Window):
 		self.proto_label.y = self.height - 15
 		self.position_label.y = self.height - 30
 		self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
+		self.render_world.update(self.x, self.z)
 
 	# def on_resize(self, width, height):
 	# 	print('hi')
