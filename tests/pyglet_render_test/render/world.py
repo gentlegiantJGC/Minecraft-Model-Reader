@@ -1,5 +1,6 @@
 from typing import Tuple, Dict, Union, List
 import itertools
+import pyglet
 
 import minecraft_model_reader
 
@@ -8,6 +9,22 @@ from amulet.api.block import Block
 paths.FORMATS_DIR = r"./amulet/formats"
 paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 from amulet import world_loader
+
+
+class RenderChunk:
+	def __init__(self, blocks):
+		# self._verts = pyglet.graphics.vertex_list(0, ('v3f', []), )
+		self.verts = pyglet.graphics.vertex_list(
+			3,
+			('v3f', [-0.5, -0.5, 0.0, 0.5, -0.5, 0.0, 0.0, 0.5, 0.0]),
+			('c3B', [100,200,220,200,110,100,100,250,100])
+		)
+
+	def draw(self):
+		self.verts.draw(pyglet.gl.GL_TRIANGLES)
+
+
+# self.triangle.verts.draw(pyglet.gl.GL_TRIANGLES)
 
 
 class RenderWorld:
@@ -25,7 +42,19 @@ class RenderWorld:
 			resource_packs = [minecraft_model_reader.JavaRP(rp) for rp in resource_packs]
 		else:
 			raise Exception('resource_pack must be a string or list of strings')
-		resource_pack = minecraft_model_reader.JavaRPHandler(resource_packs)
+		self.resource_pack = minecraft_model_reader.JavaRPHandler(resource_packs)
+		self.textures = {}
+
+	def get_texture(self, namespace_and_path: Tuple[str, str]):
+		if namespace_and_path not in self.textures:
+			abs_texture_path = self.resource_pack.get_texture(*namespace_and_path)
+			self.textures[namespace_and_path] = pyglet.image.load(abs_texture_path)
+
+		return self.textures[namespace_and_path]
+
+	def draw(self):
+		for chunk in self.chunks.values():
+			chunk.draw()
 
 	def update(self, x, z):
 		if not self.busy:
@@ -55,6 +84,7 @@ class RenderWorld:
 			else:
 				cx, cz = chunk
 				blocks = self.world.get_chunk(cx, cz).blocks
+				self.chunks[chunk] = RenderChunk(blocks)
 
 			self.busy = False
 

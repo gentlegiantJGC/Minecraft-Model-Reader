@@ -1,15 +1,10 @@
 from typing import List, Union
 import pyglet
 from pyglet.window import key
-import itertools
 
 
 from render.keys import key_map
 from render.world import RenderWorld
-
-import minecraft_model_reader
-
-
 
 
 class Renderer(pyglet.window.Window):
@@ -26,6 +21,7 @@ class Renderer(pyglet.window.Window):
 		self.position_label = pyglet.text.Label("", x=5, y=self.height - 30)
 
 		self.block_batch = pyglet.graphics.Batch()
+		pyglet.gl.glClearColor(0.2, 0.3, 0.2, 1.0)
 
 		self.x, self.y, self.z = 0, 0, 0
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
@@ -63,7 +59,11 @@ class Renderer(pyglet.window.Window):
 
 	def on_draw(self):
 		self.clear()
-		# self.triangle.verts.draw(pyglet.gl.GL_TRIANGLES)
 		self.proto_label.draw()
 		self.position_label.draw()
+		self.render_world.update(self.x, self.z)
+		self.render_world.draw()
 		# self.fps_disp.draw()
+
+	def on_resize(self, width, height):
+		pyglet.gl.glViewport(0, 0, width, height)
