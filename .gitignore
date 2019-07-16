@@ -114,3 +114,5 @@ dmypy.json
 .pyre/
 
 test_packs/
+tests/pyglet_render_test/amulet
+tests/pyglet_render_test/test_world
