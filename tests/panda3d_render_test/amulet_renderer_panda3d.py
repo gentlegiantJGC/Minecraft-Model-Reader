@@ -94,7 +94,7 @@ class App(ShowBase):
         vert_count = 0
         cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': (1,0,0), 'south': (0,0,1), 'west': (-1,0,0)}
 
-        for x, z in itertools.product(range(64), range(64)):
+        for x, z in itertools.product(range(16), range(16)):
             for y in reversed(range(0, 256)):
 
                 if world.get_block(x,y,z).blockstate == "minecraft:air":
