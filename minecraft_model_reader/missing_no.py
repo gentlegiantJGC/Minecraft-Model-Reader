@@ -1,6 +1,6 @@
 import itertools
 import numpy
-from .api.base_api import MinecraftMesh
+import minecraft_model_reader
 
 
 _box_coordinates = numpy.array(
@@ -47,13 +47,13 @@ for _face_dir in _cube_face_lut:
 	_tri_faces[_face_dir] = _tri_face_table
 	_quad_faces[_face_dir] = _quad_face_table
 
-missing_no_tris = MinecraftMesh(
+missing_no_tris = minecraft_model_reader.MinecraftMesh(
 	_verts,
 	_tri_faces,
 	[('minecraft', 'missing_no')]
 )
 
-missing_no_quads = MinecraftMesh(
+missing_no_quads = minecraft_model_reader.MinecraftMesh(
 	_verts,
 	_quad_faces,
 	[('minecraft', 'missing_no')]

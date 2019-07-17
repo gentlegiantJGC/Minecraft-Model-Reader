@@ -1,6 +1,6 @@
 from typing import Union
 import itertools
-from .api.base_api import MinecraftMesh
+from minecraft_model_reader import MinecraftMesh
 from .missing_no import missing_no_tris, missing_no_quads
 try:
 	from amulet.api.block import Block
@@ -314,7 +314,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> Union[dict, MinecraftMesh]:
 	if (block.namespace, model_path) in resource_pack.model_files:
 		model = resource_pack.model_files[(block.namespace, model_path)]
-		if isinstance(model_path, MinecraftMesh):
+		if isinstance(model, MinecraftMesh):
 			return model
 
 		if 'parent' in model:
