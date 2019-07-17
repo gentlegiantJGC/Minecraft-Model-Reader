@@ -10,7 +10,8 @@ from render.world import RenderWorld
 class Renderer(pyglet.window.Window):
 
 	def __init__(self, world_path: str, resource_packs: Union[str, List[str]]):
-		self.render_world = RenderWorld(world_path, resource_packs)
+		self.batch = pyglet.graphics.Batch()
+		self.render_world = RenderWorld(self.batch, world_path, resource_packs)
 		super(Renderer, self).__init__(480, 270, 'Amulet', resizable=True)
 		self.set_minimum_size(240, 135)
 
@@ -20,7 +21,7 @@ class Renderer(pyglet.window.Window):
 		self.proto_label = pyglet.text.Label("Pyglet Prototype Renderer", x=5, y=self.height - 15)
 		self.position_label = pyglet.text.Label("", x=5, y=self.height - 30)
 
-		self.block_batch = pyglet.graphics.Batch()
+
 		pyglet.gl.glClearColor(0.2, 0.3, 0.2, 1.0)
 
 		self.x, self.y, self.z = 0, 0, 0
@@ -49,7 +50,7 @@ class Renderer(pyglet.window.Window):
 		self.proto_label.y = self.height - 15
 		self.position_label.y = self.height - 30
 		self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
-		self.render_world.update(self.x, self.z)
+		self.render_world.update(-self.x, self.z)
 
 	# def on_resize(self, width, height):
 	# 	print('hi')
@@ -58,12 +59,20 @@ class Renderer(pyglet.window.Window):
 	# 	self.on_draw()
 
 	def on_draw(self):
-		self.clear()
-		self.proto_label.draw()
-		self.position_label.draw()
+		# self.clear()
+		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT)
+		pyglet.gl.glLoadIdentity()
+		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
+		# self.proto_label.draw()
+		# self.position_label.draw()
 		self.render_world.update(self.x, self.z)
 		self.render_world.draw()
 		# self.fps_disp.draw()
 
 	def on_resize(self, width, height):
 		pyglet.gl.glViewport(0, 0, width, height)
+		pyglet.gl.glMatrixMode(pyglet.gl.GL_PROJECTION)
+		pyglet.gl.glLoadIdentity()
+		pyglet.gl.gluPerspective(90, width / float(height), .1, 1000)
+		pyglet.gl.glMatrixMode(pyglet.gl.GL_MODELVIEW)
+		return pyglet.event.EVENT_HANDLED
