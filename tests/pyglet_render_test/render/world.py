@@ -10,7 +10,6 @@ import minecraft_model_reader
 from amulet.api import paths
 from amulet.api.block import Block
 
-"""
 paths.FORMATS_DIR = r"./amulet/formats"
 paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 from amulet import world_loader
