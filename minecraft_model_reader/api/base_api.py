@@ -141,10 +141,10 @@ class BaseRPHandler:
 		Values are the model files themselves (should be a dictionary or MinecraftMesh)"""
 		return self._model_files
 
-	def get_texture(self, namespace: str, path: str) -> str:
-		"""Get the absolute texture path from the relative path"""
-		if path in self._textures:
-			return self._textures[(namespace, path)]
+	def get_texture(self, namespace_and_path: Tuple[str, str]) -> str:
+		"""Get the absolute texture path from the namespace and relative path pair"""
+		if namespace_and_path in self._textures:
+			return self._textures[namespace_and_path]
 		else:
 			return self._missing_no
 

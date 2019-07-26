@@ -86,7 +86,6 @@ class RenderChunk:
 				vert_count += mini_vert_count * block_count
 				texture = model.faces[cull_dir][:, -1].ravel()
 				texture_region = render_world.get_texture(model.textures[texture[0]])
-				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
 				texture_array = numpy.array(
 					(
 						((model.verts[cull_dir][:, 3] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
@@ -127,7 +126,7 @@ class RenderWorld:
 
 	def get_texture(self, namespace_and_path: Tuple[str, str]):
 		if namespace_and_path not in self.textures:
-			abs_texture_path = self.resource_pack.get_texture(*namespace_and_path)
+			abs_texture_path = self.resource_pack.get_texture(namespace_and_path)
 			image = pyglet.image.load(abs_texture_path)
 			self.textures[namespace_and_path] = self.texture_bin.add(image)
 
