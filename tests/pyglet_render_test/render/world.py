@@ -5,8 +5,6 @@ import numpy
 from pyglet.gl import *
 from pyglet.image import TextureRegion
 
-import minecraft_model_reader
-
 from amulet.api import paths
 from amulet.api.block import Block
 
@@ -15,8 +13,6 @@ paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 from amulet import world_loader
 
 import minecraft_model_reader
-
-import time
 
 cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': (1,0,0), 'south': (0,0,1), 'west': (-1,0,0)}
 
@@ -56,12 +52,10 @@ class RenderChunk:
 		tex_list = []
 		vert_count = 0
 		block_dict = {}
-		tt = time.time()
 		texture_region: TextureRegion = None
-		t = time.time()
 		for block_temp_id in numpy.unique(blocks):
 			block_dict[block_temp_id] = numpy.argwhere(blocks == block_temp_id)
-		print(f'block_collection_time:{time.time() - t}')
+		# block_dict = {3: numpy.array([[0,0,0]])}  # used to debug when all else fails (reduces the chunk to a single block)
 		for block_temp_id, block_locations in block_dict.items():
 			block = world.block_manager[
 				block_temp_id
@@ -76,7 +70,7 @@ class RenderChunk:
 				# the vertices in model space
 				verts = model.verts[cull_dir]
 				# keep track of the number of vertices for use later
-				mini_vert_count = len(verts)
+				mini_vert_count = int(len(verts)/model.face_mode)
 				# translate the vertices to world space
 				vert_list_ = numpy.tile(verts, (block_count, 1))
 				vert_list_[:, 0::3] += block_offsets[:, 0].reshape((-1,1))
@@ -99,10 +93,10 @@ class RenderChunk:
 					)
 				)
 				tex_list.append(numpy.tile(texture_array.T.ravel(), block_count))
-		vert_list = numpy.concatenate(vert_list, axis=None)
-		tex_list = numpy.concatenate(tex_list, axis=None)
-		face_list = numpy.concatenate(face_list, axis=None)
-		print(f'total_time:{time.time() - tt}')
+		if len(face_list) > 0:
+			vert_list = numpy.concatenate(vert_list, axis=None)
+			tex_list = numpy.concatenate(tex_list, axis=None)
+			face_list = numpy.concatenate(face_list, axis=None)
 
 		self.batch.add_indexed(
 			int(len(vert_list)/3),
