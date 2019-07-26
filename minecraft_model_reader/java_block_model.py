@@ -100,7 +100,6 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 					pass
 
 
-
 			if len(textures) > 0:
 				textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
 				textures = list(zip(textures.T[0], textures.T[1]))
@@ -163,7 +162,7 @@ quad_face = numpy.array([[0, 1, 2, 3, 0]], numpy.uint32)
 # 	for face_dir_, vert_index_ in cube_face_lut.items()
 # }
 
-uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
+uv_lut = [0, 1, 2, 1, 2, 3, 0, 3]
 
 # tvert_lut = {  # TODO: implement this for the cases where the UV is not defined
 # 	'down': [],
