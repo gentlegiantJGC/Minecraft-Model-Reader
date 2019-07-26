@@ -139,8 +139,8 @@ cube_face_lut = {  # This maps face direction to the verticies used (defined in 
 	'south': numpy.array([1, 5, 7, 3]),
 	'west': numpy.array([0, 1, 3, 2])
 }
-tri_face = numpy.array([[0, 1, 2, 0], [0, 2, 3, 0]], numpy.uint32)
-quad_face = numpy.array([[0, 1, 2, 3, 0]], numpy.uint32)
+tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
+quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
 
 # cube_vert_lut = {  # This maps from vertex index to index in [minx, miny, minz, maxx, maxy, maxz]
 # 	1: [0, 1, 5],
@@ -188,11 +188,14 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
 	roty = blockstate_value.get('y', 0)
 	uvlock = blockstate_value.get('uvlock', False)
 
-	model = _load_block_model(resource_pack, block, model_path, face_mode)
+	model = copy.deepcopy(_load_block_model(resource_pack, block, model_path, face_mode))
 
 	# TODO: rotate model based on uv_lock
-	for cull_dir in model.verts:
-		model.verts[cull_dir][:, :3] = rotate_3d(model.verts[cull_dir][:, :3], rotx, roty, 0, 0.5, 0.5, 0.5)
+	if rotx != 0 or roty != 0:
+		for cull_dir in model.verts:
+			model.verts[cull_dir].setflags(write=True)
+			model.verts[cull_dir] = rotate_3d(model.verts[cull_dir].reshape((-1, model.face_mode)), rotx, roty, 0, 0.5, 0.5, 0.5).ravel()
+			model.verts[cull_dir].setflags(write=False)
 	return model
 
 
@@ -211,7 +214,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	texture_count = 0
 	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 
 	for element in java_model.get('elements', {}):
 		# iterate through elements (one cube per element)
@@ -268,21 +273,20 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
 				# merge the vertex coordinates and texture coordinates
 				verts[cull_dir].append(
-					numpy.hstack(
-						(
-							box_coordinates[cube_face_lut[face_dir]],  # vertex coordinates for this face
-							texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
-						)
-					)
+					box_coordinates[cube_face_lut[face_dir]]  # vertex coordinates for this face
+				)
+
+				tverts[cull_dir].append(
+					texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
 				)
 
 				# merge the face indexes and texture index
 				if face_mode == 4:
 					face_table = quad_face + vert_count[cull_dir]
+					texture_indexes[cull_dir] += [texture_index]
 				else:
 					face_table = tri_face + vert_count[cull_dir]
-
-				face_table[:, -1] = texture_index
+					texture_indexes[cull_dir] += [texture_index, texture_index]
 
 				# faces stored under cull direction because this is the criteria to render them or not
 				faces[cull_dir].append(face_table)
@@ -291,23 +295,23 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
 	remove_faces = []
 	for cull_dir, face_array in faces.items():
-		if len(verts[cull_dir]) > 0:
-			verts[cull_dir] = numpy.vstack(verts[cull_dir])
-		else:
-			verts[cull_dir] = numpy.zeros((0, 5), numpy.float)
-
 		if len(face_array) > 0:
-			faces[cull_dir] = numpy.vstack(face_array)
+			faces[cull_dir] = numpy.concatenate(face_array, axis=None)
+			verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
+			tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
+			texture_indexes[cull_dir] = numpy.array(texture_indexes[cull_dir], dtype=numpy.uint32)
 		else:
 			remove_faces.append(cull_dir)
 
 	for cull_dir in remove_faces:
 		del faces[cull_dir]
 		del verts[cull_dir]
+		del tverts[cull_dir]
+		del texture_indexes[cull_dir]
 
-	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(verts, faces, textures)
+	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures)
 
-	return copy.deepcopy(model)
+	return model
 
 
 def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> Union[dict, MinecraftMesh]:
