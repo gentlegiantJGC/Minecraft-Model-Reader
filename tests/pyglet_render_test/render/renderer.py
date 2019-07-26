@@ -53,7 +53,7 @@ class Renderer(pyglet.window.Window):
 		self.proto_label.y = self.height - 15
 		self.position_label.y = self.height - 30
 		self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
-		self.render_world.update(-self.x, self.z)
+		self.render_world.update(self.x, -self.z)
 
 	# def on_resize(self, width, height):
 	# 	print('hi')
@@ -68,7 +68,6 @@ class Renderer(pyglet.window.Window):
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
 		# self.position_label.draw()
-		self.render_world.update(self.x, self.z)
 		self.render_world.draw()
 		# self.fps_disp.draw()
 

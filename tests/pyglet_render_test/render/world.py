@@ -5,8 +5,6 @@ import numpy
 from pyglet.gl import *
 from pyglet.image import TextureRegion
 
-import minecraft_model_reader
-
 from amulet.api import paths
 from amulet.api.block import Block
 
@@ -54,13 +52,10 @@ class RenderChunk:
 		tex_list = []
 		vert_count = 0
 		block_dict = {}
-
 		texture_region: TextureRegion = None
-		for x, y, z in itertools.product(range(16), range(256), range(16)):
-			block = blocks[x, y, z]
-			block_dict.setdefault(block, [])
-			block_dict[block].append((x, y, z))
-
+		for block_temp_id in numpy.unique(blocks):
+			block_dict[block_temp_id] = numpy.argwhere(blocks == block_temp_id)
+		# block_dict = {3: numpy.array([[0,0,0]])}  # used to debug when all else fails (reduces the chunk to a single block)
 		for block_temp_id, block_locations in block_dict.items():
 			block = world.block_manager[
 				block_temp_id
@@ -69,39 +64,47 @@ class RenderChunk:
 				block
 			)
 			block_count = len(block_locations)
-			block_offsets = numpy.array(block_locations) + (cx*16, 0, cz*16)
+			block_offsets = block_locations + (cx*16, 0, cz*16)
 
 			for cull_dir in model.faces.keys():
 				# the vertices in model space
-				verts = model.verts[cull_dir][:, :3]
+				verts = model.verts[cull_dir]
 				# keep track of the number of vertices for use later
-				mini_vert_count = len(verts)
+				mini_vert_count = int(len(verts)/model.face_mode)
 				# translate the vertices to world space
-				vert_list += list(numpy.tile(verts.ravel(), block_count).ravel() + numpy.repeat(block_offsets, mini_vert_count, axis=0).ravel())
+				vert_list_ = numpy.tile(verts, (block_count, 1))
+				vert_list_[:, 0::3] += block_offsets[:, 0].reshape((-1,1))
+				vert_list_[:, 1::3] += block_offsets[:, 1].reshape((-1,1))
+				vert_list_[:, 2::3] += block_offsets[:, 2].reshape((-1,1))
+				vert_list.append(vert_list_)
 				# pull the faces out of the face table
-				faces = model.faces[cull_dir][:, :-1]
+				faces = model.faces[cull_dir]
 				# offset the face indexes
-				face_list += list(numpy.tile(faces.ravel(), block_count).ravel() + numpy.repeat(numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count), faces.size))
+				face_list.append(numpy.tile(faces, (block_count, 1)) + numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count).reshape((-1, 1)))
 				# keep track of the vertex count
 				vert_count += mini_vert_count * block_count
-				texture = model.faces[cull_dir][:, -1].ravel()
+				texture = model.texture_index[cull_dir]
 				# TODO: not all faces in the same model have the same texture
 				texture_region = render_world.get_texture(model.textures[texture[0]])
 				texture_array = numpy.array(
 					(
-						((model.verts[cull_dir][:, 3] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
-						((model.verts[cull_dir][:, 4] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
+						((model.texture_coords[cull_dir][0::2] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
+						((model.texture_coords[cull_dir][1::2] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
 					)
 				)
-				tex_list += list(numpy.tile(texture_array.T.ravel(), block_count).ravel())
+				tex_list.append(numpy.tile(texture_array.T.ravel(), block_count))
+		if len(face_list) > 0:
+			vert_list = numpy.concatenate(vert_list, axis=None)
+			tex_list = numpy.concatenate(tex_list, axis=None)
+			face_list = numpy.concatenate(face_list, axis=None)
 
 		self.batch.add_indexed(
 			int(len(vert_list)/3),
 			pyglet.gl.GL_TRIANGLES,
 			TextureBindGroup(texture_region.owner),
 			face_list,
-			('v3f', vert_list),
-			('t2f', tex_list)
+			('v3f', list(vert_list)),
+			('t2f', list(tex_list))
 		)
 
 

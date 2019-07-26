@@ -15,27 +15,45 @@ face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
 
 class MinecraftMesh:
 	"""Class for storing model data"""
-	def __init__(self, verts: Dict[Union[str, None], numpy.ndarray], faces: Dict[Union[str, None], numpy.ndarray], textures: List[Tuple[str, Union[None, str]]]):
+	def __init__(self,
+					face_width: int,
+					verts: Dict[Union[str, None], numpy.ndarray],
+					texture_coords: Dict[Union[str, None], numpy.ndarray],
+					faces: Dict[Union[str, None], numpy.ndarray],
+					texture_index: Dict[Union[str, None], numpy.ndarray],
+					textures: List[Tuple[str, Union[None, str]]]
+				):
 		assert isinstance(verts, dict) and all(
-			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.float and val.ndim == 2 and val.shape[1] == 5 for key, val in verts.items()
+			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in verts.items()
 		), 'The format for verts is incorrect'
 
-		face_width = set(val.shape[1] for val in faces.values())
-		if len(face_width) == 0:
-			face_width = {4}
+		assert isinstance(texture_coords, dict) and all(
+			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 2 == 0 for key, val in texture_coords.items()
+		), 'The format for texture coords is incorrect'
 
 		assert isinstance(faces, dict) and all(
-			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 2 and val.shape[1] in [4, 5] for key, val in faces.items()
-		) and len(face_width) == 1, 'The format of faces is incorrect'
+			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 1 and val.shape[0] % face_width == 0 for key, val in faces.items()
+		), 'The format of faces is incorrect'
+
+		assert isinstance(texture_index, dict) and all(
+			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 1 and val.shape[0] == faces[key].shape[0] / face_width for key, val in texture_index.items()
+		), 'The format of texture index is incorrect'
 
 		assert isinstance(textures, list) and all(
 			isinstance(texture, tuple) and len(texture) == 2 and isinstance(texture[0], str) and (isinstance(texture[1], str) or texture[1] is None) for texture in textures
 		), 'The format of the textures is incorrect'
 
-		self._face_mode = face_width.pop() - 1
+		self._face_mode = face_width
 		self._verts = verts
+		self._texture_coords = texture_coords
 		self._faces = faces
+		self._texture_index = texture_index
 		self._textures = textures
+
+		[a.setflags(write=False) for a in self._verts.values()]
+		[a.setflags(write=False) for a in self._texture_coords.values()]
+		[a.setflags(write=False) for a in self._faces.values()]
+		[a.setflags(write=False) for a in self._texture_index.values()]
 
 	@property
 	def face_mode(self) -> int:
@@ -44,18 +62,30 @@ class MinecraftMesh:
 	@property
 	def verts(self) -> Dict[str, numpy.ndarray]:
 		"""A dictionary mapping face cull direction to the vertex table for that direction.
-		The vertex table is n n by 5 numpy array of vertex data.
-		x,y,z coordinates in the first three columns.
-		tx, ty in the last two columns"""
+		The vertex table is a flat numpy array who's length is a multiple of 3.
+		x,y,z coordinates."""
 		return self._verts
+
+	@property
+	def texture_coords(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary mapping face cull direction to the vertex table for that direction.
+		The texture coords table is a flat numpy array who's length is a multiple of 2.
+		tx, ty"""
+		return self._texture_coords
 
 	@property
 	def faces(self) -> Dict[str, numpy.ndarray]:
 		"""A dictionary mapping face cull direction to the face table for that direction.
-		The face table is an N by 4 or 5 numpy array depending on face_mode.
+		The face table is a flat numpy array of multiple 3 or 4 depending on face_mode.
 		First 3 or 4 columns index into the verts table.
 		Last column indexes into textures."""
 		return self._faces
+
+	@property
+	def texture_index(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary mapping face cull direction to the face table for that direction.
+		The face table is a flat numpy array of multiple 2 indexing into textures."""
+		return self._texture_index
 
 	@property
 	def textures(self) -> List[Tuple[str, Union[None, str]]]:

@@ -1,6 +1,7 @@
 import itertools
 import numpy
 import minecraft_model_reader
+from typing import Dict, Union
 
 
 _box_coordinates = numpy.array(
@@ -16,45 +17,45 @@ _box_coordinates = numpy.array(
 _cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
 	'down': numpy.array([0, 4, 5, 1]),
 	'up': numpy.array([3, 7, 6, 2]),
-	'north': numpy.array([4, 0, 2, 6]),  # TODO: work out the correct order of these last four
+	'north': numpy.array([4, 0, 2, 6]),
 	'east': numpy.array([5, 4, 6, 7]),
 	'south': numpy.array([1, 5, 7, 3]),
 	'west': numpy.array([0, 1, 3, 2])
 }
 
 _texture_uv = numpy.array([0, 0, 1, 1], numpy.float)
-_uv_slice = [0, 3, 2, 3, 2, 1, 0, 1]
-_tri_face = numpy.array([[0, 1, 2, 0], [0, 2, 3, 0]], numpy.uint32)
-_quad_face = numpy.array([[0, 1, 2, 3, 0]], numpy.uint32)
+_uv_slice = [0, 1, 2, 1, 2, 3, 0, 3]
+_tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
+_quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
 
-_verts = {}
+_verts: Dict[Union[str, None], numpy.ndarray] = {}
+_texture_coords = {}
 _tri_faces = {}
 _quad_faces = {}
+_tri_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(2, dtype=numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west')}
+_quad_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(1, dtype=numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west')}
 
 for _face_dir in _cube_face_lut:
-	_verts[_face_dir] = (
-		numpy.hstack(
-			(
-				_box_coordinates[_cube_face_lut[_face_dir]],  # vertex coordinates for this face
-				_texture_uv[_uv_slice].reshape((-1, 2))  # texture vertices
-			)
-		)
-	)
-	_quad_face_table: numpy.ndarray = _quad_face
-	_tri_face_table: numpy.ndarray = _tri_face
-	_tri_face_table[:, -1] = 0
-	_quad_face_table[:, -1] = 0
-	_tri_faces[_face_dir] = _tri_face_table
-	_quad_faces[_face_dir] = _quad_face_table
+	_verts[_face_dir] = _box_coordinates[_cube_face_lut[_face_dir]].ravel(),  # vertex coordinates for this face
+	_verts[_face_dir] = _verts[_face_dir][0]
+	_texture_coords[_face_dir] = _texture_uv[_uv_slice]  # texture vertices
+	_tri_faces[_face_dir] = _tri_face
+	_quad_faces[_face_dir] = _quad_face
 
 missing_no_tris = minecraft_model_reader.MinecraftMesh(
+	3,
 	_verts,
+	_texture_coords,
 	_tri_faces,
+	_tri_texture_index,
 	[('minecraft', 'missing_no')]
 )
 
 missing_no_quads = minecraft_model_reader.MinecraftMesh(
+	4,
 	_verts,
+	_texture_coords,
 	_quad_faces,
+	_quad_texture_index,
 	[('minecraft', 'missing_no')]
 )
