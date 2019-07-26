@@ -77,7 +77,13 @@ class RenderChunk:
 				texture = model.faces[cull_dir][:,-1].ravel()
 				texture_region = texture_func(model.textures[texture[0]])
 				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
-				tex_list += list(numpy.tile(model.verts[cull_dir][:, 3:].ravel(), block_count).ravel())
+				texture_array = numpy.concatenate(
+					(
+						(model.verts[cull_dir][:, 3:][:,0] + texture_region.x) / texture_region.width,
+						(model.verts[cull_dir][:, 3:][:,1] + texture_region.y) / texture_region.height
+					),
+					axis=0)
+				tex_list += list(numpy.tile(texture_array.ravel(), block_count).ravel())
 
 		self.batch.add_indexed(
 			int(len(vert_list)/3),
