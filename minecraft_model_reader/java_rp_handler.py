@@ -65,7 +65,7 @@ class JavaRPHandler(base_api.BaseRPHandler):
 								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
 									for f in files:
 										if f.endswith('.png'):
-											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures'))
+											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures')).replace(os.sep, '/')
 										else:
 											continue
 										self._textures[(namespace, rel_path)] = os.path.join(root, f)

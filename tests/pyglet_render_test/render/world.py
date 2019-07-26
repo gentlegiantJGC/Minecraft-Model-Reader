@@ -23,9 +23,11 @@ cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': 
 class TextureEnableGroup(pyglet.graphics.Group):
 	def set_state(self):
 		glEnable(GL_TEXTURE_2D)
+		glEnable(GL_CULL_FACE)
 
 	def unset_state(self):
 		glDisable(GL_TEXTURE_2D)
+		glDisable(GL_CULL_FACE)
 
 
 texture_enable_group = TextureEnableGroup()
@@ -38,6 +40,8 @@ class TextureBindGroup(pyglet.graphics.Group):
 
 	def set_state(self):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+
 
 class RenderChunk:
 	def __init__(self, batch, world, resource_pack, render_world, cx, cz):
@@ -68,22 +72,28 @@ class RenderChunk:
 			block_offsets = numpy.array(block_locations) + (cx*16, 0, cz*16)
 
 			for cull_dir in model.faces.keys():
+				# the vertices in model space
 				verts = model.verts[cull_dir][:, :3]
+				# keep track of the number of vertices for use later
 				mini_vert_count = len(verts)
+				# translate the vertices to world space
 				vert_list += list(numpy.tile(verts.ravel(), block_count).ravel() + numpy.repeat(block_offsets, mini_vert_count, axis=0).ravel())
+				# pull the faces out of the face table
 				faces = model.faces[cull_dir][:, :-1]
+				# offset the face indexes
 				face_list += list(numpy.tile(faces.ravel(), block_count).ravel() + numpy.repeat(numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count), faces.size))
+				# keep track of the vertex count
 				vert_count += mini_vert_count * block_count
-				texture = model.faces[cull_dir][:,-1].ravel()
+				texture = model.faces[cull_dir][:, -1].ravel()
+				# TODO: not all faces in the same model have the same texture
 				texture_region = render_world.get_texture(model.textures[texture[0]])
-				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
-				texture_array = numpy.concatenate(
+				texture_array = numpy.array(
 					(
-						((model.verts[cull_dir][:, 3:][:,0] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
-						((model.verts[cull_dir][:, 3:][:,1] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
-					),
-					axis=0)
-				tex_list += list(numpy.tile(texture_array.ravel(), block_count).ravel())
+						((model.verts[cull_dir][:, 3] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
+						((model.verts[cull_dir][:, 4] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
+					)
+				)
+				tex_list += list(numpy.tile(texture_array.T.ravel(), block_count).ravel())
 
 		self.batch.add_indexed(
 			int(len(vert_list)/3),
@@ -117,8 +127,7 @@ class RenderWorld:
 
 	def get_texture(self, namespace_and_path: Tuple[str, str]):
 		if namespace_and_path not in self.textures:
-			abs_texture_path = self.resource_pack.get_texture(*namespace_and_path)
-			#self.textures[namespace_and_path] = pyglet.image.load(abs_texture_path)
+			abs_texture_path = self.resource_pack.get_texture(namespace_and_path)
 			image = pyglet.image.load(abs_texture_path)
 			self.textures[namespace_and_path] = self.texture_bin.add(image)
 
