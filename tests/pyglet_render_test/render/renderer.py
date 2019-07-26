@@ -23,6 +23,9 @@ class Renderer(pyglet.window.Window):
 
 
 		pyglet.gl.glClearColor(0.2, 0.3, 0.2, 1.0)
+		pyglet.gl.glEnable(pyglet.gl.GL_DEPTH_TEST)
+		pyglet.gl.glDepthFunc(pyglet.gl.GL_LESS)
+		
 
 		self.x, self.y, self.z = 0, 0, 0
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
@@ -60,7 +63,7 @@ class Renderer(pyglet.window.Window):
 
 	def on_draw(self):
 		# self.clear()
-		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT)
+		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT | pyglet.gl.GL_DEPTH_BUFFER_BIT)
 		pyglet.gl.glLoadIdentity()
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
