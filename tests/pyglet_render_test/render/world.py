@@ -47,6 +47,7 @@ class RenderChunk:
 		blocks = world.get_chunk(cx, cz).blocks
 		vert_list = []
 		face_list = []
+		tex_list = []
 		vert_count = 0
 		block_dict = {}
 
@@ -73,16 +74,18 @@ class RenderChunk:
 				faces = model.faces[cull_dir][:, :-1]
 				face_list += list(numpy.tile(faces.ravel(), block_count).ravel() + numpy.repeat(numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count), faces.size))
 				vert_count += mini_vert_count * block_count
-				tst = model.faces[cull_dir][:,-1].ravel()
-				texture_region = texture_func(model.textures[tst[0]])
+				texture = model.faces[cull_dir][:,-1].ravel()
+				texture_region = texture_func(model.textures[texture[0]])
 				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
+				tex_list += list(numpy.tile(model.verts[cull_dir][:, 3:].ravel(), block_count).ravel())
 
 		self.batch.add_indexed(
 			int(len(vert_list)/3),
 			pyglet.gl.GL_TRIANGLES,
 			TextureBindGroup(texture_region.owner),
 			face_list,
-			('v3f', vert_list)
+			('v3f', vert_list),
+			('t2f', tex_list)
 		)
 
 
