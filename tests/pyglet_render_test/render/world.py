@@ -68,13 +68,19 @@ class RenderChunk:
 			block_offsets = numpy.array(block_locations) + (cx*16, 0, cz*16)
 
 			for cull_dir in model.faces.keys():
+				# the vertices in model space
 				verts = model.verts[cull_dir][:, :3]
+				# keep track of the number of vertices for use later
 				mini_vert_count = len(verts)
+				# translate the vertices to world space
 				vert_list += list(numpy.tile(verts.ravel(), block_count).ravel() + numpy.repeat(block_offsets, mini_vert_count, axis=0).ravel())
+				# pull the faces out of the face table
 				faces = model.faces[cull_dir][:, :-1]
+				# offset the face indexes
 				face_list += list(numpy.tile(faces.ravel(), block_count).ravel() + numpy.repeat(numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count), faces.size))
+				# keep track of the vertex count
 				vert_count += mini_vert_count * block_count
-				texture = model.faces[cull_dir][:,-1].ravel()
+				texture = model.faces[cull_dir][:, -1].ravel()
 				texture_region = render_world.get_texture(model.textures[texture[0]])
 				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
 				texture_array = numpy.array(
@@ -118,7 +124,6 @@ class RenderWorld:
 	def get_texture(self, namespace_and_path: Tuple[str, str]):
 		if namespace_and_path not in self.textures:
 			abs_texture_path = self.resource_pack.get_texture(*namespace_and_path)
-			#self.textures[namespace_and_path] = pyglet.image.load(abs_texture_path)
 			image = pyglet.image.load(abs_texture_path)
 			self.textures[namespace_and_path] = self.texture_bin.add(image)
 
