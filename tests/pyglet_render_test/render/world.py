@@ -23,9 +23,11 @@ cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': 
 class TextureEnableGroup(pyglet.graphics.Group):
 	def set_state(self):
 		glEnable(GL_TEXTURE_2D)
+		glEnable(GL_CULL_FACE)
 
 	def unset_state(self):
 		glDisable(GL_TEXTURE_2D)
+		glDisable(GL_CULL_FACE)
 
 
 texture_enable_group = TextureEnableGroup()
@@ -38,6 +40,8 @@ class TextureBindGroup(pyglet.graphics.Group):
 
 	def set_state(self):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+
 
 class RenderChunk:
 	def __init__(self, batch, world, resource_pack, render_world, cx, cz):
