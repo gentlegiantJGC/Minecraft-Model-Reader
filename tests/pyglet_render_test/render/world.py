@@ -56,11 +56,8 @@ class RenderChunk:
 		block_dict = {}
 
 		texture_region: TextureRegion = None
-		for x, y, z in itertools.product(range(16), range(256), range(16)):
-			block = blocks[x, y, z]
-			block_dict.setdefault(block, [])
-			block_dict[block].append((x, y, z))
-
+		for block_temp_id in numpy.unique(blocks):
+			block_dict[block_temp_id] = numpy.argwhere(blocks == block_temp_id)
 		for block_temp_id, block_locations in block_dict.items():
 			block = world.block_manager[
 				block_temp_id
@@ -69,7 +66,7 @@ class RenderChunk:
 				block
 			)
 			block_count = len(block_locations)
-			block_offsets = numpy.array(block_locations) + (cx*16, 0, cz*16)
+			block_offsets = block_locations + (cx*16, 0, cz*16)
 
 			for cull_dir in model.faces.keys():
 				# the vertices in model space
