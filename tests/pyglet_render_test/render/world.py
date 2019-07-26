@@ -40,7 +40,7 @@ class TextureBindGroup(pyglet.graphics.Group):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
 
 class RenderChunk:
-	def __init__(self, batch, world, resource_pack, texture_func, cx, cz):
+	def __init__(self, batch, world, resource_pack, render_world, cx, cz):
 		self.batch = batch
 		self.cx = cx
 		self.cz = cz
@@ -75,12 +75,12 @@ class RenderChunk:
 				face_list += list(numpy.tile(faces.ravel(), block_count).ravel() + numpy.repeat(numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count), faces.size))
 				vert_count += mini_vert_count * block_count
 				texture = model.faces[cull_dir][:,-1].ravel()
-				texture_region = texture_func(model.textures[texture[0]])
+				texture_region = render_world.get_texture(model.textures[texture[0]])
 				print(texture_region.x, texture_region.y, texture_region.width, texture_region.height)
 				texture_array = numpy.concatenate(
 					(
-						(model.verts[cull_dir][:, 3:][:,0] + texture_region.x) / texture_region.width,
-						(model.verts[cull_dir][:, 3:][:,1] + texture_region.y) / texture_region.height
+						((model.verts[cull_dir][:, 3:][:,0] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
+						((model.verts[cull_dir][:, 3:][:,1] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
 					),
 					axis=0)
 				tex_list += list(numpy.tile(texture_array.ravel(), block_count).ravel())
@@ -154,7 +154,7 @@ class RenderWorld:
 				self.busy = False
 			else:
 				cx, cz = chunk
-				self.chunks[chunk] = RenderChunk(self.batch, self.world, self.resource_pack, self.get_texture, cx, cz)
+				self.chunks[chunk] = RenderChunk(self.batch, self.world, self.resource_pack, self, cx, cz)
 
 			self.busy = False
 
