@@ -85,6 +85,7 @@ class RenderChunk:
 				# keep track of the vertex count
 				vert_count += mini_vert_count * block_count
 				texture = model.faces[cull_dir][:, -1].ravel()
+				# TODO: not all faces in the same model have the same texture
 				texture_region = render_world.get_texture(model.textures[texture[0]])
 				texture_array = numpy.array(
 					(
