@@ -11,7 +11,6 @@ from amulet.api.block import Block
 paths.FORMATS_DIR = r"./amulet/formats"
 paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 from amulet import world_loader
-import time
 
 import minecraft_model_reader
 
@@ -44,20 +43,35 @@ class TextureBindGroup(pyglet.graphics.Group):
 
 class RenderChunk:
 	def __init__(self, batch, world, resource_pack, render_world, cx, cz):
-		t = time.time()
 		self.batch = batch
 		self.cx = cx
 		self.cz = cz
 		blocks = world.get_chunk(cx, cz).blocks
+
 		vert_list = []
 		# face_list = []
 		tex_list = []
-		block_dict = {}
 		texture_region: TextureRegion = None
+
+		show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_north = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_south = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_east = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_west = numpy.ones(blocks.shape, dtype=numpy.bool)
+		cull_x = blocks[1:, :, :] != blocks[:-1, :, :]
+		cull_y = blocks[:, 1:, :] != blocks[:, :-1, :]
+		cull_z = blocks[:, :, 1:] != blocks[:, :, :-1]
+		show_up[:, :-1, :] = cull_y
+		show_down[:, 1:, :] = cull_y
+		show_north[:, :, 1:] = cull_z
+		show_south[:, :, :-1] = cull_z
+		show_east[:-1, :, :] = cull_x
+		show_west[1:, :, :] = cull_x
+
+		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
+
 		for block_temp_id in numpy.unique(blocks):
-			block_dict[block_temp_id] = numpy.argwhere(blocks == block_temp_id)
-		# block_dict = {3: numpy.array([[0,0,0]])}  # used to debug when all else fails (reduces the chunk to a single block)
-		for block_temp_id, block_locations in block_dict.items():
 			block = world.block_manager[
 				block_temp_id
 			]
@@ -65,10 +79,23 @@ class RenderChunk:
 				block,
 				face_mode=4
 			)
-			block_count = len(block_locations)
-			block_offsets = block_locations + (cx*16, 0, cz*16)
-
+			all_block_locations = numpy.argwhere(blocks == block_temp_id)
+			where = None
 			for cull_dir in model.faces.keys():
+				if cull_dir is None:
+					block_locations = all_block_locations
+				elif cull_dir in show_map:
+					if where is None:
+						where = tuple(all_block_locations.T)
+					block_locations = all_block_locations[show_map[cull_dir][where]]
+					if len(block_locations) == 0:
+						continue
+				else:
+					continue
+
+				block_count = len(block_locations)
+				block_offsets = block_locations + (cx*16, 0, cz*16)
+
 				# the vertices in model space
 				verts = model.verts[cull_dir]
 				# translate the vertices to world space
@@ -96,7 +123,6 @@ class RenderChunk:
 			('v3f', vert_list),
 			('t2f', tex_list)
 		)
-		print(time.time() - t)
 
 
 class RenderWorld:
