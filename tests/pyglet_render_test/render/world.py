@@ -39,6 +39,8 @@ class TextureBindGroup(pyglet.graphics.Group):
 	def set_state(self):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		pyglet.gl.glEnable(pyglet.gl.GL_BLEND)
+		pyglet.gl.glBlendFunc(pyglet.gl.GL_SRC_ALPHA, pyglet.gl.GL_ONE_MINUS_SRC_ALPHA)
 
 
 class RenderChunk:
@@ -112,7 +114,7 @@ class RenderChunk:
 				texture_array = numpy.array(
 					(
 						((model.texture_coords[cull_dir][0::2] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
-						((model.texture_coords[cull_dir][1::2] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
+						((model.texture_coords[cull_dir][1::2] * min(texture_region.height, texture_region.width)) + texture_region.y) / render_world.texture_bin.texture_height
 					)
 				)
 				tex_list.append(numpy.tile(texture_array.T.ravel(), block_count))
