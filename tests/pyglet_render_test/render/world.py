@@ -103,8 +103,8 @@ class RenderChunk:
 			pyglet.gl.GL_TRIANGLES,
 			TextureBindGroup(texture_region.owner),
 			face_list,
-			('v3f', list(vert_list)),
-			('t2f', list(tex_list))
+			('v3f', vert_list),
+			('t2f', tex_list)
 		)
 
 
