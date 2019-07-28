@@ -11,6 +11,7 @@ from amulet.api.block import Block
 paths.FORMATS_DIR = r"./amulet/formats"
 paths.DEFINITIONS_DIR = r"./amulet/version_definitions"
 from amulet import world_loader
+import time
 
 import minecraft_model_reader
 
@@ -43,12 +44,13 @@ class TextureBindGroup(pyglet.graphics.Group):
 
 class RenderChunk:
 	def __init__(self, batch, world, resource_pack, render_world, cx, cz):
+		t = time.time()
 		self.batch = batch
 		self.cx = cx
 		self.cz = cz
 		blocks = world.get_chunk(cx, cz).blocks
 		vert_list = []
-		face_list = []
+		# face_list = []
 		tex_list = []
 		vert_count = 0
 		block_dict = {}
@@ -61,7 +63,8 @@ class RenderChunk:
 				block_temp_id
 			]
 			model: minecraft_model_reader.MinecraftMesh = resource_pack.get_model(
-				block
+				block,
+				face_mode=4
 			)
 			block_count = len(block_locations)
 			block_offsets = block_locations + (cx*16, 0, cz*16)
@@ -80,7 +83,7 @@ class RenderChunk:
 				# pull the faces out of the face table
 				faces = model.faces[cull_dir]
 				# offset the face indexes
-				face_list.append(numpy.tile(faces, (block_count, 1)) + numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count).reshape((-1, 1)))
+				# face_list.append(numpy.tile(faces, (block_count, 1)) + numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count).reshape((-1, 1)))
 				# keep track of the vertex count
 				vert_count += mini_vert_count * block_count
 				texture = model.texture_index[cull_dir]
@@ -93,19 +96,18 @@ class RenderChunk:
 					)
 				)
 				tex_list.append(numpy.tile(texture_array.T.ravel(), block_count))
-		if len(face_list) > 0:
+		if len(vert_list) > 0:
 			vert_list = numpy.concatenate(vert_list, axis=None)
 			tex_list = numpy.concatenate(tex_list, axis=None)
-			face_list = numpy.concatenate(face_list, axis=None)
-
-		self.batch.add_indexed(
+			# face_list = numpy.concatenate(face_list, axis=None)
+		self.batch.add(
 			int(len(vert_list)/3),
-			pyglet.gl.GL_TRIANGLES,
+			pyglet.gl.GL_QUADS,
 			TextureBindGroup(texture_region.owner),
-			face_list,
 			('v3f', vert_list),
 			('t2f', tex_list)
 		)
+		print(time.time() - t)
 
 
 class RenderWorld:
@@ -114,7 +116,7 @@ class RenderWorld:
 		self.world = world_loader.load_world(world_path)
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 
-		self.render_distance = 1
+		self.render_distance = 3
 		self.busy = False
 
 		# Load the resource pack
