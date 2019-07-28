@@ -46,7 +46,10 @@ class RenderChunk:
 		self.batch = batch
 		self.cx = cx
 		self.cz = cz
-		blocks = world.get_chunk(cx, cz).blocks
+		try:
+			blocks = world.get_chunk(cx, cz).blocks
+		except:
+			return
 
 		vert_list = []
 		# face_list = []
