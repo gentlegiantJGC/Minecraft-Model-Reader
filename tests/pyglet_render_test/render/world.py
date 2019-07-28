@@ -39,6 +39,8 @@ class TextureBindGroup(pyglet.graphics.Group):
 	def set_state(self):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
+		pyglet.gl.glEnable(pyglet.gl.GL_BLEND)
+		pyglet.gl.glBlendFunc(pyglet.gl.GL_SRC_ALPHA, pyglet.gl.GL_ONE_MINUS_SRC_ALPHA)
 
 
 class RenderChunk:
@@ -46,65 +48,85 @@ class RenderChunk:
 		self.batch = batch
 		self.cx = cx
 		self.cz = cz
-		blocks = world.get_chunk(cx, cz).blocks
+		try:
+			blocks = world.get_chunk(cx, cz).blocks
+		except:
+			return
+
 		vert_list = []
-		face_list = []
+		# face_list = []
 		tex_list = []
-		vert_count = 0
-		block_dict = {}
 		texture_region: TextureRegion = None
+
+		show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_north = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_south = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_east = numpy.ones(blocks.shape, dtype=numpy.bool)
+		show_west = numpy.ones(blocks.shape, dtype=numpy.bool)
+		cull_x = blocks[1:, :, :] != blocks[:-1, :, :]
+		cull_y = blocks[:, 1:, :] != blocks[:, :-1, :]
+		cull_z = blocks[:, :, 1:] != blocks[:, :, :-1]
+		show_up[:, :-1, :] = cull_y
+		show_down[:, 1:, :] = cull_y
+		show_north[:, :, 1:] = cull_z
+		show_south[:, :, :-1] = cull_z
+		show_east[:-1, :, :] = cull_x
+		show_west[1:, :, :] = cull_x
+
+		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
+
 		for block_temp_id in numpy.unique(blocks):
-			block_dict[block_temp_id] = numpy.argwhere(blocks == block_temp_id)
-		# block_dict = {3: numpy.array([[0,0,0]])}  # used to debug when all else fails (reduces the chunk to a single block)
-		for block_temp_id, block_locations in block_dict.items():
 			block = world.block_manager[
 				block_temp_id
 			]
 			model: minecraft_model_reader.MinecraftMesh = resource_pack.get_model(
-				block
+				block,
+				face_mode=4
 			)
-			block_count = len(block_locations)
-			block_offsets = block_locations + (cx*16, 0, cz*16)
-
+			all_block_locations = numpy.argwhere(blocks == block_temp_id)
+			where = None
 			for cull_dir in model.faces.keys():
+				if cull_dir is None:
+					block_locations = all_block_locations
+				elif cull_dir in show_map:
+					if where is None:
+						where = tuple(all_block_locations.T)
+					block_locations = all_block_locations[show_map[cull_dir][where]]
+					if len(block_locations) == 0:
+						continue
+				else:
+					continue
+
+				block_count = len(block_locations)
+				block_offsets = block_locations + (cx*16, 0, cz*16)
+
 				# the vertices in model space
 				verts = model.verts[cull_dir]
-				# keep track of the number of vertices for use later
-				mini_vert_count = int(len(verts)/model.face_mode)
 				# translate the vertices to world space
 				vert_list_ = numpy.tile(verts, (block_count, 1))
-				vert_list_[:, 0::3] += block_offsets[:, 0].reshape((-1,1))
-				vert_list_[:, 1::3] += block_offsets[:, 1].reshape((-1,1))
-				vert_list_[:, 2::3] += block_offsets[:, 2].reshape((-1,1))
+				for axis in range(3):
+					vert_list_[:, axis::3] += block_offsets[:, axis].reshape((-1, 1))
 				vert_list.append(vert_list_)
-				# pull the faces out of the face table
-				faces = model.faces[cull_dir]
-				# offset the face indexes
-				face_list.append(numpy.tile(faces, (block_count, 1)) + numpy.arange(vert_count, vert_count + mini_vert_count * block_count, mini_vert_count).reshape((-1, 1)))
-				# keep track of the vertex count
-				vert_count += mini_vert_count * block_count
 				texture = model.texture_index[cull_dir]
 				# TODO: not all faces in the same model have the same texture
 				texture_region = render_world.get_texture(model.textures[texture[0]])
 				texture_array = numpy.array(
 					(
 						((model.texture_coords[cull_dir][0::2] * texture_region.width) + texture_region.x) / render_world.texture_bin.texture_width,
-						((model.texture_coords[cull_dir][1::2] * texture_region.height) + texture_region.y) / render_world.texture_bin.texture_height
+						((model.texture_coords[cull_dir][1::2] * min(texture_region.height, texture_region.width)) + texture_region.y) / render_world.texture_bin.texture_height
 					)
 				)
 				tex_list.append(numpy.tile(texture_array.T.ravel(), block_count))
-		if len(face_list) > 0:
+		if len(vert_list) > 0:
 			vert_list = numpy.concatenate(vert_list, axis=None)
 			tex_list = numpy.concatenate(tex_list, axis=None)
-			face_list = numpy.concatenate(face_list, axis=None)
-
-		self.batch.add_indexed(
+		self.batch.add(
 			int(len(vert_list)/3),
-			pyglet.gl.GL_TRIANGLES,
+			pyglet.gl.GL_QUADS,
 			TextureBindGroup(texture_region.owner),
-			face_list,
-			('v3f', list(vert_list)),
-			('t2f', list(tex_list))
+			('v3f', vert_list),
+			('t2f', tex_list)
 		)
 
 
@@ -114,7 +136,7 @@ class RenderWorld:
 		self.world = world_loader.load_world(world_path)
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 
-		self.render_distance = 1
+		self.render_distance = 3
 		self.busy = False
 
 		# Load the resource pack

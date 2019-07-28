@@ -37,14 +37,14 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			for variant in blockstate['variants']:
 				if variant == '':
 					try:
-						return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
+						return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
 					except:
 						pass
 				else:
 					properties_match = Block.parameters_regex.finditer(f',{variant}')
 					if all(block.properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
 						try:
-							return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
+							return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
 						except:
 							pass
 
@@ -53,7 +53,9 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			texture_count = 0
 			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 
 			for case in blockstate['multipart']:
 				try:
@@ -80,16 +82,19 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 					if 'apply' in case:
 						try:
-							temp_model = _load_blockstate_model(resource_pack, block, case['apply'])
+							temp_model = _load_blockstate_model(resource_pack, block, case['apply'], face_mode)
 
 							for cull_dir in temp_model.faces.keys():
 								verts[cull_dir].append(temp_model.verts[cull_dir])
+								tverts[cull_dir].append(temp_model.texture_coords[cull_dir])
 								face_table = temp_model.faces[cull_dir].copy()
-								face_table[:, :-1] += vert_count[cull_dir]
-								face_table[:, -1] += texture_count
+								texture_index = temp_model.texture_index[cull_dir].copy()
+								face_table += vert_count[cull_dir]
+								texture_index += texture_count
 								faces[cull_dir].append(face_table)
+								texture_indexes[cull_dir].append(texture_index)
 
-								vert_count[cull_dir] += temp_model.verts[cull_dir].shape[0]
+								vert_count[cull_dir] += int(temp_model.verts[cull_dir].shape[0]/temp_model.face_mode)
 
 							textures += temp_model.textures
 							texture_count += len(temp_model.textures)
@@ -99,9 +104,9 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				except:
 					pass
 
-
 			if len(textures) > 0:
 				textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
+				texture_index_map = texture_index_map.astype(numpy.uint32)
 				textures = list(zip(textures.T[0], textures.T[1]))
 			else:
 				texture_index_map = numpy.array([], dtype=numpy.uint8)
@@ -109,21 +114,25 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			remove_faces = []
 			for cull_dir, face_table in faces.items():
 				if len(verts[cull_dir]) > 0:
-					verts[cull_dir] = numpy.vstack(verts[cull_dir])
+					verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
+					tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
 				else:
-					verts[cull_dir] = numpy.zeros((0, 5), numpy.float)
+					verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
+					tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
 
 				if len(face_table) > 0:
-					faces[cull_dir] = numpy.vstack(face_table)
-					faces[cull_dir][:, -1] = texture_index_map[faces[cull_dir][:, -1]]
+					faces[cull_dir] = numpy.concatenate(face_table, axis=None)
+					texture_indexes[cull_dir] = texture_index_map[numpy.concatenate(texture_indexes[cull_dir], axis=None)]
 				else:
 					remove_faces.append(cull_dir)
 
 			for cull_dir in remove_faces:
 				del faces[cull_dir]
 				del verts[cull_dir]
+				del tverts[cull_dir]
+				del texture_indexes[cull_dir]
 
-			return MinecraftMesh(verts, faces, textures)
+			return MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures)
 
 	if face_mode == 4:
 		return missing_no_quads

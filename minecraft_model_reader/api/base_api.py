@@ -32,11 +32,11 @@ class MinecraftMesh:
 		), 'The format for texture coords is incorrect'
 
 		assert isinstance(faces, dict) and all(
-			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 1 and val.shape[0] % face_width == 0 for key, val in faces.items()
+			key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.uint) and val.ndim == 1 and val.shape[0] % face_width == 0 for key, val in faces.items()
 		), 'The format of faces is incorrect'
 
 		assert isinstance(texture_index, dict) and all(
-			key in face_set and isinstance(val, numpy.ndarray) and val.dtype == numpy.uint32 and val.ndim == 1 and val.shape[0] == faces[key].shape[0] / face_width for key, val in texture_index.items()
+			key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.uint) and val.ndim == 1 and val.shape[0] == faces[key].shape[0] / face_width for key, val in texture_index.items()
 		), 'The format of texture index is incorrect'
 
 		assert isinstance(textures, list) and all(
