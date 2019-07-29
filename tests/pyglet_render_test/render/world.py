@@ -39,8 +39,8 @@ class TextureBindGroup(pyglet.graphics.Group):
 	def set_state(self):
 		glBindTexture(GL_TEXTURE_2D, self.texture.id)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST)
-		pyglet.gl.glEnable(pyglet.gl.GL_BLEND)
-		pyglet.gl.glBlendFunc(pyglet.gl.GL_SRC_ALPHA, pyglet.gl.GL_ONE_MINUS_SRC_ALPHA)
+		glEnable(GL_BLEND)
+		glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA)
 
 
 class RenderChunk:
