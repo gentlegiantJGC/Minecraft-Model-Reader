@@ -30,17 +30,20 @@ class Renderer(pyglet.window.Window):
 
 		self.x, self.y, self.z = 0, 0, 0
 		self.yaw, self.pitch = 0, 0
+		self.rotation_mode = False
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
 
-	def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
-		if buttons & pyglet.window.mouse.RIGHT:
-			self.yaw += MOUSE_SPEED * ((480.0 / 2.0) - x)
-			self.pitch += MOUSE_SPEED * ((270.0 / 2.0) - y)
-			print(self.yaw, self.pitch)
-		print(x, y)
+	def on_mouse_motion(self, x, y, dx, dy):
+		if self.rotation_mode:
+			self.yaw += MOUSE_SPEED * -dy
+			self.pitch += MOUSE_SPEED * dx
 
+	def on_mouse_press(self, x, y, button, modifiers):
+		if button == pyglet.window.mouse.MIDDLE:
+			self.rotation_mode = not self.rotation_mode
+			self.set_exclusive_mouse(self.rotation_mode)
 
 	def update(self, delta_time):
 
