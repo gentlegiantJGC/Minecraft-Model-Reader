@@ -1,5 +1,6 @@
 from typing import List, Union
 import pyglet
+import math
 from pyglet.window import key
 
 
@@ -27,6 +28,7 @@ class Renderer(pyglet.window.Window):
 		
 
 		self.x, self.y, self.z = 0, 0, 0
+		self.move_speed = 1
 		self.yaw, self.pitch = 0, 0
 		self.mouse_speed = 0.05
 		self.rotation_mode = False
@@ -46,21 +48,27 @@ class Renderer(pyglet.window.Window):
 			self.set_exclusive_mouse(self.rotation_mode)
 
 	def update(self, delta_time):
+		if self.keys[key_map['forwards']]:
+			self.y -= self.move_speed * math.sin(math.radians(self.pitch))
+			self.x += self.move_speed * math.cos(math.radians(self.pitch)) * math.sin(math.radians(self.yaw))
+			self.z += self.move_speed * math.cos(math.radians(self.pitch)) * math.cos(math.radians(self.yaw))
+		if self.keys[key_map['backwards']]:
+			self.y += self.move_speed * math.sin(math.radians(self.pitch))
+			self.x -= self.move_speed * math.cos(math.radians(self.pitch)) * math.sin(math.radians(self.yaw))
+			self.z -= self.move_speed * math.cos(math.radians(self.pitch)) * math.cos(math.radians(self.yaw))
+
+		if self.keys[key_map['left']]:
+			self.z += self.move_speed * math.sin(math.radians(self.yaw))
+			self.x -= self.move_speed * math.cos(math.radians(self.yaw))
 
 		if self.keys[key_map['right']]:
-			self.x += 1
-		elif self.keys[key_map['left']]:
-			self.x -= 1
+			self.z -= self.move_speed * math.sin(math.radians(self.yaw))
+			self.x += self.move_speed * math.cos(math.radians(self.yaw))
 
 		if self.keys[key_map['up']]:
-			self.y += 1
-		elif self.keys[key_map['down']]:
-			self.y -= 1
-
-		if self.keys[key_map['forwards']]:
-			self.z += 1
-		elif self.keys[key_map['backwards']]:
-			self.z -= 1
+			self.y += self.move_speed
+		if self.keys[key_map['down']]:
+			self.y -= self.move_speed
 
 		self.proto_label.y = self.height - 15
 		self.position_label.y = self.height - 30
