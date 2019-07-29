@@ -6,8 +6,6 @@ from pyglet.window import key
 from render.keys import key_map
 from render.world import RenderWorld
 
-MOUSE_SPEED = 0.05
-
 class Renderer(pyglet.window.Window):
 
 	def __init__(self, world_path: str, resource_packs: Union[str, List[str]]):
@@ -30,6 +28,7 @@ class Renderer(pyglet.window.Window):
 
 		self.x, self.y, self.z = 0, 0, 0
 		self.yaw, self.pitch = 0, 0
+		self.mouse_speed = 0.05
 		self.rotation_mode = False
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
 
@@ -37,9 +36,9 @@ class Renderer(pyglet.window.Window):
 
 	def on_mouse_motion(self, x, y, dx, dy):
 		if self.rotation_mode:
-			self.yaw += MOUSE_SPEED * -dy
-			self.yaw = min(max(-90, self.yaw), 90)
-			self.pitch += MOUSE_SPEED * dx
+			self.pitch += self.mouse_speed * -dy
+			self.pitch = min(max(-90, self.pitch), 90)
+			self.yaw += self.mouse_speed * dx
 
 	def on_mouse_press(self, x, y, button, modifiers):
 		if button == pyglet.window.mouse.MIDDLE:
@@ -78,8 +77,8 @@ class Renderer(pyglet.window.Window):
 		# self.clear()
 		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT | pyglet.gl.GL_DEPTH_BUFFER_BIT)
 		pyglet.gl.glLoadIdentity()
-		pyglet.gl.glRotatef(self.yaw, 1, 0, 0)
-		pyglet.gl.glRotatef(self.pitch, 0, 1, 0)
+		pyglet.gl.glRotatef(self.pitch, 1, 0, 0)
+		pyglet.gl.glRotatef(self.yaw, 0, 1, 0)
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
 		# self.position_label.draw()
