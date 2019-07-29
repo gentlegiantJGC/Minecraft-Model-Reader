@@ -6,6 +6,7 @@ from pyglet.window import key
 from render.keys import key_map
 from render.world import RenderWorld
 
+MOUSE_SPEED = 0.05
 
 class Renderer(pyglet.window.Window):
 
@@ -28,9 +29,17 @@ class Renderer(pyglet.window.Window):
 		
 
 		self.x, self.y, self.z = 0, 0, 0
+		self.yaw, self.pitch = 0, 0
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
+
+	def on_mouse_drag(self, x, y, dx, dy, buttons, modifiers):
+		if buttons & pyglet.window.mouse.RIGHT:
+			self.yaw += MOUSE_SPEED * ((480.0 / 2.0) - x)
+			self.pitch += MOUSE_SPEED * ((270.0 / 2.0) - y)
+			print(self.yaw, self.pitch)
+		print(x, y)
 
 
 	def update(self, delta_time):
@@ -65,6 +74,8 @@ class Renderer(pyglet.window.Window):
 		# self.clear()
 		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT | pyglet.gl.GL_DEPTH_BUFFER_BIT)
 		pyglet.gl.glLoadIdentity()
+		pyglet.gl.glRotatef(self.yaw, 1, 0, 0)
+		pyglet.gl.glRotatef(self.pitch, 0, 1, 0)
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
 		# self.position_label.draw()
