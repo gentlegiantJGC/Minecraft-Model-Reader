@@ -38,6 +38,7 @@ class Renderer(pyglet.window.Window):
 	def on_mouse_motion(self, x, y, dx, dy):
 		if self.rotation_mode:
 			self.yaw += MOUSE_SPEED * -dy
+			self.yaw = min(max(-90, self.yaw), 90)
 			self.pitch += MOUSE_SPEED * dx
 
 	def on_mouse_press(self, x, y, button, modifiers):
