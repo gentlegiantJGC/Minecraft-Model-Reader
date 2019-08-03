@@ -5,7 +5,7 @@ import numpy
 from pyglet.gl import *
 from pyglet.image import TextureRegion
 
-from amulet.api import paths
+from amulet.api import paths, errors
 from amulet.api.block import Block
 
 paths.FORMATS_DIR = r"./amulet/formats"
@@ -14,7 +14,7 @@ from amulet import world_loader
 
 import minecraft_model_reader
 
-cull_offset_dict = {'down': (0,-1,0), 'up': (0,1,0), 'north': (0,0,-1), 'east': (1,0,0), 'south': (0,0,1), 'west': (-1,0,0)}
+cull_offset_dict = {'down': (0, -1, 0), 'up': (0, 1, 0), 'north': (0, 0, -1), 'east': (1, 0, 0), 'south': (0, 0, 1), 'west': (-1, 0, 0)}
 
 
 # The following two classes are from the docs and might already exist in pyglet
@@ -49,9 +49,27 @@ class RenderChunk:
 		self.cx = cx
 		self.cz = cz
 		try:
-			blocks = world.get_chunk(cx, cz).blocks
+			blocks: numpy.ndarray = world.get_chunk(cx, cz).blocks
 		except:
 			return
+
+		blocks_ = numpy.zeros(blocks.shape + numpy.array((2, 0, 2)), blocks.dtype)
+		blocks_[1:-1, :, 1:-1] = blocks
+
+		for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+			try:
+				blocks_temp: numpy.ndarray = world.get_chunk(cx+dx, cz+dz).blocks
+				if (dx, dz) == (-1, 0):
+					blocks_[0, :, 1:-1] = blocks_temp[-1, :, :]
+				elif (dx, dz) == (1, 0):
+					blocks_[-1, :, 1:-1] = blocks_temp[0, :, :]
+				elif (dx, dz) == (0, -1):
+					blocks_[1:-1, :, 0] = blocks_temp[:, :, -1]
+				elif (dx, dz) == (0, 1):
+					blocks_[1:-1, :, -1] = blocks_temp[:, :, 0]
+
+			except:
+				continue
 
 		vert_list = []
 		# face_list = []
@@ -64,15 +82,15 @@ class RenderChunk:
 		show_south = numpy.ones(blocks.shape, dtype=numpy.bool)
 		show_east = numpy.ones(blocks.shape, dtype=numpy.bool)
 		show_west = numpy.ones(blocks.shape, dtype=numpy.bool)
-		cull_x = blocks[1:, :, :] != blocks[:-1, :, :]
-		cull_y = blocks[:, 1:, :] != blocks[:, :-1, :]
-		cull_z = blocks[:, :, 1:] != blocks[:, :, :-1]
+		cull_x = blocks_[1:, :, 1:-1] != blocks_[:-1, :, 1:-1]
+		cull_y = blocks_[1:-1, 1:, 1:-1] != blocks_[1:-1, :-1, 1:-1]
+		cull_z = blocks_[1:-1, :, 1:] != blocks_[1:-1, :, :-1]
 		show_up[:, :-1, :] = cull_y
 		show_down[:, 1:, :] = cull_y
-		show_north[:, :, 1:] = cull_z
-		show_south[:, :, :-1] = cull_z
-		show_east[:-1, :, :] = cull_x
-		show_west[1:, :, :] = cull_x
+		show_north[:, :, :] = cull_z[:, :, :-1]
+		show_south[:, :, :] = cull_z[:, :, 1:]
+		show_east[:, :, :] = cull_x[1:, :, :]
+		show_west[:, :, :] = cull_x[:-1, :, :]
 
 		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
 
