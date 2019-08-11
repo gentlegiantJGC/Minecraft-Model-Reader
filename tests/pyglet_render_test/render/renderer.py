@@ -1,3 +1,4 @@
+from concurrent.futures.thread import ThreadPoolExecutor
 from typing import List, Union
 import pyglet
 import math
@@ -7,11 +8,10 @@ from pyglet.window import key
 from render.keys import key_map
 from render.world import RenderWorld
 
-class Renderer(pyglet.window.Window):
 
+class Renderer(pyglet.window.Window):
 	def __init__(self, world_path: str, resource_packs: Union[str, List[str]]):
-		self.batch = pyglet.graphics.Batch()
-		self.render_world = RenderWorld(self.batch, world_path, resource_packs)
+		self.render_world = RenderWorld(world_path, resource_packs)
 		super(Renderer, self).__init__(480, 270, 'Amulet', resizable=True)
 		self.set_minimum_size(240, 135)
 
@@ -21,11 +21,9 @@ class Renderer(pyglet.window.Window):
 		self.proto_label = pyglet.text.Label("Pyglet Prototype Renderer", x=5, y=self.height - 15)
 		self.position_label = pyglet.text.Label("", x=5, y=self.height - 30)
 
-
 		pyglet.gl.glClearColor(0.2, 0.3, 0.2, 1.0)
 		pyglet.gl.glEnable(pyglet.gl.GL_DEPTH_TEST)
 		pyglet.gl.glDepthFunc(pyglet.gl.GL_LESS)
-		
 
 		self.x, self.y, self.z = 0, 0, 0
 		self.move_speed = 1
@@ -35,6 +33,8 @@ class Renderer(pyglet.window.Window):
 		# self.fps_disp = pyglet.clock.ClockDisplay()  # this is undefined and throws an error
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
+
+		self.thread_executor = ThreadPoolExecutor(max_workers=4)
 
 	def on_mouse_motion(self, x, y, dx, dy):
 		if self.rotation_mode:
@@ -46,6 +46,10 @@ class Renderer(pyglet.window.Window):
 		if button == pyglet.window.mouse.MIDDLE:
 			self.rotation_mode = not self.rotation_mode
 			self.set_exclusive_mouse(self.rotation_mode)
+
+	def on_close(self):
+		super().on_close()
+		self.thread_executor.shutdown()
 
 	def update(self, delta_time):
 		if self.keys[key_map['forwards']]:
@@ -70,10 +74,13 @@ class Renderer(pyglet.window.Window):
 		if self.keys[key_map['down']]:
 			self.y -= self.move_speed
 
-		self.proto_label.y = self.height - 15
-		self.position_label.y = self.height - 30
-		self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
-		self.render_world.update(self.x, -self.z)
+		# self.proto_label.y = self.height - 15
+		# self.position_label.y = self.height - 30
+		# self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
+
+		chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
+		if chunk_to_calculate is not None:
+			self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
 
 	# def on_resize(self, width, height):
 	# 	print('hi')
@@ -90,7 +97,7 @@ class Renderer(pyglet.window.Window):
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
 		# self.position_label.draw()
-		self.render_world.draw()
+		self.render_world.draw(1 / 60.0)
 		# self.fps_disp.draw()
 
 	def on_resize(self, width, height):
