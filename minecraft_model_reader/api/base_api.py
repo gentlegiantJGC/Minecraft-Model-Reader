@@ -134,6 +134,7 @@ class BaseRPHandler:
 		self._packs = []
 		self._missing_no = missing_no
 		self._textures: Dict[Tuple[str, str], str] = {}
+		self._texture_is_transparrent: Dict[str, List[int, bool]] = {}
 		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
 		self._model_files: Dict[Tuple[str, str], dict] = {}
 		self._cached_models = {}

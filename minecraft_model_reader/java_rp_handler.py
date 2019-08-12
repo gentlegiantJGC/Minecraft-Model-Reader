@@ -2,6 +2,8 @@ import os
 import json
 import copy
 from typing import List, Union, Dict, Tuple
+from PIL import Image
+import numpy
 from .api import base_api
 try:
 	from amulet.api.block import Block
@@ -51,6 +53,9 @@ class JavaRPHandler(base_api.BaseRPHandler):
 
 		blockstate_file_paths: Dict[Tuple[str, str], str] = {}
 		model_file_paths: Dict[Tuple[str, str], str] = {}
+		if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')):
+			with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')) as f:
+				self._texture_is_transparrent = json.load(f)
 
 		for pack in self._packs:
 			# pack_format=2 textures/blocks, textures/items - case sensitive
@@ -68,7 +73,16 @@ class JavaRPHandler(base_api.BaseRPHandler):
 											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures')).replace(os.sep, '/')
 										else:
 											continue
-										self._textures[(namespace, rel_path)] = os.path.join(root, f)
+										texture_path = os.path.join(root, f)
+										self._textures[(namespace, rel_path)] = texture_path
+										if os.stat(texture_path)[8] != self._texture_is_transparrent.get(texture_path, [0])[0]:
+											texture_is_transparrent = False
+											im: Image.Image = Image.open(texture_path)
+											if im.mode == 'RGBA':
+												alpha = numpy.array(im.getchannel('A').getdata())
+												texture_is_transparrent = numpy.any(alpha != 255)
+
+											self._texture_is_transparrent[os.path.join(root, f)] = [os.stat(texture_path)[8], bool(texture_is_transparrent)]
 
 							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
 								for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
@@ -81,6 +95,9 @@ class JavaRPHandler(base_api.BaseRPHandler):
 										if f.endswith('.json'):
 											rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
 											model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = os.path.join(root, f)
+
+		with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json'), 'w') as f:
+			json.dump(self._texture_is_transparrent, f)
 
 		for key, path in blockstate_file_paths.items():
 			with open(path) as fi:
