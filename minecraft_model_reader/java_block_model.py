@@ -234,7 +234,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 		# iterate through elements (one cube per element)
 		element_faces = element.get('faces', {})
 
-		if not is_opaque and 'rotation' not in element and element.get('to', [0, 0, 0]) == [0, 0, 0] and element.get('from', [16, 16, 16]) == [16, 16, 16] and len(element_faces) >= 6:
+		if not is_opaque and 'rotation' not in element and element.get('to', [16, 16, 16]) == [16, 16, 16] and element.get('from', [0, 0, 0]) == [0, 0, 0] and len(element_faces) >= 6:
 			face_count = len(element_faces)
 			check_faces = True
 		else:
@@ -245,8 +245,8 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 		corners = numpy.sort(
 			numpy.array(
 				[
-					element.get('to', [0, 0, 0]),
-					element.get('from', [16, 16, 16])
+					element.get('to', [16, 16, 16]),
+					element.get('from', [0, 0, 0])
 				],
 				numpy.float
 			)/16,
