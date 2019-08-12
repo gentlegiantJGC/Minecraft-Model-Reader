@@ -70,32 +70,23 @@ class RenderChunk:
 			except:
 				continue
 
+		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: resource_pack.get_model(world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
+		is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
+		is_transparrent_array = numpy.isin(blocks_, is_transparrent)
+
 		show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
 		show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_north = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_south = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_east = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_west = numpy.ones(blocks.shape, dtype=numpy.bool)
-		cull_x = blocks_[1:, :, 1:-1] != blocks_[:-1, :, 1:-1]
-		cull_y = blocks_[1:-1, 1:, 1:-1] != blocks_[1:-1, :-1, 1:-1]
-		cull_z = blocks_[1:-1, :, 1:] != blocks_[1:-1, :, :-1]
-		show_up[:, :-1, :] = cull_y
-		show_down[:, 1:, :] = cull_y
-		show_north[:, :, :] = cull_z[:, :, :-1]
-		show_south[:, :, :] = cull_z[:, :, 1:]
-		show_east[:, :, :] = cull_x[1:, :, :]
-		show_west[:, :, :] = cull_x[:-1, :, :]
+		show_up[:, :-1, :] = is_transparrent_array[1:-1, 1:, 1:-1]
+		show_down[:, 1:, :] = is_transparrent_array[1:-1, :-1, 1:-1]
+		show_north = is_transparrent_array[1:-1, :, :-2]
+		show_south = is_transparrent_array[1:-1, :-1, 2:]
+		show_east = is_transparrent_array[2:, :-1, 1:-1]
+		show_west = is_transparrent_array[:-2, :-1, 1:-1]
 
 		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
 
 		for block_temp_id in numpy.unique(blocks):
-			block = world.block_manager[
-				block_temp_id
-			]
-			model: minecraft_model_reader.MinecraftMesh = resource_pack.get_model(
-				block,
-				face_mode=4
-			)
+			model: minecraft_model_reader.MinecraftMesh = models[block_temp_id]
 			all_block_locations = numpy.argwhere(blocks == block_temp_id)
 			where = None
 			for cull_dir in model.faces.keys():
