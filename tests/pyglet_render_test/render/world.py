@@ -44,7 +44,7 @@ class TextureBindGroup(pyglet.graphics.Group):
 
 
 class RenderChunk:
-	def __init__(self, queue: queue.Queue, world, resource_pack, render_world, cx, cz):
+	def __init__(self, queue_: queue.Queue, world, resource_pack, render_world, cx, cz):
 		self.cx = cx
 		self.cz = cz
 		try:
@@ -124,9 +124,9 @@ class RenderChunk:
 				# TODO: not all faces in the same model have the same texture
 				cur_texture = model.textures[texture[0]]
 				if not render_world.texture_exists(cur_texture):
-					queue.put(("texture", cur_texture))
+					queue_.put(("texture", cur_texture))
 					render_world.queued_textures.append(cur_texture)
-				queue.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
+				queue_.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
 
 
 class RenderWorld:
