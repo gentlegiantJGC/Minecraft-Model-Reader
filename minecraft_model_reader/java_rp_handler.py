@@ -107,6 +107,9 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			with open(path) as fi:
 				self._model_files[key] = json.load(fi)
 
+	def texture_is_transparrent(self, namespace: str, path: str) -> bool:
+		return self._texture_is_transparrent[self._textures[(namespace, path)]][1]
+
 	def get_model(self, block: Block, face_mode: int = 3):
 		# TODO: add some logic here to convert the block to Java blockstate format if it is not already
 		if block.blockstate not in self._cached_models:

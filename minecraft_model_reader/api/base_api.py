@@ -15,14 +15,16 @@ face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
 
 class MinecraftMesh:
 	"""Class for storing model data"""
-	def __init__(self,
-					face_width: int,
-					verts: Dict[Union[str, None], numpy.ndarray],
-					texture_coords: Dict[Union[str, None], numpy.ndarray],
-					faces: Dict[Union[str, None], numpy.ndarray],
-					texture_index: Dict[Union[str, None], numpy.ndarray],
-					textures: List[Tuple[str, Union[None, str]]]
-				):
+	def __init__(
+		self,
+		face_width: int,
+		verts: Dict[Union[str, None], numpy.ndarray],
+		texture_coords: Dict[Union[str, None], numpy.ndarray],
+		faces: Dict[Union[str, None], numpy.ndarray],
+		texture_index: Dict[Union[str, None], numpy.ndarray],
+		textures: List[Tuple[str, Union[None, str]]],
+		is_opaque: bool
+	):
 		assert isinstance(verts, dict) and all(
 			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in verts.items()
 		), 'The format for verts is incorrect'
@@ -49,6 +51,7 @@ class MinecraftMesh:
 		self._faces = faces
 		self._texture_index = texture_index
 		self._textures = textures
+		self._is_opaque = is_opaque
 
 		[a.setflags(write=False) for a in self._verts.values()]
 		[a.setflags(write=False) for a in self._texture_coords.values()]
@@ -91,6 +94,14 @@ class MinecraftMesh:
 	def textures(self) -> List[Tuple[str, Union[None, str]]]:
 		"""A list of all the texture paths."""
 		return self._textures
+
+	@property
+	def is_opaque(self) -> bool:
+		"""
+		If the model covers all surrounding blocks.
+		Also takes into account texture transparency.
+		"""
+		return self._is_opaque
 
 
 class BaseRP:

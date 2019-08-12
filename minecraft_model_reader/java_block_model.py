@@ -56,6 +56,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			is_opaque = False
 
 			for case in blockstate['multipart']:
 				try:
@@ -98,6 +99,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 							textures += temp_model.textures
 							texture_count += len(temp_model.textures)
+							is_opaque = is_opaque or temp_model.is_opaque
 
 						except:
 							pass
@@ -132,7 +134,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				del tverts[cull_dir]
 				del texture_indexes[cull_dir]
 
-			return MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures)
+			return MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures, is_opaque)
 
 	if face_mode == 4:
 		return missing_no_quads
@@ -226,17 +228,25 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	is_opaque = False
 
 	for element in java_model.get('elements', {}):
 		# iterate through elements (one cube per element)
 		element_faces = element.get('faces', {})
 
+		if not is_opaque and 'rotation' not in element and element.get('to', [0, 0, 0]) == [0, 0, 0] and element.get('from', [16, 16, 16]) == [16, 16, 16] and len(element_faces) >= 6:
+			face_count = len(element_faces)
+			check_faces = True
+		else:
+			face_count = -1
+			check_faces = False
+
 		# lower and upper box coordinates
 		corners = numpy.sort(
 			numpy.array(
 				[
-					element.get('to', [1, 0, 2]),
-					element.get('from', [0, 1, 0])
+					element.get('to', [0, 0, 0]),
+					element.get('from', [16, 16, 16])
 				],
 				numpy.float
 			)/16,
@@ -264,6 +274,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				texture_path = element_faces[face_dir].get('texture', None)
 				while isinstance(texture_path, str) and texture_path.startswith('#'):
 					texture_path = java_model['textures'].get(texture_path[1:], None)
+
+				if check_faces and resource_pack.texture_is_transparrent(block.namespace, texture_path):
+					check_faces = False
 
 				# get the texture
 				if texture_path not in texture_dict:
@@ -301,6 +314,11 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				faces[cull_dir].append(face_table)
 
 				vert_count[cull_dir] += 4
+			else:
+				face_count -= 1
+
+		if check_faces and face_count == 6:
+			is_opaque = True
 
 	remove_faces = []
 	for cull_dir, face_array in faces.items():
@@ -318,7 +336,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 		del tverts[cull_dir]
 		del texture_indexes[cull_dir]
 
-	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures)
+	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures, is_opaque)
 
 	return model
 

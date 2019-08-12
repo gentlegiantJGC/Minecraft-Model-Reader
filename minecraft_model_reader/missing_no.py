@@ -48,7 +48,8 @@ missing_no_tris = minecraft_model_reader.MinecraftMesh(
 	_texture_coords,
 	_tri_faces,
 	_tri_texture_index,
-	[('minecraft', 'missing_no')]
+	[('minecraft', 'missing_no')],
+	True
 )
 
 missing_no_quads = minecraft_model_reader.MinecraftMesh(
@@ -57,5 +58,6 @@ missing_no_quads = minecraft_model_reader.MinecraftMesh(
 	_texture_coords,
 	_quad_faces,
 	_quad_texture_index,
-	[('minecraft', 'missing_no')]
+	[('minecraft', 'missing_no')],
+	True
 )
