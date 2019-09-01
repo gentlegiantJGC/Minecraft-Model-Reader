@@ -126,7 +126,6 @@ class RenderWorld:
 		self.queue = queue.Queue()
 		self.queued_textures = []
 		self.queued_chunks = []
-		self.busy = False
 		self.world = world_loader.load_world(world_path)
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 		self.group = None
