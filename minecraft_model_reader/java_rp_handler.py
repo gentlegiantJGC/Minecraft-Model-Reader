@@ -54,8 +54,11 @@ class JavaRPHandler(base_api.BaseRPHandler):
 		blockstate_file_paths: Dict[Tuple[str, str], str] = {}
 		model_file_paths: Dict[Tuple[str, str], str] = {}
 		if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')):
-			with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')) as f:
-				self._texture_is_transparrent = json.load(f)
+			try:
+				with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')) as f:
+					self._texture_is_transparrent = json.load(f)
+			except:
+				pass
 
 		for pack in self._packs:
 			# pack_format=2 textures/blocks, textures/items - case sensitive
