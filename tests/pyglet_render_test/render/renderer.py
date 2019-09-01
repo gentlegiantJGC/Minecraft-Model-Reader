@@ -48,6 +48,9 @@ class Renderer(pyglet.window.Window):
 			self.rotation_mode = not self.rotation_mode
 			self.set_exclusive_mouse(self.rotation_mode)
 
+	def on_mouse_scroll(self, x, y, scroll_x, scroll_y):
+		self.move_speed = max(0, self.move_speed + scroll_y * 0.25)
+
 	def on_close(self):
 		super().on_close()
 		self.thread_executor.shutdown()
