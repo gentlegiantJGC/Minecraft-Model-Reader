@@ -82,11 +82,9 @@ class Renderer(pyglet.window.Window):
 		# self.position_label.y = self.height - 30
 		# self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
 
-		if not self.render_world.busy:
+		if self.render_world.queue.qsize() < 1000:
 			chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
 			if chunk_to_calculate is not None:
-				# self.thread_executor.
-				self.render_world.busy = True
 				self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
 		# print(f'Update time: {time.time() - t}')
 

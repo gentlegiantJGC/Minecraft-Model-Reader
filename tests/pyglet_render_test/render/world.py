@@ -203,4 +203,3 @@ class RenderWorld:
 		cx, cz = chunk
 		self.chunks[chunk] = RenderChunk(self.queue, self.world, self.resource_pack, self, cx, cz)
 		self.queued_chunks.remove(chunk)
-		self.busy = False
