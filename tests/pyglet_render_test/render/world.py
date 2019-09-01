@@ -190,7 +190,7 @@ class RenderWorld:
 				range(cx-self.render_distance, cx+self.render_distance),
 				range(cz - self.render_distance, cz + self.render_distance)
 			),
-			key=lambda chunk_coords: chunk_coords[0]**2 + chunk_coords[1] ** 2
+			key=lambda chunk_coords: (chunk_coords[0]-cx)**2 + (chunk_coords[1]-cz) ** 2
 		)
 
 		for chunk in sorted_chunks:
