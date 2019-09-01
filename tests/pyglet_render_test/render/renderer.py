@@ -35,7 +35,7 @@ class Renderer(pyglet.window.Window):
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
 
-		self.thread_executor = ThreadPoolExecutor(max_workers=1)
+		self.thread_executor = ThreadPoolExecutor(max_workers=4)
 
 	def on_mouse_motion(self, x, y, dx, dy):
 		if self.rotation_mode:
@@ -82,10 +82,13 @@ class Renderer(pyglet.window.Window):
 		# self.position_label.y = self.height - 30
 		# self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
 
-		if self.render_world.queue.qsize() < 1000:
+		chunk_to_calculate = True
+		while self.render_world.queue.qsize() < 200 and len(self.render_world.queued_chunks) < 5 and chunk_to_calculate is not None:
 			chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
 			if chunk_to_calculate is not None:
 				self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
+				# self.render_world.calculate_chunk(chunk_to_calculate) # swap these to time
+
 		# print(f'Update time: {time.time() - t}')
 
 	# def on_resize(self, width, height):
