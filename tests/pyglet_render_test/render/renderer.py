@@ -3,6 +3,7 @@ from typing import List, Union
 import pyglet
 import math
 from pyglet.window import key
+import time
 
 
 from render.keys import key_map
@@ -11,7 +12,7 @@ from render.world import RenderWorld
 
 class Renderer(pyglet.window.Window):
 	def __init__(self, world_path: str, resource_packs: Union[str, List[str]]):
-		self.render_world = RenderWorld(world_path, resource_packs)
+		self.render_world: RenderWorld = RenderWorld(world_path, resource_packs)
 		super(Renderer, self).__init__(480, 270, 'Amulet', resizable=True)
 		self.set_minimum_size(240, 135)
 
@@ -34,7 +35,7 @@ class Renderer(pyglet.window.Window):
 
 		pyglet.clock.schedule_interval(self.update, 1 / 60.0)
 
-		self.thread_executor = ThreadPoolExecutor(max_workers=4)
+		self.thread_executor = ThreadPoolExecutor(max_workers=1)
 
 	def on_mouse_motion(self, x, y, dx, dy):
 		if self.rotation_mode:
@@ -78,9 +79,13 @@ class Renderer(pyglet.window.Window):
 		# self.position_label.y = self.height - 30
 		# self.position_label.text = f"x = {self.x}, y = {self.y}, z = {self.z}"
 
-		chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
-		if chunk_to_calculate is not None:
-			self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
+		if not self.render_world.busy:
+			chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
+			if chunk_to_calculate is not None:
+				# self.thread_executor.
+				self.render_world.busy = True
+				self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
+		# print(f'Update time: {time.time() - t}')
 
 	# def on_resize(self, width, height):
 	# 	print('hi')
@@ -89,6 +94,7 @@ class Renderer(pyglet.window.Window):
 	# 	self.on_draw()
 
 	def on_draw(self):
+		t = time.clock()
 		# self.clear()
 		pyglet.gl.glClear(pyglet.gl.GL_COLOR_BUFFER_BIT | pyglet.gl.GL_DEPTH_BUFFER_BIT)
 		pyglet.gl.glLoadIdentity()
@@ -97,7 +103,7 @@ class Renderer(pyglet.window.Window):
 		pyglet.gl.glTranslatef(-self.x, -self.y, self.z)
 		# self.proto_label.draw()
 		# self.position_label.draw()
-		self.render_world.draw(1 / 60.0)
+		self.render_world.draw(t, 1 / 60.0)
 		# self.fps_disp.draw()
 
 	def on_resize(self, width, height):

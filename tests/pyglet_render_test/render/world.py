@@ -126,6 +126,7 @@ class RenderWorld:
 		self.queue = queue.Queue()
 		self.queued_textures = []
 		self.queued_chunks = []
+		self.busy = False
 		self.world = world_loader.load_world(world_path)
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 		self.group = None
@@ -151,8 +152,7 @@ class RenderWorld:
 		image = pyglet.image.load(abs_texture_path)
 		self.textures[namespace_and_path] = self.texture_bin.add(image)
 
-	def draw(self, dt):
-		start_time = time.clock()
+	def draw(self, start_time, dt):
 		while not self.queue.empty() and time.clock() - start_time < dt:
 			queue_item = self.queue.get()
 			if queue_item[0] == "texture":
@@ -203,3 +203,4 @@ class RenderWorld:
 		cx, cz = chunk
 		self.chunks[chunk] = RenderChunk(self.queue, self.world, self.resource_pack, self, cx, cz)
 		self.queued_chunks.remove(chunk)
+		self.busy = False
