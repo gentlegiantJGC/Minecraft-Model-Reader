@@ -5,6 +5,7 @@ import itertools
 import pyglet
 import numpy
 from pyglet.gl import *
+import random
 
 from amulet.api import paths
 
@@ -58,72 +59,100 @@ class RenderChunk:
 		except:
 			return
 
-		blocks_ = numpy.zeros(blocks.shape + numpy.array((2, 0, 2)), blocks.dtype)
-		blocks_[1:-1, :, 1:-1] = blocks
+		distance = max(abs(self.cx - px//16), abs(self.cz - pz//16))
 
-		for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
-			try:
-				blocks_temp: numpy.ndarray = self.world.get_chunk(self.cx+dx, self.cz+dz).blocks
-				if (dx, dz) == (-1, 0):
-					blocks_[0, :, 1:-1] = blocks_temp[-1, :, :]
-				elif (dx, dz) == (1, 0):
-					blocks_[-1, :, 1:-1] = blocks_temp[0, :, :]
-				elif (dx, dz) == (0, -1):
-					blocks_[1:-1, :, 0] = blocks_temp[:, :, -1]
-				elif (dx, dz) == (0, 1):
-					blocks_[1:-1, :, -1] = blocks_temp[:, :, 0]
+		if distance <= render_distance[0]:
+			blocks_ = numpy.zeros(blocks.shape + numpy.array((2, 0, 2)), blocks.dtype)
+			blocks_[1:-1, :, 1:-1] = blocks
 
-			except:
-				continue
+			for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
+				try:
+					blocks_temp: numpy.ndarray = self.world.get_chunk(self.cx+dx, self.cz+dz).blocks
+					if (dx, dz) == (-1, 0):
+						blocks_[0, :, 1:-1] = blocks_temp[-1, :, :]
+					elif (dx, dz) == (1, 0):
+						blocks_[-1, :, 1:-1] = blocks_temp[0, :, :]
+					elif (dx, dz) == (0, -1):
+						blocks_[1:-1, :, 0] = blocks_temp[:, :, -1]
+					elif (dx, dz) == (0, 1):
+						blocks_[1:-1, :, -1] = blocks_temp[:, :, 0]
 
-		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
-		is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
-		is_transparrent_array = numpy.isin(blocks_, is_transparrent)
-
-		show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_up[:, :-1, :] = is_transparrent_array[1:-1, 1:, 1:-1]
-		show_down[:, 1:, :] = is_transparrent_array[1:-1, :-1, 1:-1]
-		show_north = is_transparrent_array[1:-1, :, :-2]
-		show_south = is_transparrent_array[1:-1, :-1, 2:]
-		show_east = is_transparrent_array[2:, :-1, 1:-1]
-		show_west = is_transparrent_array[:-2, :-1, 1:-1]
-
-		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
-
-		for block_temp_id in numpy.unique(blocks):
-			model: minecraft_model_reader.MinecraftMesh = models[block_temp_id]
-			all_block_locations = numpy.argwhere(blocks == block_temp_id)
-			where = None
-			for cull_dir in model.faces.keys():
-				if cull_dir is None:
-					block_locations = all_block_locations
-				elif cull_dir in show_map:
-					if where is None:
-						where = tuple(all_block_locations.T)
-					block_locations = all_block_locations[show_map[cull_dir][where]]
-					if len(block_locations) == 0:
-						continue
-				else:
+				except:
 					continue
 
-				block_count = len(block_locations)
-				block_offsets = block_locations + (self.cx*16, 0, self.cz*16)
+			models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
+			is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
+			is_transparrent_array = numpy.isin(blocks_, is_transparrent)
 
-				# the vertices in model space
-				verts = model.verts[cull_dir]
-				# translate the vertices to world space
-				vert_list_ = numpy.tile(verts, (block_count, 1))
-				for axis in range(3):
-					vert_list_[:, axis::3] += block_offsets[:, axis].reshape((-1, 1))
-				vert_list_ = vert_list_.flatten().astype(int)
-				texture = model.texture_index[cull_dir]
-				# TODO: not all faces in the same model have the same texture
-				cur_texture = model.textures[texture[0]]
-				if not self.render_world.texture_exists(cur_texture):
-					self.queue.put(("texture", cur_texture))
-					self.render_world.queued_textures.append(cur_texture)
-				self.queue.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
+			show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
+			show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
+			show_up[:, :-1, :] = is_transparrent_array[1:-1, 1:, 1:-1]
+			show_down[:, 1:, :] = is_transparrent_array[1:-1, :-1, 1:-1]
+			show_north = is_transparrent_array[1:-1, :, :-2]
+			show_south = is_transparrent_array[1:-1, :-1, 2:]
+			show_east = is_transparrent_array[2:, :-1, 1:-1]
+			show_west = is_transparrent_array[:-2, :-1, 1:-1]
+
+			show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
+
+			for block_temp_id in numpy.unique(blocks):
+				model: minecraft_model_reader.MinecraftMesh = models[block_temp_id]
+				all_block_locations = numpy.argwhere(blocks == block_temp_id)
+				where = None
+				for cull_dir in model.faces.keys():
+					if cull_dir is None:
+						block_locations = all_block_locations
+					elif cull_dir in show_map:
+						if where is None:
+							where = tuple(all_block_locations.T)
+						block_locations = all_block_locations[show_map[cull_dir][where]]
+						if len(block_locations) == 0:
+							continue
+					else:
+						continue
+
+					block_count = len(block_locations)
+					block_offsets = block_locations + (self.cx*16, 0, self.cz*16)
+
+					# the vertices in model space
+					verts = model.verts[cull_dir]
+					# translate the vertices to world space
+					vert_list_ = numpy.tile(verts, (block_count, 1))
+					for axis in range(3):
+						vert_list_[:, axis::3] += block_offsets[:, axis].reshape((-1, 1))
+					vert_list_ = vert_list_.flatten().astype(int)
+					texture = model.texture_index[cull_dir]
+					# TODO: not all faces in the same model have the same texture
+					cur_texture = model.textures[texture[0]]
+					if not self.render_world.texture_exists(cur_texture):
+						self.queue.put(("texture", cur_texture))
+						self.render_world.queued_textures.append(cur_texture)
+					self.queue.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
+
+		elif distance <= render_distance[2]:
+			blocks_ = numpy.zeros(blocks.shape + numpy.array((2, 0, 2)), blocks.dtype)
+			blocks_[1:-1, :, 1:-1] = blocks
+
+			models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks)}
+
+			is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
+			is_transparrent_array = numpy.isin(blocks_, is_transparrent)
+			is_visible_array = numpy.zeros(blocks.shape, numpy.int8)
+			is_visible_array[:] = -2
+			is_visible_array[1:-1, :, 1:-1] = 0
+			is_visible_array[:, :-1, :] += is_transparrent_array[1:-1, 1:, 1:-1]
+			is_visible_array[:, 1:, :] += is_transparrent_array[1:-1, :-1, 1:-1]
+			is_visible_array += is_transparrent_array[1:-1, :, :-2]
+			is_visible_array += is_transparrent_array[1:-1, :, 2:]
+			is_visible_array += is_transparrent_array[2:, :, 1:-1]
+			is_visible_array += is_transparrent_array[:-2, :, 1:-1]
+			is_visible_array = is_visible_array > 0
+
+			for block_temp_id in numpy.unique(blocks):
+				model: minecraft_model_reader.MinecraftMesh = models[block_temp_id]
+				if model.is_opaque:
+					all_block_locations = numpy.argwhere(numpy.all([blocks == block_temp_id, is_visible_array], axis=0)) + (self.cx * 16, 0, self.cz * 16)
+					self.queue.put(("points", all_block_locations.ravel().astype(int), tuple(random.randrange(0, 256) for _ in range(3))))
 
 
 class RenderWorld:
@@ -136,7 +165,9 @@ class RenderWorld:
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 		self.group = None
 
-		self.render_distance = 10
+		self.render_distance = [5, 10, 15]
+		self.render_distance[1] = max(self.render_distance[0], self.render_distance[1])
+		self.render_distance[2] = max(self.render_distance[1], self.render_distance[2])
 
 		# Load the resource pack
 		if isinstance(resource_packs, str):
@@ -184,6 +215,18 @@ class RenderWorld:
 					('v3i/static', vert_list_),
 					('t2f/static', tex_list_)
 				)
+			elif queue_item[0] == "points":
+				vert_list_, colour = queue_item[1:]
+				pyglet.gl.glPointSize(5)
+				self.batch.add(
+					len(vert_list_) // 3,
+					pyglet.gl.GL_POINTS,
+					None,
+					('v3i/static', vert_list_),
+					('c3B/static', colour * (len(vert_list_) // 3)),
+
+					# ('t2f/static', tex_list_)
+				)
 		self.batch.draw()
 
 	def get_chunk_in_range(self, x, z):
@@ -192,8 +235,8 @@ class RenderWorld:
 
 		sorted_chunks = sorted(
 			itertools.product(
-				range(cx-self.render_distance, cx+self.render_distance),
-				range(cz - self.render_distance, cz + self.render_distance)
+				range(cx-self.render_distance[-1], cx+self.render_distance[-1]),
+				range(cz - self.render_distance[-1], cz + self.render_distance[-1])
 			),
 			key=lambda chunk_coords: (chunk_coords[0]-cx)**2 + (chunk_coords[1]-cz) ** 2
 		)
