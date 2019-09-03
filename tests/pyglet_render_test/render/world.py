@@ -47,8 +47,14 @@ class RenderChunk:
 	def __init__(self, queue_: queue.Queue, world, resource_pack, render_world, cx, cz):
 		self.cx = cx
 		self.cz = cz
+		self.queue = queue_
+		self.world = world
+		self.resource_pack = resource_pack
+		self.render_world = render_world
+
+	def rebuild(self, px, pz, render_distance):
 		try:
-			blocks: numpy.ndarray = world.get_chunk(cx, cz).blocks
+			blocks: numpy.ndarray = self.world.get_chunk(self.cx, self.cz).blocks
 		except:
 			return
 
@@ -57,7 +63,7 @@ class RenderChunk:
 
 		for dx, dz in ((-1, 0), (1, 0), (0, -1), (0, 1)):
 			try:
-				blocks_temp: numpy.ndarray = world.get_chunk(cx+dx, cz+dz).blocks
+				blocks_temp: numpy.ndarray = self.world.get_chunk(self.cx+dx, self.cz+dz).blocks
 				if (dx, dz) == (-1, 0):
 					blocks_[0, :, 1:-1] = blocks_temp[-1, :, :]
 				elif (dx, dz) == (1, 0):
@@ -70,7 +76,7 @@ class RenderChunk:
 			except:
 				continue
 
-		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: resource_pack.get_model(world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
+		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
 		is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
 		is_transparrent_array = numpy.isin(blocks_, is_transparrent)
 
@@ -102,7 +108,7 @@ class RenderChunk:
 					continue
 
 				block_count = len(block_locations)
-				block_offsets = block_locations + (cx*16, 0, cz*16)
+				block_offsets = block_locations + (self.cx*16, 0, self.cz*16)
 
 				# the vertices in model space
 				verts = model.verts[cull_dir]
@@ -114,10 +120,10 @@ class RenderChunk:
 				texture = model.texture_index[cull_dir]
 				# TODO: not all faces in the same model have the same texture
 				cur_texture = model.textures[texture[0]]
-				if not render_world.texture_exists(cur_texture):
-					queue_.put(("texture", cur_texture))
-					render_world.queued_textures.append(cur_texture)
-				queue_.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
+				if not self.render_world.texture_exists(cur_texture):
+					self.queue.put(("texture", cur_texture))
+					self.render_world.queued_textures.append(cur_texture)
+				self.queue.put(("vertices", cur_texture, vert_list_, block_count, model.texture_coords[cull_dir][0::2], model.texture_coords[cull_dir][1::2]))
 
 
 class RenderWorld:
@@ -130,7 +136,7 @@ class RenderWorld:
 		self.chunks: Dict[Tuple[int, int], RenderChunk] = {}
 		self.group = None
 
-		self.render_distance = 3
+		self.render_distance = 10
 
 		# Load the resource pack
 		if isinstance(resource_packs, str):
@@ -198,7 +204,8 @@ class RenderWorld:
 				return chunk
 		return None
 
-	def calculate_chunk(self, chunk):
+	def calculate_chunk(self, chunk, px, pz):
 		cx, cz = chunk
-		self.chunks[chunk] = RenderChunk(self.queue, self.world, self.resource_pack, self, cx, cz)
+		self.chunks[chunk] = chunk_class = RenderChunk(self.queue, self.world, self.resource_pack, self, cx, cz)
+		chunk_class.rebuild(px, pz, self.render_distance)
 		self.queued_chunks.remove(chunk)

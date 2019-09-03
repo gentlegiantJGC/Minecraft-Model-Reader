@@ -86,8 +86,8 @@ class Renderer(pyglet.window.Window):
 		while self.render_world.queue.qsize() < 200 and len(self.render_world.queued_chunks) < 5 and chunk_to_calculate is not None:
 			chunk_to_calculate = self.render_world.get_chunk_in_range(self.x, -self.z)
 			if chunk_to_calculate is not None:
-				self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate)
-				# self.render_world.calculate_chunk(chunk_to_calculate) # swap these to time
+				self.thread_executor.submit(self.render_world.calculate_chunk, chunk_to_calculate, self.x, self.z)
+				# self.render_world.calculate_chunk(chunk_to_calculate, self.x, self.z) # swap these to time
 
 		# print(f'Update time: {time.time() - t}')
 
