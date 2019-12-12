@@ -1,11 +1,10 @@
-from typing import Dict, Tuple, List, Union
+from typing import Dict, Tuple, List, Union, TYPE_CHECKING
 import os
 import copy
 import numpy
-try:
+
+if TYPE_CHECKING:
 	from amulet.api.block import Block
-except:
-	from .block import Block
 
 default_pack_icon = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_pack_java.png')
 missing_no = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_no.png')
@@ -25,6 +24,23 @@ class MinecraftMesh:
 		textures: List[Tuple[str, Union[None, str]]],
 		is_opaque: bool
 	):
+		"""
+
+		:param face_width: the number of vertices per face (3 or 4)
+		:param verts: a numpy float array containing the vert data. One line per vertex
+		:param texture_coords: a numpy float array containing the texture coordinate data. One line per vertex
+		:param faces: a dictionary of numpy int arrays (stored under cull direction) containing
+			the vertex indexes (<face_width> columns) and
+			texture index (1 column)
+		:param texture_index:
+		:param textures:
+		:param is_opaque: is the model a full non-transparent block
+
+		Workflow:
+			find the directions a block is not being culled in
+			look them up in the face table
+			the face table will tell you which vertices are needed for the face
+		"""
 		assert isinstance(verts, dict) and all(
 			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in verts.items()
 		), 'The format for verts is incorrect'
@@ -48,6 +64,8 @@ class MinecraftMesh:
 		self._face_mode = face_width
 		self._verts = verts
 		self._texture_coords = texture_coords
+		self._vert_tables = None
+
 		self._faces = faces
 		self._texture_index = texture_index
 		self._textures = textures
@@ -60,7 +78,23 @@ class MinecraftMesh:
 
 	@property
 	def face_mode(self) -> int:
+		"""The number of vertices per face"""
 		return self._face_mode
+
+	@property
+	def vert_tables(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary of cull dir -> the flat vert table containing vertices, texture coords and (in the future) normals"""
+		if self._vert_tables is None:
+			self._vert_tables = {
+				key: numpy.hstack((
+					self._verts[key].reshape(-1, self._face_mode),
+					self._texture_coords[key].reshape(-1, 2)
+					# TODO: add in face normals
+				)).ravel()
+				for key in self._verts.keys()
+			}
+			[a.setflags(write=False) for a in self._vert_tables.values()]
+		return self._vert_tables
 
 	@property
 	def verts(self) -> Dict[str, numpy.ndarray]:
