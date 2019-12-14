@@ -19,6 +19,7 @@ class MinecraftMesh:
 		face_width: int,
 		verts: Dict[Union[str, None], numpy.ndarray],
 		texture_coords: Dict[Union[str, None], numpy.ndarray],
+		# normals: Dict[Union[str, None], numpy.ndarray],
 		faces: Dict[Union[str, None], numpy.ndarray],
 		texture_index: Dict[Union[str, None], numpy.ndarray],
 		textures: List[Tuple[str, Union[None, str]]],
@@ -176,13 +177,17 @@ class BaseRP:
 class BaseRPHandler:
 	"""The base class that all resource pack handlers must inherit from. Defines the base api."""
 	def __init__(self):
-		self._packs = []
+		self._packs: List[BaseRP] = []
 		self._missing_no = missing_no
 		self._textures: Dict[Tuple[str, str], str] = {}
 		self._texture_is_transparrent: Dict[str, List[int, bool]] = {}
 		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
 		self._model_files: Dict[Tuple[str, str], dict] = {}
 		self._cached_models = {}
+
+	@property
+	def pack_paths(self):
+		return [pack.root_dir for pack in self._packs]
 
 	def unload(self):
 		"""Clear all loaded resources."""
@@ -224,5 +229,5 @@ class BaseRPHandler:
 		else:
 			return self._missing_no
 
-	def get_model(self, block: Block):
+	def get_model(self, block: 'Block'):
 		raise NotImplemented
