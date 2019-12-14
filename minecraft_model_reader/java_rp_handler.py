@@ -71,6 +71,8 @@ class JavaRPHandler(base_api.BaseRPHandler):
 						if pack.pack_format >= 2:
 							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
 								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
+									if any(root.startswith(os.path.join(pack.root_dir, 'assets', namespace, 'textures', path)) for path in ['gui', 'font']):
+										continue
 									for f in files:
 										if f.endswith('.png'):
 											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures')).replace(os.sep, '/')
