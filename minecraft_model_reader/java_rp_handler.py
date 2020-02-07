@@ -34,6 +34,9 @@ class JavaRP(base_api.BaseRP):
 			if os.path.isfile(os.path.join(resource_pack_path, 'pack.png')):
 				self._pack_icon = os.path.join(resource_pack_path, 'pack.png')
 
+	def __repr__(self):
+		return f'JavaRP({self._root_dir})'
+
 
 class JavaRPHandler(base_api.BaseRPHandler):
 	"""A class to load and handle the data from the packs.
@@ -44,6 +47,8 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			self._packs = resource_packs
 		elif isinstance(resource_packs, JavaRP):
 			self._packs = [resource_packs]
+		else:
+			raise Exception(f'Invalid format {resource_packs}')
 		self.reload()
 
 	def reload(self):
@@ -60,10 +65,13 @@ class JavaRPHandler(base_api.BaseRPHandler):
 			except:
 				pass
 
+		self._textures[('minecraft', 'missing_no')] = self.missing_no
+
 		for pack in self._packs:
 			# pack_format=2 textures/blocks, textures/items - case sensitive
 			# pack_format=3 textures/blocks, textures/items - lower case
 			# pack_format=4 textures/block, textures/item
+			# pack_format=5 ?
 
 			if pack.valid_pack and os.path.isdir(os.path.join(pack.root_dir, 'assets')):
 				for namespace in os.listdir(os.path.join(pack.root_dir, 'assets')):
