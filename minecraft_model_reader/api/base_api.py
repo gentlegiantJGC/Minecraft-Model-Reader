@@ -24,7 +24,7 @@ class MinecraftMesh:
 		faces: Dict[Union[str, None], numpy.ndarray],
 		texture_index: Dict[Union[str, None], numpy.ndarray],
 		textures: List[Tuple[str, Union[None, str]]],
-		is_opaque: bool
+		transparency: int
 	):
 		"""
 
@@ -37,7 +37,7 @@ class MinecraftMesh:
 			texture index (1 column)
 		:param texture_index:
 		:param textures:
-		:param is_opaque: is the model a full non-transparent block
+		:param transparency: is the model a full non-transparent block
 
 		Workflow:
 			find the directions a block is not being culled in
@@ -77,7 +77,7 @@ class MinecraftMesh:
 		self._faces = faces
 		self._texture_index = texture_index
 		self._textures = textures
-		self._is_opaque = is_opaque
+		self._transparency = transparency
 
 		[a.setflags(write=False) for a in self._verts.values()]
 		[a.setflags(write=False) for a in self._texture_coords.values()]
@@ -150,7 +150,17 @@ class MinecraftMesh:
 		If the model covers all surrounding blocks.
 		Also takes into account texture transparency.
 		"""
-		return self._is_opaque
+		return not self._transparency
+
+	@property
+	def is_transparent(self) -> int:
+		"""
+		The transparency mode of the block
+		0 - the block is a full block with opaque textures
+		1 - the block is a full block with transparent/translucent textures
+		2 - the block is not a full block
+		"""
+		return self._transparency
 
 
 class BaseRP:
