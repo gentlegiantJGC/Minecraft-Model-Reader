@@ -123,7 +123,7 @@ class MinecraftMesh:
 		"""A dictionary mapping face cull direction to the tint table for that direction.
 		The tint table is a flat numpy bool array with one value per vertex.
 		"""
-		return self._texture_coords
+		return self._tint_verts
 
 	@property
 	def faces(self) -> Dict[str, numpy.ndarray]:

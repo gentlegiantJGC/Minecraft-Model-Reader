@@ -307,16 +307,15 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				tverts[cull_dir].append(
 					texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
 				)
+				tint_verts[cull_dir] += ['tintindex' in element_faces[face_dir]] * 4
 
 				# merge the face indexes and texture index
 				if face_mode == 4:
 					face_table = quad_face + vert_count[cull_dir]
 					texture_indexes[cull_dir] += [texture_index]
-					tint_verts[cull_dir] += [element_faces[face_dir].get('tintindex', 0)] * 4
 				else:
 					face_table = tri_face + vert_count[cull_dir]
 					texture_indexes[cull_dir] += [texture_index, texture_index]
-					tint_verts[cull_dir] += [element_faces[face_dir].get('tintindex', 0)] * 3
 
 				# faces stored under cull direction because this is the criteria to render them or not
 				faces[cull_dir].append(face_table)
@@ -332,7 +331,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	for cull_dir, face_array in faces.items():
 		if len(face_array) > 0:
 			faces[cull_dir] = numpy.concatenate(face_array, axis=None)
-			tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None).astype(numpy.bool)
+			tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
 			verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
 			tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
 			texture_indexes[cull_dir] = numpy.array(texture_indexes[cull_dir], dtype=numpy.uint32)
