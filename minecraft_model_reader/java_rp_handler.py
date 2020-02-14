@@ -1,6 +1,9 @@
 import os
 import json
 import copy
+from urllib.request import urlopen
+import zipfile
+import io
 from typing import List, Union, Dict, Tuple
 from PIL import Image
 import numpy
@@ -10,6 +13,7 @@ try:
 except:
 	from .api.block import Block
 from . import java_block_model
+import minecraft_model_reader
 
 
 class JavaRP(base_api.BaseRP):
@@ -44,7 +48,37 @@ class JavaRPHandler(base_api.BaseRPHandler):
 	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
 		base_api.BaseRPHandler.__init__(self)
 		if isinstance(resource_packs, list) and all(isinstance(path, JavaRP) for path in resource_packs):
-			self._packs = resource_packs
+			if resource_packs:
+				self._packs = resource_packs
+			else:
+				vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
+				if os.path.isdir(vanilla_rp_path):
+					vanilla_rp = JavaRP(vanilla_rp_path)
+				else:
+					vanilla_rp = None
+				if vanilla_rp is None or not vanilla_rp.valid_pack:
+					# download the latest server and extract the assets
+					try:
+						launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json'))
+						new_version = launcher_manifest['latest']['release']
+						version_url = next(v["url"] for v in launcher_manifest['versions'] if v['id'] == new_version)
+						version_manifest = json.load(urlopen(version_url))
+						version_client_url = version_manifest["downloads"]["client"]["url"]
+
+						client = zipfile.ZipFile(io.BytesIO(urlopen(version_client_url).read()))
+						for fpath in client.namelist():
+							if fpath.startswith('assets/'):
+								client.extract(fpath, vanilla_rp_path)
+						client.extract('pack.mcmeta', vanilla_rp_path)
+						client.extract('pack.png', vanilla_rp_path)
+
+						vanilla_rp = JavaRP(vanilla_rp_path)
+					except Exception as e:
+						import traceback
+						traceback.print_exc()
+						raise Exception(f'Failed to download and extract the vanilla resource pack. Make sure you have a connection to the internet\n{e}')
+				self._packs = [vanilla_rp]
+			self._packs += [minecraft_model_reader.java_vanilla_fix]
 		elif isinstance(resource_packs, JavaRP):
 			self._packs = [resource_packs]
 		else:
