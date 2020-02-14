@@ -53,7 +53,7 @@ class MinecraftMesh:
 		), 'The format for texture coords is incorrect'
 
 		assert isinstance(tint_verts, dict) and all(
-			key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.bool) and val.ndim == 1 for key, val in tint_verts.items()
+			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 for key, val in tint_verts.items()
 		), 'The format of tint verts is incorrect'
 
 		assert isinstance(faces, dict) and all(
