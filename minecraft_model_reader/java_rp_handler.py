@@ -124,7 +124,8 @@ class JavaRPHandler(base_api.BaseRPHandler):
 		return self._texture_is_transparrent[self._textures[(namespace, path)]][1]
 
 	def get_model(self, block: Block, face_mode: int = 3):
-		# TODO: add some logic here to convert the block to Java blockstate format if it is not already
-		if block.blockstate not in self._cached_models:
+		"""Get a model for a block state.
+		The block should already be in the resource pack format"""
+		if block not in self._cached_models:
 			self._cached_models[block] = java_block_model.get_model(self, block, face_mode)
 		return copy.deepcopy(self._cached_models[block])

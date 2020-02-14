@@ -30,6 +30,7 @@ _quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
 
 _verts: Dict[Union[str, None], numpy.ndarray] = {}
 _texture_coords = {}
+_tint_verts = {}
 _tri_faces = {}
 _quad_faces = {}
 _tri_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(2, dtype=numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west')}
@@ -39,6 +40,7 @@ for _face_dir in _cube_face_lut:
 	_verts[_face_dir] = _box_coordinates[_cube_face_lut[_face_dir]].ravel(),  # vertex coordinates for this face
 	_verts[_face_dir] = _verts[_face_dir][0]
 	_texture_coords[_face_dir] = _texture_uv[_uv_slice]  # texture vertices
+	_tint_verts[_face_dir] = numpy.zeros(4, dtype=numpy.bool)
 	_tri_faces[_face_dir] = _tri_face
 	_quad_faces[_face_dir] = _quad_face
 
@@ -46,6 +48,7 @@ missing_no_tris = minecraft_model_reader.MinecraftMesh(
 	3,
 	_verts,
 	_texture_coords,
+	_tint_verts,
 	_tri_faces,
 	_tri_texture_index,
 	[('minecraft', 'missing_no')],
@@ -56,6 +59,7 @@ missing_no_quads = minecraft_model_reader.MinecraftMesh(
 	4,
 	_verts,
 	_texture_coords,
+	_tint_verts,
 	_quad_faces,
 	_quad_texture_index,
 	[('minecraft', 'missing_no')],

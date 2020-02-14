@@ -19,6 +19,7 @@ class MinecraftMesh:
 		face_width: int,
 		verts: Dict[Union[str, None], numpy.ndarray],
 		texture_coords: Dict[Union[str, None], numpy.ndarray],
+		tint_verts: Dict[Union[str, None], numpy.ndarray],
 		# normals: Dict[Union[str, None], numpy.ndarray],
 		faces: Dict[Union[str, None], numpy.ndarray],
 		texture_index: Dict[Union[str, None], numpy.ndarray],
@@ -30,6 +31,7 @@ class MinecraftMesh:
 		:param face_width: the number of vertices per face (3 or 4)
 		:param verts: a numpy float array containing the vert data. One line per vertex
 		:param texture_coords: a numpy float array containing the texture coordinate data. One line per vertex
+		:param tint_verts: a numpy bool array if the vertex should have a tint applied to it. One line per vertex
 		:param faces: a dictionary of numpy int arrays (stored under cull direction) containing
 			the vertex indexes (<face_width> columns) and
 			texture index (1 column)
@@ -50,6 +52,10 @@ class MinecraftMesh:
 			key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 2 == 0 for key, val in texture_coords.items()
 		), 'The format for texture coords is incorrect'
 
+		assert isinstance(tint_verts, dict) and all(
+			key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.bool) and val.ndim == 1 for key, val in tint_verts.items()
+		), 'The format of tint verts is incorrect'
+
 		assert isinstance(faces, dict) and all(
 			key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.unsignedinteger) and val.ndim == 1 and val.shape[0] % face_width == 0 for key, val in faces.items()
 		), 'The format of faces is incorrect'
@@ -65,6 +71,7 @@ class MinecraftMesh:
 		self._face_mode = face_width
 		self._verts = verts
 		self._texture_coords = texture_coords
+		self._tint_verts = tint_verts
 		self._vert_tables = None
 
 		self._faces = faces
@@ -106,9 +113,16 @@ class MinecraftMesh:
 
 	@property
 	def texture_coords(self) -> Dict[str, numpy.ndarray]:
-		"""A dictionary mapping face cull direction to the vertex table for that direction.
+		"""A dictionary mapping face cull direction to the texture coords table for that direction.
 		The texture coords table is a flat numpy array who's length is a multiple of 2.
 		tx, ty"""
+		return self._texture_coords
+
+	@property
+	def tint_verts(self) -> Dict[str, numpy.ndarray]:
+		"""A dictionary mapping face cull direction to the tint table for that direction.
+		The tint table is a flat numpy bool array with one value per vertex.
+		"""
 		return self._texture_coords
 
 	@property

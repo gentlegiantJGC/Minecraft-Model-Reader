@@ -54,6 +54,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+			tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 			is_opaque = False
@@ -88,6 +89,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 							for cull_dir in temp_model.faces.keys():
 								verts[cull_dir].append(temp_model.verts[cull_dir])
 								tverts[cull_dir].append(temp_model.texture_coords[cull_dir])
+								tint_verts[cull_dir].append(temp_model.tint_verts[cull_dir])
 								face_table = temp_model.faces[cull_dir].copy()
 								texture_index = temp_model.texture_index[cull_dir].copy()
 								face_table += vert_count[cull_dir]
@@ -118,9 +120,11 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				if len(verts[cull_dir]) > 0:
 					verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
 					tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
+					tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
 				else:
 					verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
 					tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
+					tint_verts[cull_dir] = numpy.zeros(0, numpy.float)
 
 				if len(face_table) > 0:
 					faces[cull_dir] = numpy.concatenate(face_table, axis=None)
@@ -134,7 +138,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 				del tverts[cull_dir]
 				del texture_indexes[cull_dir]
 
-			return MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures, is_opaque)
+			return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, is_opaque)
 
 	if face_mode == 4:
 		return missing_no_quads
@@ -226,7 +230,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	
 	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
 	is_opaque = False
 
@@ -306,9 +312,11 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				if face_mode == 4:
 					face_table = quad_face + vert_count[cull_dir]
 					texture_indexes[cull_dir] += [texture_index]
+					tint_verts[cull_dir] += [element_faces[face_dir].get('tintindex', 0)] * 4
 				else:
 					face_table = tri_face + vert_count[cull_dir]
 					texture_indexes[cull_dir] += [texture_index, texture_index]
+					tint_verts[cull_dir] += [element_faces[face_dir].get('tintindex', 0)] * 3
 
 				# faces stored under cull direction because this is the criteria to render them or not
 				faces[cull_dir].append(face_table)
@@ -324,6 +332,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	for cull_dir, face_array in faces.items():
 		if len(face_array) > 0:
 			faces[cull_dir] = numpy.concatenate(face_array, axis=None)
+			tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None).astype(numpy.bool)
 			verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
 			tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
 			texture_indexes[cull_dir] = numpy.array(texture_indexes[cull_dir], dtype=numpy.uint32)
@@ -332,11 +341,12 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
 	for cull_dir in remove_faces:
 		del faces[cull_dir]
+		del tint_verts[cull_dir]
 		del verts[cull_dir]
 		del tverts[cull_dir]
 		del texture_indexes[cull_dir]
 
-	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, faces, texture_indexes, textures, is_opaque)
+	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, is_opaque)
 
 	return model
 
