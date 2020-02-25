@@ -9,6 +9,7 @@ except:
 import numpy
 import math
 import copy
+import amulet_nbt
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -42,7 +43,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 						pass
 				else:
 					properties_match = Block.parameters_regex.finditer(f',{variant}')
-					if all(block.properties.get(match.group("name"), match.group("value")) == match.group("value") for match in properties_match):
+					if all(block.properties.get(match.group("name"), amulet_nbt.TAG_String(match.group("value"))).value == match.group("value") for match in properties_match):
 						try:
 							return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
 						except:
