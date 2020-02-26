@@ -1,4 +1,4 @@
-from typing import Union
+from typing import Union, Iterable
 import itertools
 from minecraft_model_reader import MinecraftMesh
 from .missing_no import missing_no_tris, missing_no_quads
@@ -27,10 +27,84 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
 	return numpy.matmul(verts - origin, trmtx) + origin
 
 
+def merge_models(models: Iterable[MinecraftMesh], face_mode: int = 3) -> MinecraftMesh:
+	textures = []
+	texture_count = 0
+	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	transparent = 2
+
+	for temp_model in models:
+		for cull_dir in temp_model.faces.keys():
+			verts[cull_dir].append(temp_model.verts[cull_dir])
+			tverts[cull_dir].append(temp_model.texture_coords[cull_dir])
+			tint_verts[cull_dir].append(temp_model.tint_verts[cull_dir])
+			face_table = temp_model.faces[cull_dir].copy()
+			texture_index = temp_model.texture_index[cull_dir].copy()
+			face_table += vert_count[cull_dir]
+			texture_index += texture_count
+			faces[cull_dir].append(face_table)
+			texture_indexes[cull_dir].append(texture_index)
+
+			vert_count[cull_dir] += int(temp_model.verts[cull_dir].shape[0] / temp_model.face_mode)
+
+		textures += temp_model.textures
+		texture_count += len(temp_model.textures)
+		transparent = min(transparent, temp_model.is_transparent)
+
+	if textures:
+		textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
+		texture_index_map = texture_index_map.astype(numpy.uint32)
+		textures = list(zip(textures.T[0], textures.T[1]))
+	else:
+		texture_index_map = numpy.array([], dtype=numpy.uint8)
+
+	remove_faces = []
+	for cull_dir, face_table in faces.items():
+		if verts[cull_dir]:
+			verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
+			tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
+			tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
+		else:
+			verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
+			tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
+			tint_verts[cull_dir] = numpy.zeros(0, numpy.float)
+
+		if face_table:
+			faces[cull_dir] = numpy.concatenate(face_table, axis=None)
+			texture_indexes[cull_dir] = texture_index_map[numpy.concatenate(texture_indexes[cull_dir], axis=None)]
+		else:
+			remove_faces.append(cull_dir)
+
+	for cull_dir in remove_faces:
+		del faces[cull_dir]
+		del verts[cull_dir]
+		del tverts[cull_dir]
+		del texture_indexes[cull_dir]
+
+	return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+
+
 def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 	"""A function to load the model for a block from a resource pack.
 	Needs a JavaRPHandler and Block.
 	See get_model in JavaRPHandler if you are trying to use from an external application."""
+	print(block)
+	if block.extra_blocks:
+		return merge_models(
+			(_get_model(resource_pack, block.base_block, face_mode), ) +
+			tuple(_get_model(resource_pack, block_, face_mode) for block_ in block.extra_blocks)
+		)
+	else:
+		return _get_model(resource_pack, block, face_mode)
+
+
+def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
+	"""Get a model for a Block object with no extra blocks"""
 	assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
 	if (block.namespace, block.base_name) in resource_pack.blockstate_files:
 		blockstate: dict = resource_pack.blockstate_files[(block.namespace, block.base_name)]
@@ -50,15 +124,7 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 							pass
 
 		elif 'multipart' in blockstate:
-			textures = []
-			texture_count = 0
-			vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-			transparent = 2
+			models = []
 
 			for case in blockstate['multipart']:
 				try:
@@ -85,61 +151,14 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 
 					if 'apply' in case:
 						try:
-							temp_model = _load_blockstate_model(resource_pack, block, case['apply'], face_mode)
-
-							for cull_dir in temp_model.faces.keys():
-								verts[cull_dir].append(temp_model.verts[cull_dir])
-								tverts[cull_dir].append(temp_model.texture_coords[cull_dir])
-								tint_verts[cull_dir].append(temp_model.tint_verts[cull_dir])
-								face_table = temp_model.faces[cull_dir].copy()
-								texture_index = temp_model.texture_index[cull_dir].copy()
-								face_table += vert_count[cull_dir]
-								texture_index += texture_count
-								faces[cull_dir].append(face_table)
-								texture_indexes[cull_dir].append(texture_index)
-
-								vert_count[cull_dir] += int(temp_model.verts[cull_dir].shape[0]/temp_model.face_mode)
-
-							textures += temp_model.textures
-							texture_count += len(temp_model.textures)
-							transparent = min(transparent, temp_model.is_transparent)
+							models.append(_load_blockstate_model(resource_pack, block, case['apply'], face_mode))
 
 						except:
 							pass
 				except:
 					pass
 
-			if len(textures) > 0:
-				textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
-				texture_index_map = texture_index_map.astype(numpy.uint32)
-				textures = list(zip(textures.T[0], textures.T[1]))
-			else:
-				texture_index_map = numpy.array([], dtype=numpy.uint8)
-
-			remove_faces = []
-			for cull_dir, face_table in faces.items():
-				if len(verts[cull_dir]) > 0:
-					verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
-					tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
-					tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
-				else:
-					verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
-					tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
-					tint_verts[cull_dir] = numpy.zeros(0, numpy.float)
-
-				if len(face_table) > 0:
-					faces[cull_dir] = numpy.concatenate(face_table, axis=None)
-					texture_indexes[cull_dir] = texture_index_map[numpy.concatenate(texture_indexes[cull_dir], axis=None)]
-				else:
-					remove_faces.append(cull_dir)
-
-			for cull_dir in remove_faces:
-				del faces[cull_dir]
-				del verts[cull_dir]
-				del tverts[cull_dir]
-				del texture_indexes[cull_dir]
-
-			return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+			return merge_models(models)
 
 	if face_mode == 4:
 		return missing_no_quads
