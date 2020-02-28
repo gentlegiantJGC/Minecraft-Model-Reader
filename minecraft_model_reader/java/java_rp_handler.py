@@ -22,7 +22,6 @@ class JavaRP(resource_pack.BaseRP):
 	This information can be used in a viewer to display the packs to the user."""
 	def __init__(self, resource_pack_path: str):
 		resource_pack.BaseRP.__init__(self)
-		assert os.path.isdir(resource_pack_path), 'The given path must be a directory'
 		self._root_dir = resource_pack_path
 		try:
 			if os.path.isfile(os.path.join(resource_pack_path, 'pack.mcmeta')):
