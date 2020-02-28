@@ -65,4 +65,5 @@ def download_resources(path, version) -> bool:
             exc_info=True
         )
         return False
+    log.info(f'Finished downloading Java resource pack for version {version}')
     return True
