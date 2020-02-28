@@ -1,11 +1,11 @@
 from typing import Union, Iterable
 import itertools
 from minecraft_model_reader import MinecraftMesh
-from .missing_no import missing_no_tris, missing_no_quads
+from minecraft_model_reader.missing_no import missing_no_tris, missing_no_quads
 try:
 	from amulet.api.block import Block
 except:
-	from .api.block import Block
+	from minecraft_model_reader.api.block import Block
 import numpy
 import math
 import copy
@@ -93,7 +93,6 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 	"""A function to load the model for a block from a resource pack.
 	Needs a JavaRPHandler and Block.
 	See get_model in JavaRPHandler if you are trying to use from an external application."""
-	print(block)
 	if block.extra_blocks:
 		return merge_models(
 			(_get_model(resource_pack, block.base_block, face_mode), ) +

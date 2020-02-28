@@ -7,21 +7,21 @@ import io
 from typing import List, Union, Dict, Tuple
 from PIL import Image
 import numpy
-from .api import base_api
+from minecraft_model_reader.api import resource_pack
 try:
 	from amulet.api.block import Block
 except:
-	from .api.block import Block
-from . import java_block_model
+	from minecraft_model_reader.api.block import Block
+from minecraft_model_reader.java import java_block_model
 import minecraft_model_reader
 
 
-class JavaRP(base_api.BaseRP):
+class JavaRP(resource_pack.BaseRP):
 	"""A class to hold the bare bones information about the resource pack.
 	Holds the pack format, description and if the pack is valid.
 	This information can be used in a viewer to display the packs to the user."""
 	def __init__(self, resource_pack_path: str):
-		base_api.BaseRP.__init__(self)
+		resource_pack.BaseRP.__init__(self)
 		assert os.path.isdir(resource_pack_path), 'The given path must be a directory'
 		self._root_dir = resource_pack_path
 		try:
@@ -42,11 +42,11 @@ class JavaRP(base_api.BaseRP):
 		return f'JavaRP({self._root_dir})'
 
 
-class JavaRPHandler(base_api.BaseRPHandler):
+class JavaRPHandler(resource_pack.BaseRPHandler):
 	"""A class to load and handle the data from the packs.
 	Packs are given as a list with the later packs overwriting the earlier ones."""
 	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
-		base_api.BaseRPHandler.__init__(self)
+		resource_pack.BaseRPHandler.__init__(self)
 		if isinstance(resource_packs, list) and all(isinstance(path, JavaRP) for path in resource_packs):
 			if resource_packs:
 				self._packs = resource_packs
