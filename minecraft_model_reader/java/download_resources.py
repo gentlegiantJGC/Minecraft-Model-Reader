@@ -8,9 +8,10 @@ import io
 from . import launcher_manifest
 import minecraft_model_reader
 from minecraft_model_reader import log
+from .java_rp_handler import JavaRP
 
 
-def get_latest():
+def get_latest() -> JavaRP:
     vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
     new_version = launcher_manifest['latest']['release']
     if new_version is None:
@@ -29,6 +30,7 @@ def get_latest():
                 _remove_and_download(vanilla_rp_path, new_version)
         else:
             _remove_and_download(vanilla_rp_path, new_version)
+    return JavaRP(vanilla_rp_path)
 
 
 def _remove_and_download(path, version):
