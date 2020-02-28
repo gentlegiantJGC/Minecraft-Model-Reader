@@ -47,38 +47,8 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 	Packs are given as a list with the later packs overwriting the earlier ones."""
 	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
 		resource_pack.BaseRPHandler.__init__(self)
-		if isinstance(resource_packs, list) and all(isinstance(path, JavaRP) for path in resource_packs):
-			if resource_packs:
-				self._packs = resource_packs
-			else:
-				vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
-				if os.path.isdir(vanilla_rp_path):
-					vanilla_rp = JavaRP(vanilla_rp_path)
-				else:
-					vanilla_rp = None
-				if vanilla_rp is None or not vanilla_rp.valid_pack:
-					# download the latest server and extract the assets
-					try:
-						launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json'))
-						new_version = launcher_manifest['latest']['release']
-						version_url = next(v["url"] for v in launcher_manifest['versions'] if v['id'] == new_version)
-						version_manifest = json.load(urlopen(version_url))
-						version_client_url = version_manifest["downloads"]["client"]["url"]
-
-						client = zipfile.ZipFile(io.BytesIO(urlopen(version_client_url).read()))
-						for fpath in client.namelist():
-							if fpath.startswith('assets/'):
-								client.extract(fpath, vanilla_rp_path)
-						client.extract('pack.mcmeta', vanilla_rp_path)
-						client.extract('pack.png', vanilla_rp_path)
-
-						vanilla_rp = JavaRP(vanilla_rp_path)
-					except Exception as e:
-						import traceback
-						traceback.print_exc()
-						raise Exception(f'Failed to download and extract the vanilla resource pack. Make sure you have a connection to the internet\n{e}')
-				self._packs = [vanilla_rp]
-			self._packs += [minecraft_model_reader.java_vanilla_fix]
+		if isinstance(resource_packs, list):
+			self._packs = [rp for rp in resource_packs if isinstance(rp, JavaRP)]
 		elif isinstance(resource_packs, JavaRP):
 			self._packs = [resource_packs]
 		else:
