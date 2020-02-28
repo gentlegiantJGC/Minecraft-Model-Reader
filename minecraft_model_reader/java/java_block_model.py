@@ -1,7 +1,7 @@
 from typing import Union, Iterable
 import itertools
 from minecraft_model_reader import MinecraftMesh
-from minecraft_model_reader.missing_no import missing_no_tris, missing_no_quads
+from minecraft_model_reader.lib.missing_no import missing_no_tris, missing_no_quads
 try:
 	from amulet.api.block import Block
 except:
