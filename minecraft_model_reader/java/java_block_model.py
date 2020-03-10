@@ -319,7 +319,6 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				)
 			)
 		)
-		# TODO: box rotation
 
 		for face_dir in element_faces:
 			if face_dir in cube_face_lut:
@@ -353,8 +352,23 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				uv_slice = uv_lut[2 * int(texture_rotation / 90):] + uv_lut[:2 * int(texture_rotation / 90)]
 
 				# merge the vertex coordinates and texture coordinates
+				face_verts = box_coordinates[cube_face_lut[face_dir]]
+				if 'rotation' in element:
+					rotation = element['rotation']
+					origin = [r/16 for r in rotation.get('origin', [8, 8, 8])]
+					angle = rotation.get('angle', 0)
+					axis = rotation.get('axis', 'x')
+					angles = [0, 0, 0]
+					if axis == 'x':
+						angles[0] = -angle
+					elif axis == 'y':
+						angles[1] = -angle
+					elif axis == 'z':
+						angles[2] = -angle
+					face_verts = rotate_3d(face_verts, *angles, *origin)
+
 				verts[cull_dir].append(
-					box_coordinates[cube_face_lut[face_dir]]  # vertex coordinates for this face
+					face_verts  # vertex coordinates for this face
 				)
 
 				tverts[cull_dir].append(
