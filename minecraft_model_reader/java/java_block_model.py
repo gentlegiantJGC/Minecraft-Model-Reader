@@ -143,8 +143,8 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh
 								continue
 						elif not all(
 							block.properties.get(prop, None) in (
-								val.split('|') if isinstance(val, str)
-								else (['true'] if val else ['false']) if isinstance(val, bool)
+								[amulet_nbt.TAG_String(s) for s in val.split('|')] if isinstance(val, str)
+								else ([amulet_nbt.TAG_String('true')] if val else [amulet_nbt.TAG_String('false')]) if isinstance(val, bool)
 								else Exception
 							) for prop, val in case['when'].items()
 						):
