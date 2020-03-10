@@ -1,4 +1,4 @@
-from typing import Union, Iterable
+from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
 from minecraft_model_reader import MinecraftMesh
 from minecraft_model_reader.lib.missing_no import missing_no_tris, missing_no_quads
@@ -10,6 +10,8 @@ import numpy
 import math
 import copy
 import amulet_nbt
+
+FACE_KEYS = ('down', 'up', 'north', 'east', 'south', 'west', None)
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -30,12 +32,12 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
 def merge_models(models: Iterable[MinecraftMesh], face_mode: int = 3) -> MinecraftMesh:
 	textures = []
 	texture_count = 0
-	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	vert_count = {side: 0 for side in FACE_KEYS}
+	verts = {side: [] for side in FACE_KEYS}
+	tverts = {side: [] for side in FACE_KEYS}
+	tint_verts = {side: [] for side in FACE_KEYS}
+	faces = {side: [] for side in FACE_KEYS}
+	texture_indexes = {side: [] for side in FACE_KEYS}
 	transparent = 2
 
 	for temp_model in models:
@@ -208,6 +210,25 @@ uv_lut = [0, 1, 2, 1, 2, 3, 0, 3]
 # }
 
 
+def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]]]:
+	cull_remap_ = {}
+	roty_map = ["north", "east", "south", "west"]
+	for roty in range(-3, 4):
+		for rotx in range(-3, 4):
+			roty_map_rotated = roty_map[roty:] + roty_map[:roty]
+			rotx_map = [roty_map_rotated[0], "down", roty_map_rotated[2], "up"]
+			rotx_map_rotated = rotx_map[rotx:] + rotx_map[:rotx]
+			roty_remap = dict(zip(roty_map, roty_map_rotated))
+			rotx_remap = dict(zip(rotx_map, rotx_map_rotated))
+			cull_remap_[(roty, rotx)] = {
+				key: rotx_remap.get(roty_remap.get(key, key), roty_remap.get(key, key)) for key in FACE_KEYS
+			}
+	return cull_remap_
+
+
+cull_remap_all = create_cull_map()
+
+
 def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> MinecraftMesh:
 	assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
 	if isinstance(blockstate_value, list):
@@ -218,18 +239,25 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
 		else:
 			return missing_no_tris
 	model_path = blockstate_value['model']
-	rotx = blockstate_value.get('x', 0)
-	roty = blockstate_value.get('y', 0)
+	rotx = int(blockstate_value.get('x', 0)//90)
+	roty = int(blockstate_value.get('y', 0)//90)
 	uvlock = blockstate_value.get('uvlock', False)
 
 	model = copy.deepcopy(_load_block_model(resource_pack, block, model_path, face_mode))
 
 	# TODO: rotate model based on uv_lock
-	if rotx != 0 or roty != 0:
-		for cull_dir in model.verts:
-			model.verts[cull_dir].setflags(write=True)
-			model.verts[cull_dir] = rotate_3d(model.verts[cull_dir].reshape((-1, model.face_mode)), rotx, roty, 0, 0.5, 0.5, 0.5).ravel()
-			model.verts[cull_dir].setflags(write=False)
+	if rotx or roty and (roty, rotx) in cull_remap_all:
+		cull_remap = cull_remap_all[(roty, rotx)]
+		return MinecraftMesh(
+			model.face_mode,
+			{cull_remap[cull_dir]: rotate_3d(model.verts[cull_dir].reshape((-1, model.face_mode)), rotx*90, roty*90, 0, 0.5, 0.5, 0.5).ravel() for cull_dir in model.verts},
+			{cull_remap[cull_dir]: model.texture_coords[cull_dir] for cull_dir in model.texture_coords},
+			{cull_remap[cull_dir]: model.tint_verts[cull_dir] for cull_dir in model.tint_verts},
+			{cull_remap[cull_dir]: model.faces[cull_dir] for cull_dir in model.faces},
+			{cull_remap[cull_dir]: model.texture_index[cull_dir] for cull_dir in model.texture_index},
+			model.textures,
+			model.is_transparent
+		)
 	return model
 
 
@@ -246,13 +274,13 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	texture_dict = {}
 	textures = []
 	texture_count = 0
-	vert_count = {side: 0 for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	tverts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	tint_verts = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
-	faces = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	vert_count = {side: 0 for side in FACE_KEYS}
+	verts = {side: [] for side in FACE_KEYS}
+	tverts = {side: [] for side in FACE_KEYS}
+	tint_verts = {side: [] for side in FACE_KEYS}
+	faces = {side: [] for side in FACE_KEYS}
 	
-	texture_indexes = {side: [] for side in ('down', 'up', 'north', 'east', 'south', 'west', None)}
+	texture_indexes = {side: [] for side in FACE_KEYS}
 	transparent = 2
 
 	for element in java_model.get('elements', {}):
