@@ -13,6 +13,7 @@ try:
 except:
 	from minecraft_model_reader.api.block import Block
 from minecraft_model_reader.java import java_block_model
+from minecraft_model_reader import MinecraftMesh
 import minecraft_model_reader
 
 
@@ -126,7 +127,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 	def texture_is_transparrent(self, namespace: str, path: str) -> bool:
 		return self._texture_is_transparrent[self._textures[(namespace, path)]][1]
 
-	def get_model(self, block: Block, face_mode: int = 3):
+	def get_model(self, block: Block, face_mode: int = 3) -> MinecraftMesh:
 		"""Get a model for a block state.
 		The block should already be in the resource pack format"""
 		if block not in self._cached_models:

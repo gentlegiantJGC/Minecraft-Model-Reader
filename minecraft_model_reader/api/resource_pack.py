@@ -1,6 +1,7 @@
 from typing import Dict, Tuple, List, TYPE_CHECKING
 import os
 import copy
+from minecraft_model_reader import MinecraftMesh
 
 if TYPE_CHECKING:
 	from amulet.api.block import Block
@@ -55,7 +56,7 @@ class BaseRPHandler:
 		self._texture_is_transparrent: Dict[str, List[int, bool]] = {}
 		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
 		self._model_files: Dict[Tuple[str, str], dict] = {}
-		self._cached_models = {}
+		self._cached_models: Dict[Block, MinecraftMesh] = {}
 
 	@property
 	def pack_paths(self):
