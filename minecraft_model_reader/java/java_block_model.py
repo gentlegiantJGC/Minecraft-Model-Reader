@@ -198,7 +198,7 @@ quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
 # 	for face_dir_, vert_index_ in cube_face_lut.items()
 # }
 
-uv_lut = [0, 1, 2, 1, 2, 3, 0, 3]
+uv_lut = [0, 3, 2, 3, 2, 1, 0, 1]
 
 # tvert_lut = {  # TODO: implement this for the cases where the UV is not defined
 # 	'down': [],
