@@ -4,7 +4,7 @@ import copy
 from urllib.request import urlopen
 import zipfile
 import io
-from typing import List, Union, Dict, Tuple
+from typing import List, Union, Dict, Tuple, Iterable
 from PIL import Image
 import numpy
 from minecraft_model_reader.api import resource_pack
@@ -45,9 +45,9 @@ class JavaRP(resource_pack.BaseRP):
 class JavaRPHandler(resource_pack.BaseRPHandler):
 	"""A class to load and handle the data from the packs.
 	Packs are given as a list with the later packs overwriting the earlier ones."""
-	def __init__(self, resource_packs: Union[JavaRP, List[JavaRP]]):
+	def __init__(self, resource_packs: Union[JavaRP, Iterable[JavaRP]]):
 		resource_pack.BaseRPHandler.__init__(self)
-		if isinstance(resource_packs, list):
+		if isinstance(resource_packs, (list, tuple)):
 			self._packs = [rp for rp in resource_packs if isinstance(rp, JavaRP)]
 		elif isinstance(resource_packs, JavaRP):
 			self._packs = [resource_packs]
