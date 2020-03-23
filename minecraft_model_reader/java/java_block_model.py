@@ -250,7 +250,14 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
 		cull_remap = cull_remap_all[(roty, rotx)]
 		return MinecraftMesh(
 			model.face_mode,
-			{cull_remap[cull_dir]: rotate_3d(model.verts[cull_dir].reshape((-1, model.face_mode)), rotx*90, roty*90, 0, 0.5, 0.5, 0.5).ravel() for cull_dir in model.verts},
+			{
+				cull_remap[cull_dir]: rotate_3d(
+					rotate_3d(
+						model.verts[cull_dir].reshape((-1, model.face_mode)),
+						rotx*90, 0, 0, 0.5, 0.5, 0.5),
+					0, roty*90, 0, 0.5, 0.5, 0.5).ravel()
+				for cull_dir in model.verts
+			},
 			{cull_remap[cull_dir]: model.texture_coords[cull_dir] for cull_dir in model.texture_coords},
 			{cull_remap[cull_dir]: model.tint_verts[cull_dir] for cull_dir in model.tint_verts},
 			{cull_remap[cull_dir]: model.faces[cull_dir] for cull_dir in model.faces},
