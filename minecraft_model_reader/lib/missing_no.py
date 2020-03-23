@@ -39,7 +39,7 @@ _quad_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(
 for _face_dir in _cube_face_lut:
 	_verts[_face_dir] = _box_coordinates[_cube_face_lut[_face_dir]].ravel()  # vertex coordinates for this face
 	_texture_coords[_face_dir] = _texture_uv[_uv_slice]  # texture vertices
-	_tint_verts[_face_dir] = numpy.zeros(4, dtype=numpy.bool)
+	_tint_verts[_face_dir] = numpy.ones(12, dtype=numpy.float)
 	_tri_faces[_face_dir] = _tri_face
 	_quad_faces[_face_dir] = _quad_face
 

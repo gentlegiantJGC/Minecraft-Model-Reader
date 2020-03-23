@@ -374,7 +374,10 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 				tverts[cull_dir].append(
 					texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
 				)
-				tint_verts[cull_dir] += ['tintindex' in element_faces[face_dir]] * 4
+				if 'tintindex' in element_faces[face_dir]:
+					tint_verts[cull_dir] += [0, 1, 0] * 4  # TODO: set this up for each supported block
+				else:
+					tint_verts[cull_dir] += [1, 1, 1] * 4
 
 				# merge the face indexes and texture index
 				if face_mode == 4:

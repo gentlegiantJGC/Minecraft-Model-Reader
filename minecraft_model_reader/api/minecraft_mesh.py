@@ -45,7 +45,7 @@ class MinecraftMesh:
         ), 'The format for texture coords is incorrect'
 
         assert isinstance(tint_verts, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 for key, val in tint_verts.items()
+            key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in tint_verts.items()
         ), 'The format of tint verts is incorrect'
 
         assert isinstance(faces, dict) and all(
@@ -113,7 +113,7 @@ class MinecraftMesh:
     @property
     def tint_verts(self) -> Dict[str, numpy.ndarray]:
         """A dictionary mapping face cull direction to the tint table for that direction.
-        The tint table is a flat numpy bool array with one value per vertex.
+        The tint table is a flat numpy bool array with three values per vertex.
         """
         return self._tint_verts
 
