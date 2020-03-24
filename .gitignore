@@ -113,7 +113,7 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-transparrency_cache.json
+transparency_cache.json
 test_packs/
 tests/panda3d_render_test/amulet
 tests/panda3d_render_test/test_world

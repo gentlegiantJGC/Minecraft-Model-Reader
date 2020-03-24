@@ -121,17 +121,17 @@ class RenderChunk:
 				continue
 
 		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks_)}
-		is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
-		is_transparrent_array = numpy.isin(blocks_, is_transparrent)
+		is_transparent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
+		is_transparent_array = numpy.isin(blocks_, is_transparent)
 
 		show_up = numpy.ones(blocks.shape, dtype=numpy.bool)
 		show_down = numpy.ones(blocks.shape, dtype=numpy.bool)
-		show_up[:, :-1, :] = is_transparrent_array[1:-1, 1:, 1:-1]
-		show_down[:, 1:, :] = is_transparrent_array[1:-1, :-1, 1:-1]
-		show_north = is_transparrent_array[1:-1, :, :-2]
-		show_south = is_transparrent_array[1:-1, :-1, 2:]
-		show_east = is_transparrent_array[2:, :-1, 1:-1]
-		show_west = is_transparrent_array[:-2, :-1, 1:-1]
+		show_up[:, :-1, :] = is_transparent_array[1:-1, 1:, 1:-1]
+		show_down[:, 1:, :] = is_transparent_array[1:-1, :-1, 1:-1]
+		show_north = is_transparent_array[1:-1, :, :-2]
+		show_south = is_transparent_array[1:-1, :-1, 2:]
+		show_east = is_transparent_array[2:, :-1, 1:-1]
+		show_west = is_transparent_array[:-2, :-1, 1:-1]
 
 		show_map = {'up': show_up, 'down': show_down, 'north': show_north, 'south': show_south, 'east': show_east, 'west': show_west}
 
@@ -178,17 +178,17 @@ class RenderChunk:
 
 		models: Dict[int, minecraft_model_reader.MinecraftMesh] = {block_temp_id: self.resource_pack.get_model(self.world.block_manager[block_temp_id], face_mode=4) for block_temp_id in numpy.unique(blocks)}
 
-		is_transparrent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
-		is_transparrent_array = numpy.isin(blocks, is_transparrent)
+		is_transparent = [block_temp_id for block_temp_id, model in models.items() if not model.is_opaque]
+		is_transparent_array = numpy.isin(blocks, is_transparent)
 		is_visible_array = numpy.zeros(blocks.shape, numpy.int8)
 		is_visible_array[:] = -2
 		is_visible_array[1:-1, :, 1:-1] = 0
-		is_visible_array[:, :-1, :] += is_transparrent_array[:, 1:, :]
-		is_visible_array[:, 1:, :] += is_transparrent_array[:, :-1, :]
-		is_visible_array[:, :, 1:] += is_transparrent_array[:, :, :-1]
-		is_visible_array[:, :, :-1] += is_transparrent_array[:, :, 1:]
-		is_visible_array[:-1, :, :] += is_transparrent_array[1:, :, :]
-		is_visible_array[1:, :, :] += is_transparrent_array[:-1, :, :]
+		is_visible_array[:, :-1, :] += is_transparent_array[:, 1:, :]
+		is_visible_array[:, 1:, :] += is_transparent_array[:, :-1, :]
+		is_visible_array[:, :, 1:] += is_transparent_array[:, :, :-1]
+		is_visible_array[:, :, :-1] += is_transparent_array[:, :, 1:]
+		is_visible_array[:-1, :, :] += is_transparent_array[1:, :, :]
+		is_visible_array[1:, :, :] += is_transparent_array[:-1, :, :]
 		is_visible_array = is_visible_array > 0
 
 		for block_temp_id in numpy.unique(blocks):
