@@ -338,7 +338,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 					texture_path = java_model['textures'].get(texture_path[1:], None)
 
 				if check_faces:
-					if resource_pack.texture_is_transparrent(block.namespace, texture_path):
+					if resource_pack.texture_is_transparent(block.namespace, texture_path):
 						check_faces = False
 					else:
 						opaque_face_count += 1

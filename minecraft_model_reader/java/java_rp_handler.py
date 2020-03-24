@@ -62,10 +62,10 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 
 		blockstate_file_paths: Dict[Tuple[str, str], str] = {}
 		model_file_paths: Dict[Tuple[str, str], str] = {}
-		if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')):
+		if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparency_cache.json')):
 			try:
-				with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json')) as f:
-					self._texture_is_transparrent = json.load(f)
+				with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json')) as f:
+					self._texture_is_transparent = json.load(f)
 			except:
 				pass
 
@@ -92,14 +92,14 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 											continue
 										texture_path = os.path.join(root, f)
 										self._textures[(namespace, rel_path)] = texture_path
-										if os.stat(texture_path)[8] != self._texture_is_transparrent.get(texture_path, [0])[0]:
-											texture_is_transparrent = False
+										if os.stat(texture_path)[8] != self._texture_is_transparent.get(texture_path, [0])[0]:
+											texture_is_transparent = False
 											im: Image.Image = Image.open(texture_path)
 											if im.mode == 'RGBA':
 												alpha = numpy.array(im.getchannel('A').getdata())
-												texture_is_transparrent = numpy.any(alpha != 255)
+												texture_is_transparent = numpy.any(alpha != 255)
 
-											self._texture_is_transparrent[os.path.join(root, f)] = [os.stat(texture_path)[8], bool(texture_is_transparrent)]
+											self._texture_is_transparent[os.path.join(root, f)] = [os.stat(texture_path)[8], bool(texture_is_transparent)]
 
 							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
 								for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
@@ -113,8 +113,8 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 											rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
 											model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = os.path.join(root, f)
 
-		with open(os.path.join(os.path.dirname(__file__), 'transparrency_cache.json'), 'w') as f:
-			json.dump(self._texture_is_transparrent, f)
+		with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json'), 'w') as f:
+			json.dump(self._texture_is_transparent, f)
 
 		for key, path in blockstate_file_paths.items():
 			with open(path) as fi:
@@ -124,8 +124,8 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 			with open(path) as fi:
 				self._model_files[key] = json.load(fi)
 
-	def texture_is_transparrent(self, namespace: str, path: str) -> bool:
-		return self._texture_is_transparrent[self._textures[(namespace, path)]][1]
+	def texture_is_transparent(self, namespace: str, path: str) -> bool:
+		return self._texture_is_transparent[self._textures[(namespace, path)]][1]
 
 	def get_model(self, block: Block, face_mode: int = 3) -> MinecraftMesh:
 		"""Get a model for a block state.
