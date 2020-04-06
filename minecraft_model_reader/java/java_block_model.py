@@ -420,16 +420,12 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 		del tverts[cull_dir]
 		del texture_indexes[cull_dir]
 
-	model = resource_pack.model_files[(block.namespace, model_path)] = MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
-
-	return model
+	return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
 
 
-def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> Union[dict, MinecraftMesh]:
+def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> dict:
 	if (block.namespace, model_path) in resource_pack.model_files:
 		model = resource_pack.model_files[(block.namespace, model_path)]
-		if isinstance(model, MinecraftMesh):
-			return model
 
 		if 'parent' in model:
 			parent_model = _recursive_load_block_model(resource_pack, block, model['parent'], face_mode)
@@ -445,8 +441,4 @@ def _recursive_load_block_model(resource_pack, block: Block, model_path: str, fa
 
 		return parent_model
 
-	else:
-		if face_mode == 4:
-			return missing_no_quads
-		else:
-			return missing_no_tris
+	return {}
