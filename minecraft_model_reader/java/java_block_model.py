@@ -102,6 +102,15 @@ def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
 		)
 	else:
 		return _get_model(resource_pack, block, face_mode)
+	
+	
+def parse_state_val(val) -> list:
+	if isinstance(val, str):
+		return [amulet_nbt.TAG_String(v) for v in val.split('|')]
+	elif isinstance(val, bool):
+		return amulet_nbt.TAG_String("true") if val else amulet_nbt.TAG_String("false")
+	else:
+		raise Exception(f'Could not parse state val {val}')
 
 
 def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
@@ -133,20 +142,12 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh
 						if 'OR' in case['when']:
 							if not any(
 								all(
-									block.properties.get(prop, None) in (
-											val.split('|') if isinstance(val, str)
-											else (['true'] if val else ['false']) if isinstance(val, bool)
-											else Exception
-									) for prop, val in prop_match.items()
+									block.properties.get(prop, None) in parse_state_val(val) for prop, val in prop_match.items()
 								) for prop_match in case['when']['OR']
 							):
 								continue
 						elif not all(
-							block.properties.get(prop, None) in (
-								[amulet_nbt.TAG_String(s) for s in val.split('|')] if isinstance(val, str)
-								else ([amulet_nbt.TAG_String('true')] if val else [amulet_nbt.TAG_String('false')]) if isinstance(val, bool)
-								else Exception
-							) for prop, val in case['when'].items()
+							block.properties.get(prop, None) in parse_state_val(val) for prop, val in case['when'].items()
 						):
 							continue
 
