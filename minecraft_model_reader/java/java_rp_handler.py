@@ -1,12 +1,11 @@
 import os
 import json
 import copy
-from urllib.request import urlopen
-import zipfile
-import io
 from typing import List, Union, Dict, Tuple, Iterable
 from PIL import Image
 import numpy
+import glob
+
 from minecraft_model_reader.api import resource_pack
 try:
 	from amulet.api.block import Block
@@ -14,7 +13,8 @@ except:
 	from minecraft_model_reader.api.block import Block
 from minecraft_model_reader.java import java_block_model
 from minecraft_model_reader import MinecraftMesh
-import minecraft_model_reader
+
+UselessImageGroups = {"colormap", "effect", "environment", "font", "gui", "map", "mob_effect", "particle"}
 
 
 class JavaRP(resource_pack.BaseRP):
@@ -77,41 +77,58 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 			# pack_format=4 textures/block, textures/item
 			# pack_format=5 ?
 
-			if pack.valid_pack and os.path.isdir(os.path.join(pack.root_dir, 'assets')):
-				for namespace in os.listdir(os.path.join(pack.root_dir, 'assets')):
-					if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace)):
-						if pack.pack_format >= 2:
-							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
-								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'textures')):
-									if any(root.startswith(os.path.join(pack.root_dir, 'assets', namespace, 'textures', path)) for path in ['gui', 'font']):
-										continue
-									for f in files:
-										if f.endswith('.png'):
-											rel_path = os.path.relpath(os.path.join(root, f[:-4]), os.path.join(pack.root_dir, 'assets', namespace, 'textures')).replace(os.sep, '/')
-										else:
-											continue
-										texture_path = os.path.join(root, f)
-										self._textures[(namespace, rel_path)] = texture_path
-										if os.stat(texture_path)[8] != self._texture_is_transparent.get(texture_path, [0])[0]:
-											texture_is_transparent = False
-											im: Image.Image = Image.open(texture_path)
-											if im.mode == 'RGBA':
-												alpha = numpy.array(im.getchannel('A').getdata())
-												texture_is_transparent = numpy.any(alpha != 255)
+			if pack.valid_pack and pack.pack_format >= 2:
+				for texture_path in glob.iglob(
+					os.path.join(
+						pack.root_dir,
+						"assets",
+						"*",  # namespace
+						"textures",
+						"**",
+						"*.png"
+					),
+					recursive=True
+				):
+					_, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(texture_path, pack.root_dir)).split(os.sep)
+					if rel_path_list[0] not in UselessImageGroups:
+						rel_path = "/".join(rel_path_list)[:-4]
+						self._textures[(namespace, rel_path)] = texture_path
+						if os.stat(texture_path)[8] != self._texture_is_transparent.get(texture_path, [0])[0]:
+							im: Image.Image = Image.open(texture_path)
+							if im.mode == 'RGBA':
+								alpha = numpy.array(im.getchannel('A').getdata())
+								texture_is_transparent = numpy.any(alpha != 255)
+							else:
+								texture_is_transparent = False
 
-											self._texture_is_transparent[os.path.join(root, f)] = [os.stat(texture_path)[8], bool(texture_is_transparent)]
+							self._texture_is_transparent[texture_path] = [os.stat(texture_path)[8], bool(texture_is_transparent)]
 
-							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
-								for f in os.listdir(os.path.join(pack.root_dir, 'assets', namespace, 'blockstates')):
-									if f.endswith('.json'):
-										blockstate_file_paths[(namespace, f[:-5])] = os.path.join(pack.root_dir, 'assets', namespace, 'blockstates', f)
+				for blockstate_path in glob.iglob(
+						os.path.join(
+							pack.root_dir,
+							"assets",
+							"*",  # namespace
+							"blockstates",
+							"*.json"
+						)
+				):
+					_, namespace, _, blockstate_file = os.path.normpath(os.path.relpath(blockstate_path, pack.root_dir)).split(os.sep)
+					blockstate_file_paths[(namespace, blockstate_file[:-5])] = blockstate_path
 
-							if os.path.isdir(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
-								for root, _, files in os.walk(os.path.join(pack.root_dir, 'assets', namespace, 'models')):
-									for f in files:
-										if f.endswith('.json'):
-											rel_path = os.path.relpath(os.path.join(root, f[:-5]), os.path.join(pack.root_dir, 'assets', namespace, 'models'))
-											model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = os.path.join(root, f)
+				for model_path in glob.iglob(
+					os.path.join(
+						pack.root_dir,
+						"assets",
+						"*",  # namespace
+						"models",
+						"**",
+						"*.json"
+					),
+					recursive=True
+				):
+					_, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(model_path, pack.root_dir)).split(os.sep)
+					rel_path = "/".join(rel_path_list)[:-5]
+					model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = model_path
 
 		with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json'), 'w') as f:
 			json.dump(self._texture_is_transparent, f)
