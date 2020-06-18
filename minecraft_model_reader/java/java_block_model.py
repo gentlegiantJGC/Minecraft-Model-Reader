@@ -291,6 +291,12 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 	texture_indexes = {side: [] for side in FACE_KEYS}
 	transparent = 2
 
+	if java_model.get("textures", {}) and not java_model.get("elements"):
+		if face_mode == 4:
+			return missing_no_quads
+		else:
+			return missing_no_tris
+
 	for element in java_model.get('elements', {}):
 		# iterate through elements (one cube per element)
 		element_faces = element.get('faces', {})
