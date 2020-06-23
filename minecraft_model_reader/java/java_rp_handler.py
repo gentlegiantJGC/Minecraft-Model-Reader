@@ -75,7 +75,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 			# pack_format=2 textures/blocks, textures/items - case sensitive
 			# pack_format=3 textures/blocks, textures/items - lower case
 			# pack_format=4 textures/block, textures/item
-			# pack_format=5 ?
+			# pack_format=5 model paths and texture paths are now optionally namespaced
 
 			if pack.valid_pack and pack.pack_format >= 2:
 				for texture_path in glob.iglob(
