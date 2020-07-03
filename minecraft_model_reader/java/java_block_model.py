@@ -12,7 +12,7 @@ import math
 import copy
 import amulet_nbt
 
-FACE_KEYS = ('down', 'up', 'north', 'east', 'south', 'west', None)
+FACE_KEYS = {'down', 'up', 'north', 'east', 'south', 'west', None}
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -339,6 +339,8 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
             if face_dir in cube_face_lut:
                 # get the cull direction. If there is an opaque block in this direction then cull this face
                 cull_dir = element_faces[face_dir].get('cullface', None)
+                if cull_dir not in FACE_KEYS:
+                    cull_dir = None
 
                 # get the relative texture path for the texture used
                 texture_path = element_faces[face_dir].get('texture', None)
