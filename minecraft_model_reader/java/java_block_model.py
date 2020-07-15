@@ -1,6 +1,6 @@
 from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
-from minecraft_model_reader import MinecraftMesh
+from minecraft_model_reader import MinecraftMesh, log
 from minecraft_model_reader.lib.missing_no import missing_no_tris, missing_no_quads
 
 try:
@@ -124,15 +124,15 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh
                 if variant == '':
                     try:
                         return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
-                    except:
-                        pass
+                    except Exception as e:
+                        log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
                 else:
                     properties_match = Block.parameters_regex.finditer(f',{variant}')
                     if all(block.properties.get(match.group("name"), amulet_nbt.TAG_String(match.group("value"))).value == match.group("value") for match in properties_match):
                         try:
                             return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
-                        except:
-                            pass
+                        except Exception as e:
+                            log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
 
         elif 'multipart' in blockstate:
             models = []
