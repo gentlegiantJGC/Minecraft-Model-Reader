@@ -33,6 +33,24 @@ def get_latest() -> JavaRP:
     return JavaRP(vanilla_rp_path)
 
 
+_java_vanilla_fix = None
+_java_vanilla_latest = None
+
+
+def get_java_vanilla_fix():
+    global _java_vanilla_fix
+    if _java_vanilla_fix is None:
+        _java_vanilla_fix = JavaRP(os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla_fix'))
+    return _java_vanilla_fix
+
+
+def get_java_vanilla_latest():
+    global _java_vanilla_latest
+    if _java_vanilla_latest is None:
+        _java_vanilla_latest = get_latest()
+    return _java_vanilla_latest
+
+
 def _remove_and_download(path, version):
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)
