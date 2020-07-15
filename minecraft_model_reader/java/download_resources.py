@@ -66,6 +66,13 @@ def get_java_vanilla_latest():
     return _java_vanilla_latest
 
 
+def get_java_vanilla_latest_iter() -> Generator[float, None, JavaRP]:
+    global _java_vanilla_latest
+    if _java_vanilla_latest is None:
+        _java_vanilla_latest = yield from get_latest_iter()
+    return _java_vanilla_latest
+
+
 def _remove_and_download(path, version):
     for _ in _remove_and_download_iter(path, version):
         pass
