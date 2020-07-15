@@ -4,6 +4,7 @@ import zipfile
 import json
 from urllib.request import urlopen
 import io
+from typing import Generator
 
 from . import launcher_manifest
 import minecraft_model_reader
@@ -11,7 +12,21 @@ from minecraft_model_reader import log
 from .java_rp_handler import JavaRP
 
 
+def generator_unpacker(gen: Generator):
+    try:
+        while True:
+            next(gen)
+    except StopIteration as e:
+        return e.value
+
+
 def get_latest() -> JavaRP:
+    return generator_unpacker(
+        get_latest_iter()
+    )
+
+
+def get_latest_iter() -> Generator[float, None, JavaRP]:
     vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
     new_version = launcher_manifest['latest']['release']
     if new_version is None:
@@ -25,11 +40,11 @@ def get_latest() -> JavaRP:
                 with open(os.path.join(vanilla_rp_path, 'version')) as f:
                     old_version = f.read()
                 if old_version != new_version:
-                    _remove_and_download(vanilla_rp_path, new_version)
+                    yield from _remove_and_download_iter(vanilla_rp_path, new_version)
             else:
-                _remove_and_download(vanilla_rp_path, new_version)
+                yield from _remove_and_download_iter(vanilla_rp_path, new_version)
         else:
-            _remove_and_download(vanilla_rp_path, new_version)
+            yield from _remove_and_download_iter(vanilla_rp_path, new_version)
     return JavaRP(vanilla_rp_path)
 
 
@@ -52,14 +67,26 @@ def get_java_vanilla_latest():
 
 
 def _remove_and_download(path, version):
+    for _ in _remove_and_download_iter(path, version):
+        pass
+
+
+def _remove_and_download_iter(path, version) -> Generator[float, None, None]:
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)
-    if download_resources(path, version):
+    exists = yield from download_resources_iter(path, version)
+    if exists:
         with open(os.path.join(path, 'version'), 'w') as f:
             f.write(version)
 
 
 def download_resources(path, version) -> bool:
+    return generator_unpacker(
+        download_resources_iter(path, version)
+    )
+
+
+def download_resources_iter(path, version, chunk_size=4096) -> Generator[float, None, bool]:
     log.info(f'Downloading Java resource pack for version {version}')
     version_url = next((v["url"] for v in launcher_manifest['versions'] if v['id'] == version), None)
     if version_url is None:
@@ -70,7 +97,23 @@ def download_resources(path, version) -> bool:
         version_manifest = json.load(urlopen(version_url))
         version_client_url = version_manifest["downloads"]["client"]["url"]
 
-        client = zipfile.ZipFile(io.BytesIO(urlopen(version_client_url).read()))
+        response = urlopen(version_client_url)
+        data = []
+        data_size = int(response.headers["content-length"].strip())
+        index = 0
+        chunk = b"hello"
+        while chunk:
+            chunk = response.read(chunk_size)
+            data.append(chunk)
+            index += 1
+            yield min(
+                1.0,
+                (index * chunk_size) / data_size
+            )
+
+        client = zipfile.ZipFile(io.BytesIO(
+            b"".join(data)
+        ))
         for fpath in client.namelist():
             if fpath.startswith('assets/'):
                 client.extract(fpath, path)
