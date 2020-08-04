@@ -1,7 +1,7 @@
 import os
 import json
 import copy
-from typing import List, Union, Dict, Tuple, Iterable
+from typing import Union, Dict, Tuple, Iterable, Generator
 from PIL import Image
 import numpy
 import glob
@@ -45,7 +45,7 @@ class JavaRP(resource_pack.BaseRP):
 class JavaRPHandler(resource_pack.BaseRPHandler):
 	"""A class to load and handle the data from the packs.
 	Packs are given as a list with the later packs overwriting the earlier ones."""
-	def __init__(self, resource_packs: Union[JavaRP, Iterable[JavaRP]]):
+	def __init__(self, resource_packs: Union[JavaRP, Iterable[JavaRP]], load=True):
 		resource_pack.BaseRPHandler.__init__(self)
 		if isinstance(resource_packs, (list, tuple)):
 			self._packs = [rp for rp in resource_packs if isinstance(rp, JavaRP)]
@@ -53,9 +53,11 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 			self._packs = [resource_packs]
 		else:
 			raise Exception(f'Invalid format {resource_packs}')
-		self.reload()
+		if load:
+			for _ in self.reload():
+				pass
 
-	def reload(self):
+	def reload(self) -> Generator[float, None, None]:
 		"""Reload the resources from the resource packs.
 		This clears all memory and repopulates it."""
 		self.unload()
@@ -71,14 +73,19 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 
 		self._textures[('minecraft', 'missing_no')] = self.missing_no
 
-		for pack in self._packs:
+		pack_count = len(self._packs)
+
+		for pack_index, pack in enumerate(self._packs):
 			# pack_format=2 textures/blocks, textures/items - case sensitive
 			# pack_format=3 textures/blocks, textures/items - lower case
 			# pack_format=4 textures/block, textures/item
 			# pack_format=5 model paths and texture paths are now optionally namespaced
 
+			pack_progress = pack_index / pack_count
+			yield pack_progress
+
 			if pack.valid_pack and pack.pack_format >= 2:
-				for texture_path in glob.iglob(
+				image_paths = glob.glob(
 					os.path.join(
 						pack.root_dir,
 						"assets",
@@ -88,7 +95,10 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 						"*.png"
 					),
 					recursive=True
-				):
+				)
+				image_count = len(image_paths)
+				sub_progress = pack_progress
+				for image_index, texture_path in enumerate(image_paths):
 					_, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(texture_path, pack.root_dir)).split(os.sep)
 					if rel_path_list[0] not in UselessImageGroups:
 						rel_path = "/".join(rel_path_list)[:-4]
@@ -102,20 +112,25 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 								texture_is_transparent = False
 
 							self._texture_is_transparent[texture_path] = [os.stat(texture_path)[8], bool(texture_is_transparent)]
+					yield sub_progress + image_index / (image_count * pack_count * 3)
 
-				for blockstate_path in glob.iglob(
-						os.path.join(
-							pack.root_dir,
-							"assets",
-							"*",  # namespace
-							"blockstates",
-							"*.json"
-						)
-				):
+				blockstate_paths = glob.glob(
+					os.path.join(
+						pack.root_dir,
+						"assets",
+						"*",  # namespace
+						"blockstates",
+						"*.json"
+					)
+				)
+				blockstate_count = len(blockstate_paths)
+				sub_progress = pack_progress + 1 / (pack_count * 3)
+				for blockstate_index, blockstate_path in enumerate(blockstate_paths):
 					_, namespace, _, blockstate_file = os.path.normpath(os.path.relpath(blockstate_path, pack.root_dir)).split(os.sep)
 					blockstate_file_paths[(namespace, blockstate_file[:-5])] = blockstate_path
+					yield sub_progress + (blockstate_index) / (blockstate_count * pack_count * 3)
 
-				for model_path in glob.iglob(
+				model_paths = glob.glob(
 					os.path.join(
 						pack.root_dir,
 						"assets",
@@ -125,10 +140,14 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 						"*.json"
 					),
 					recursive=True
-				):
+				)
+				model_count = len(model_paths)
+				sub_progress = pack_progress + 2 / (pack_count * 3)
+				for model_index, model_path in enumerate(model_paths):
 					_, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(model_path, pack.root_dir)).split(os.sep)
 					rel_path = "/".join(rel_path_list)[:-5]
 					model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = model_path
+					yield sub_progress + (model_index) / (model_count * pack_count * 3)
 
 		with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json'), 'w') as f:
 			json.dump(self._texture_is_transparent, f)
