@@ -1,0 +1,2 @@
+include minecraft_model_reader/image/*.*
+recursive-include minecraft_model_reader/resource_packs/java_vanilla_fix/* *.*
