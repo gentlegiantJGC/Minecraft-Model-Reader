@@ -87,7 +87,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 			if pack.valid_pack and pack.pack_format >= 2:
 				image_paths = glob.glob(
 					os.path.join(
-						pack.root_dir,
+						glob.escape(pack.root_dir),
 						"assets",
 						"*",  # namespace
 						"textures",
@@ -116,7 +116,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 
 				blockstate_paths = glob.glob(
 					os.path.join(
-						pack.root_dir,
+						glob.escape(pack.root_dir),
 						"assets",
 						"*",  # namespace
 						"blockstates",
@@ -132,7 +132,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 
 				model_paths = glob.glob(
 					os.path.join(
-						pack.root_dir,
+						glob.escape(pack.root_dir),
 						"assets",
 						"*",  # namespace
 						"models",
