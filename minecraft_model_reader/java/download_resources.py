@@ -115,15 +115,18 @@ def download_resources_iter(path, version, chunk_size=4096) -> Generator[float, 
             index += 1
             yield min(
                 1.0,
-                (index * chunk_size) / data_size
+                (index * chunk_size) / (data_size * 2)
             )
 
         client = zipfile.ZipFile(io.BytesIO(
             b"".join(data)
         ))
-        for fpath in client.namelist():
-            if fpath.startswith('assets/'):
-                client.extract(fpath, path)
+        paths = [fpath for fpath in client.namelist() if fpath.startswith('assets/')]
+        path_count = len(paths)
+        for path_index, fpath in enumerate(paths):
+            if not path_index % 30:
+                yield path_index / (path_count * 2) + 0.5
+            client.extract(fpath, path)
         client.extract('pack.mcmeta', path)
         client.extract('pack.png', path)
 
