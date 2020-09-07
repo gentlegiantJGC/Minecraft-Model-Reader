@@ -2,12 +2,10 @@ from typing import Dict, Tuple, List, TYPE_CHECKING
 import os
 import copy
 from minecraft_model_reader import MinecraftMesh
+from minecraft_model_reader.api.image import default_pack_icon_path, missing_no_path
 
 if TYPE_CHECKING:
 	from amulet.api import Block
-
-default_pack_icon = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_pack_java.png')
-missing_no = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_no.png')
 
 face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
 
@@ -19,7 +17,7 @@ class BaseRP:
 		self._root_dir = None
 		self._pack_format = None
 		self._pack_description = ''
-		self._pack_icon = default_pack_icon
+		self._pack_icon = default_pack_icon_path
 
 	@property
 	def valid_pack(self) -> bool:
@@ -51,7 +49,7 @@ class BaseRPHandler:
 	"""The base class that all resource pack handlers must inherit from. Defines the base api."""
 	def __init__(self):
 		self._packs: List[BaseRP] = []
-		self._missing_no = missing_no
+		self._missing_no = missing_no_path
 		self._textures: Dict[Tuple[str, str], str] = {}
 		self._texture_is_transparent: Dict[str, List[int, bool]] = {}
 		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
