@@ -28,8 +28,8 @@ packages = find_packages(
 )
 
 package_data_locations = (
-    ("image",),
-    ("resource_packs",)
+    ("api", "image",),
+    ("api", "resource_pack", "java", "resource_packs",)
 )
 
 package_data = []

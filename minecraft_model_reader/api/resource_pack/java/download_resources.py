@@ -10,6 +10,8 @@ import minecraft_model_reader
 from minecraft_model_reader import log
 from minecraft_model_reader.api.resource_pack import JavaResourcePack
 
+RESOURCE_PACK_DIR = os.path.join(minecraft_model_reader.path, "api", "resource_pack", "java", 'resource_packs')
+
 try:
     launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json', timeout=2.0))
 except Exception as e:
@@ -35,7 +37,7 @@ def get_latest() -> JavaResourcePack:
 
 
 def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
-    vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
+    vanilla_rp_path = os.path.join(RESOURCE_PACK_DIR, 'java_vanilla')
     new_version = launcher_manifest['latest']['release']
     if new_version is None:
         if os.path.isdir(vanilla_rp_path):
@@ -63,7 +65,7 @@ _java_vanilla_latest = None
 def get_java_vanilla_fix():
     global _java_vanilla_fix
     if _java_vanilla_fix is None:
-        _java_vanilla_fix = JavaResourcePack(os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla_fix'))
+        _java_vanilla_fix = JavaResourcePack(os.path.join(RESOURCE_PACK_DIR, 'java_vanilla_fix'))
     return _java_vanilla_fix
 
 
