@@ -1,7 +1,7 @@
 import os
 import json
 
-from .base_resource_pack import BaseResourcePack
+from minecraft_model_reader.api.resource_pack.base import BaseResourcePack
 
 
 class JavaResourcePack(BaseResourcePack):

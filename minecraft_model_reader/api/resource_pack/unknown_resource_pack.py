@@ -1,4 +1,4 @@
-from .base_resource_pack import BaseResourcePack
+from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseResourcePack
 
 
 class UnknownResourcePack(BaseResourcePack):

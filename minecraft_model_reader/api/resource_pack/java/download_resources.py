@@ -6,11 +6,19 @@ from urllib.request import urlopen
 import io
 from typing import Generator
 
-from . import launcher_manifest
 import minecraft_model_reader
 from minecraft_model_reader import log
-from .java_rp_handler import JavaRP
+from minecraft_model_reader.api.resource_pack import JavaResourcePack
 
+try:
+    launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json', timeout=2.0))
+except Exception as e:
+    log.error(f'Failed to download the launcher manifest. "{e}" This may cause problems if you have not used the program before. Make sure you are connected to the internet and https://mojang.com is not blocked.')
+    launcher_manifest = {
+        "latest": {
+            "release": None
+        }
+    }
 
 def generator_unpacker(gen: Generator):
     try:
@@ -20,13 +28,13 @@ def generator_unpacker(gen: Generator):
         return e.value
 
 
-def get_latest() -> JavaRP:
+def get_latest() -> JavaResourcePack:
     return generator_unpacker(
         get_latest_iter()
     )
 
 
-def get_latest_iter() -> Generator[float, None, JavaRP]:
+def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
     vanilla_rp_path = os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla')
     new_version = launcher_manifest['latest']['release']
     if new_version is None:
@@ -45,7 +53,7 @@ def get_latest_iter() -> Generator[float, None, JavaRP]:
                 yield from _remove_and_download_iter(vanilla_rp_path, new_version)
         else:
             yield from _remove_and_download_iter(vanilla_rp_path, new_version)
-    return JavaRP(vanilla_rp_path)
+    return JavaResourcePack(vanilla_rp_path)
 
 
 _java_vanilla_fix = None
@@ -55,7 +63,7 @@ _java_vanilla_latest = None
 def get_java_vanilla_fix():
     global _java_vanilla_fix
     if _java_vanilla_fix is None:
-        _java_vanilla_fix = JavaRP(os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla_fix'))
+        _java_vanilla_fix = JavaResourcePack(os.path.join(minecraft_model_reader.path, 'resource_packs', 'java_vanilla_fix'))
     return _java_vanilla_fix
 
 
@@ -66,7 +74,7 @@ def get_java_vanilla_latest():
     return _java_vanilla_latest
 
 
-def get_java_vanilla_latest_iter() -> Generator[float, None, JavaRP]:
+def get_java_vanilla_latest_iter() -> Generator[float, None, JavaResourcePack]:
     global _java_vanilla_latest
     if _java_vanilla_latest is None:
         _java_vanilla_latest = yield from get_latest_iter()
