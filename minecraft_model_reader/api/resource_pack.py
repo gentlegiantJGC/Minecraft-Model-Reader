@@ -1,7 +1,7 @@
 from typing import Dict, Tuple, List, TYPE_CHECKING
 import os
 import copy
-from minecraft_model_reader import MinecraftMesh
+from minecraft_model_reader import BlockMesh
 from minecraft_model_reader.api.image import default_pack_icon_path, missing_no_path
 
 if TYPE_CHECKING:
@@ -54,7 +54,7 @@ class BaseRPHandler:
 		self._texture_is_transparent: Dict[str, List[int, bool]] = {}
 		self._blockstate_files: Dict[Tuple[str, str], dict] = {}
 		self._model_files: Dict[Tuple[str, str], dict] = {}
-		self._cached_models: Dict[Block, MinecraftMesh] = {}
+		self._cached_models: Dict[Block, BlockMesh] = {}
 
 	@property
 	def pack_paths(self):
@@ -90,7 +90,7 @@ class BaseRPHandler:
 	def model_files(self) -> Dict[Tuple[str, str], dict]:
 		"""Returns self._model_files.
 		Keys are a tuple of (namespace, relative paths used in models)
-		Values are the model files themselves (should be a dictionary or MinecraftMesh)"""
+		Values are the model files themselves (should be a dictionary or BlockMesh)"""
 		return self._model_files
 
 	def get_texture(self, namespace_and_path: Tuple[str, str]) -> str:

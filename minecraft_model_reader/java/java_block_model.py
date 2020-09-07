@@ -1,6 +1,6 @@
 from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
-from minecraft_model_reader import MinecraftMesh, log
+from minecraft_model_reader import BlockMesh, log
 from minecraft_model_reader.api.mesh.block.missing_block import missing_block_tris, missing_block_quads
 from minecraft_model_reader.api import Block
 
@@ -27,7 +27,7 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
     return numpy.matmul(verts - origin, trmtx) + origin
 
 
-def merge_models(models: Iterable[MinecraftMesh], face_mode: int = 3) -> MinecraftMesh:
+def merge_models(models: Iterable[BlockMesh], face_mode: int = 3) -> BlockMesh:
     textures = []
     texture_count = 0
     vert_count = {side: 0 for side in FACE_KEYS}
@@ -86,10 +86,10 @@ def merge_models(models: Iterable[MinecraftMesh], face_mode: int = 3) -> Minecra
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
 
 
-def get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
+def get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
     """A function to load the model for a block from a resource pack.
     Needs a JavaRPHandler and Block.
     See get_model in JavaRPHandler if you are trying to use from an external application."""
@@ -111,7 +111,7 @@ def parse_state_val(val) -> list:
         raise Exception(f'Could not parse state val {val}')
 
 
-def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh:
+def _get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
     """Get a model for a Block object with no extra blocks"""
     assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
     if (block.namespace, block.base_name) in resource_pack.blockstate_files:
@@ -229,7 +229,7 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
 cull_remap_all = create_cull_map()
 
 
-def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> MinecraftMesh:
+def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> BlockMesh:
     assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
     if isinstance(blockstate_value, list):
         blockstate_value = blockstate_value[0]
@@ -248,7 +248,7 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
     # TODO: rotate model based on uv_lock
     if rotx or roty and (roty, rotx) in cull_remap_all:
         cull_remap = cull_remap_all[(roty, rotx)]
-        return MinecraftMesh(
+        return BlockMesh(
             model.face_mode,
             {
                 cull_remap[cull_dir]: rotate_3d(
@@ -268,12 +268,12 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
     return model
 
 
-def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> MinecraftMesh:
+def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> BlockMesh:
     # recursively load model files into one dictionary
     java_model = _recursive_load_block_model(resource_pack, block, model_path, face_mode)
 
-    # return immediately if it is already a MinecraftMesh class. This could be because it is missing_no or a forge model if implemented
-    if isinstance(java_model, MinecraftMesh):
+    # return immediately if it is already a BlockMesh class. This could be because it is missing_no or a forge model if implemented
+    if isinstance(java_model, BlockMesh):
         return copy.deepcopy(java_model)
 
     # set up some variables
@@ -432,7 +432,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return MinecraftMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
 
 
 def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> dict:

@@ -8,7 +8,7 @@ import glob
 
 from minecraft_model_reader.api import resource_pack, Block
 from minecraft_model_reader.java import java_block_model
-from minecraft_model_reader import MinecraftMesh
+from minecraft_model_reader import BlockMesh
 
 UselessImageGroups = {"colormap", "effect", "environment", "font", "gui", "map", "mob_effect", "particle"}
 
@@ -159,7 +159,7 @@ class JavaRPHandler(resource_pack.BaseRPHandler):
 	def texture_is_transparent(self, namespace: str, path: str) -> bool:
 		return self._texture_is_transparent[self._textures[(namespace, path)]][1]
 
-	def get_model(self, block: Block, face_mode: int = 3) -> MinecraftMesh:
+	def get_model(self, block: Block, face_mode: int = 3) -> BlockMesh:
 		"""Get a model for a block state.
 		The block should already be in the resource pack format"""
 		if block not in self._cached_models:

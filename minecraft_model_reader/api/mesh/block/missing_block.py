@@ -43,7 +43,7 @@ for _face_dir in _cube_face_lut:
 	_tri_faces[_face_dir] = _tri_face
 	_quad_faces[_face_dir] = _quad_face
 
-missing_block_tris = minecraft_model_reader.MinecraftMesh(
+missing_block_tris = minecraft_model_reader.BlockMesh(
 	3,
 	_verts,
 	_texture_coords,
@@ -54,7 +54,7 @@ missing_block_tris = minecraft_model_reader.MinecraftMesh(
 	0
 )
 
-missing_block_quads = minecraft_model_reader.MinecraftMesh(
+missing_block_quads = minecraft_model_reader.BlockMesh(
 	4,
 	_verts,
 	_texture_coords,
