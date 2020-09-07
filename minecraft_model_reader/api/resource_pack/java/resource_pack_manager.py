@@ -7,8 +7,8 @@ import numpy
 import glob
 
 from minecraft_model_reader.api import Block
-from minecraft_model_reader.api.resource_pack import JavaResourcePack, BaseResourcePackManager
-from minecraft_model_reader.api.resource_pack.java import java_block_model
+from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
+from minecraft_model_reader.api.resource_pack.java import java_block_model, JavaResourcePack
 from minecraft_model_reader import BlockMesh
 
 UselessImageGroups = {"colormap", "effect", "environment", "font", "gui", "map", "mob_effect", "particle"}
