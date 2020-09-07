@@ -1,8 +1,5 @@
 import minecraft_model_reader
-try:
-	from amulet.api.block import Block
-except:
-	from minecraft_model_reader.api.block import Block
+from minecraft_model_reader.api import Block
 
 vanilla_1_13_2 = minecraft_model_reader.JavaRP('./../test_packs/Vanilla 1.13.2')
 

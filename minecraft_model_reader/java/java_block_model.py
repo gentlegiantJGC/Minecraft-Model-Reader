@@ -2,11 +2,8 @@ from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
 from minecraft_model_reader import MinecraftMesh, log
 from minecraft_model_reader.lib.missing_no import missing_no_tris, missing_no_quads
+from minecraft_model_reader.api import Block
 
-try:
-    from amulet.api.block import Block
-except:
-    from minecraft_model_reader.api.block import Block
 import numpy
 import math
 import copy

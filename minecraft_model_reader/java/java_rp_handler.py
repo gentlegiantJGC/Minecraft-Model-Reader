@@ -6,11 +6,7 @@ from PIL import Image
 import numpy
 import glob
 
-from minecraft_model_reader.api import resource_pack
-try:
-	from amulet.api.block import Block
-except:
-	from minecraft_model_reader.api.block import Block
+from minecraft_model_reader.api import resource_pack, Block
 from minecraft_model_reader.java import java_block_model
 from minecraft_model_reader import MinecraftMesh
 

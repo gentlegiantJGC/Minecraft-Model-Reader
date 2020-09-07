@@ -4,7 +4,7 @@ import copy
 from minecraft_model_reader import MinecraftMesh
 
 if TYPE_CHECKING:
-	from amulet.api.block import Block
+	from amulet.api import Block
 
 default_pack_icon = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_pack_java.png')
 missing_no = os.path.join(os.path.dirname(os.path.dirname(__file__)), 'image', 'missing_no.png')
