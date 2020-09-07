@@ -106,7 +106,7 @@ def parse_state_val(val) -> list:
     if isinstance(val, str):
         return [amulet_nbt.TAG_String(v) for v in val.split('|')]
     elif isinstance(val, bool):
-        return amulet_nbt.TAG_String("true") if val else amulet_nbt.TAG_String("false")
+        return [amulet_nbt.TAG_String("true") if val else amulet_nbt.TAG_String("false")]
     else:
         raise Exception(f'Could not parse state val {val}')
 
