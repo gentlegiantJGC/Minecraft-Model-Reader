@@ -1,7 +1,7 @@
 from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
 from minecraft_model_reader import MinecraftMesh, log
-from minecraft_model_reader.lib.missing_no import missing_no_tris, missing_no_quads
+from minecraft_model_reader.api.mesh.block.missing_block import missing_block_tris, missing_block_quads
 from minecraft_model_reader.api import Block
 
 import numpy
@@ -161,9 +161,9 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> MinecraftMesh
             return merge_models(models)
 
     if face_mode == 4:
-        return missing_no_quads
+        return missing_block_quads
     else:
-        return missing_no_tris
+        return missing_block_tris
 
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
@@ -235,9 +235,9 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
         blockstate_value = blockstate_value[0]
     if 'model' not in blockstate_value:
         if face_mode == 4:
-            return missing_no_quads
+            return missing_block_quads
         else:
-            return missing_no_tris
+            return missing_block_tris
     model_path = blockstate_value['model']
     rotx = int(blockstate_value.get('x', 0) // 90)
     roty = int(blockstate_value.get('y', 0) // 90)
@@ -291,9 +291,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
 
     if java_model.get("textures", {}) and not java_model.get("elements"):
         if face_mode == 4:
-            return missing_no_quads
+            return missing_block_quads
         else:
-            return missing_no_tris
+            return missing_block_tris
 
     for element in java_model.get('elements', {}):
         # iterate through elements (one cube per element)
