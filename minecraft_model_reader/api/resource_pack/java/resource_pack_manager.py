@@ -176,5 +176,5 @@ class JavaResourcePackManager(BaseResourcePackManager):
         """Get a model for a block state.
         The block should already be in the resource pack format"""
         if block not in self._cached_models:
-            self._cached_models[block] = java_block_model.get_model(self, block, 3)
+            self._cached_models[block] = java_block_model.get_model(self, block)
         return copy.deepcopy(self._cached_models[block])

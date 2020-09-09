@@ -1,9 +1,10 @@
 import minecraft_model_reader
 from minecraft_model_reader.api import Block
+from minecraft_model_reader.api.resource_pack.java import JavaResourcePack, JavaResourcePackManager
 
-vanilla_1_13_2 = minecraft_model_reader.JavaRP('./../test_packs/Vanilla 1.13.2')
+vanilla_1_13_2 = JavaResourcePack('./../test_packs/Vanilla 1.13.2')
 
-resource_pack = minecraft_model_reader.JavaRPHandler([vanilla_1_13_2])
+resource_pack = JavaResourcePackManager([vanilla_1_13_2])
 
 air: Block = Block(namespace='minecraft', base_name='air')
 stone: Block = Block(namespace='minecraft', base_name='stone')
