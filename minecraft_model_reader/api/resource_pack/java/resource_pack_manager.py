@@ -20,6 +20,11 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
     def __init__(self, resource_packs: Union[JavaResourcePack, Iterable[JavaResourcePack]], load=True):
         super().__init__()
+        self._blockstate_files: Dict[Tuple[str, str], dict] = {}
+        self._textures: Dict[Tuple[str, str], str] = {}
+        self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
+        self._model_files: Dict[Tuple[str, str], dict] = {}
+        self._cached_models: Dict[Block, BlockMesh] = {}
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [rp for rp in resource_packs if isinstance(rp, JavaResourcePack)]
         elif isinstance(resource_packs, JavaResourcePack):
@@ -30,11 +35,14 @@ class JavaResourcePackManager(BaseResourcePackManager):
             for _ in self.reload():
                 pass
 
-    def reload(self) -> Generator[float, None, None]:
-        """Reload the resources from the resource packs.
-        This clears all memory and repopulates it."""
-        self.unload()
+    def _unload(self):
+        """Clear all loaded resources."""
+        self._textures.clear()
+        self._blockstate_files.clear()
+        self._model_files.clear()
+        self._cached_models.clear()
 
+    def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
         if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparency_cache.json')):
@@ -84,7 +92,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                             else:
                                 texture_is_transparent = False
 
-                            self._texture_is_transparent[texture_path] = [os.stat(texture_path)[8], bool(texture_is_transparent)]
+                            self._texture_is_transparent[texture_path] = (os.stat(texture_path)[8], bool(texture_is_transparent))
                     yield sub_progress + image_index / (image_count * pack_count * 3)
 
                 blockstate_paths = glob.glob(
@@ -133,12 +141,40 @@ class JavaResourcePackManager(BaseResourcePackManager):
             with open(path) as fi:
                 self._model_files[key] = json.load(fi)
 
+    @property
+    def blockstate_files(self) -> Dict[Tuple[str, str], dict]:
+        """Returns self._blockstate_files.
+        Keys are a tuple of (namespace, relative paths used in models)
+        Values are the blockstate files themselves (should be a dictionary)"""
+        return self._blockstate_files
+
+    @property
+    def textures(self) -> Dict[Tuple[str, str], str]:
+        """Returns a deepcopy of self._textures.
+        Keys are a tuple of (namespace, relative paths used in models)
+        Values are the absolute path to the texture"""
+        return self._textures.copy()
+
+    @property
+    def model_files(self) -> Dict[Tuple[str, str], dict]:
+        """Returns self._model_files.
+        Keys are a tuple of (namespace, relative paths used in models)
+        Values are the model files themselves (should be a dictionary or BlockMesh)"""
+        return self._model_files
+
+    def get_texture(self, namespace_and_path: Tuple[str, str]) -> str:
+        """Get the absolute texture path from the namespace and relative path pair"""
+        if namespace_and_path in self._textures:
+            return self._textures[namespace_and_path]
+        else:
+            return self._missing_no
+
     def texture_is_transparent(self, namespace: str, path: str) -> bool:
         return self._texture_is_transparent[self._textures[(namespace, path)]][1]
 
-    def get_model(self, block: Block, face_mode: int = 3) -> BlockMesh:
+    def get_block_model(self, block: Block) -> BlockMesh:
         """Get a model for a block state.
         The block should already be in the resource pack format"""
         if block not in self._cached_models:
-            self._cached_models[block] = java_block_model.get_model(self, block, face_mode)
+            self._cached_models[block] = java_block_model.get_model(self, block, 3)
         return copy.deepcopy(self._cached_models[block])

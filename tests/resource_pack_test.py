@@ -18,8 +18,8 @@ fire: Block = Block(namespace='minecraft', base_name='fire',
 	}
 )
 
-air_model = resource_pack.get_model(air)
-stone_model = resource_pack.get_model(stone)
-fire_model = resource_pack.get_model(fire)
+air_model = resource_pack.get_block_model(air)
+stone_model = resource_pack.get_block_model(stone)
+fire_model = resource_pack.get_block_model(fire)
 
 print('Read successfully')

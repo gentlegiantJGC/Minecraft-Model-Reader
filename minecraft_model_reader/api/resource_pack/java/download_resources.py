@@ -13,7 +13,8 @@ from minecraft_model_reader.api.resource_pack import JavaResourcePack
 RESOURCE_PACK_DIR = os.path.join(minecraft_model_reader.path, "api", "resource_pack", "java", 'resource_packs')
 
 try:
-    launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json', timeout=2.0))
+    log.info("Downloading java launcher manifest file.")
+    launcher_manifest = json.load(urlopen('https://launchermeta.mojang.com/mc/game/version_manifest.json'))
 except Exception as e:
     log.error(f'Failed to download the launcher manifest. "{e}" This may cause problems if you have not used the program before. Make sure you are connected to the internet and https://mojang.com is not blocked.')
     launcher_manifest = {
