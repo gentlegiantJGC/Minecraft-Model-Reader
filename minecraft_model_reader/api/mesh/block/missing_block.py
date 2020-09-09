@@ -26,22 +26,18 @@ _cube_face_lut = {  # This maps face direction to the verticies used (defined in
 _texture_uv = numpy.array([0, 0, 1, 1], numpy.float)
 _uv_slice = [0, 1, 2, 1, 2, 3, 0, 3]
 _tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
-_quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
 
 _verts: Dict[Union[str, None], numpy.ndarray] = {}
 _texture_coords = {}
 _tint_verts = {}
 _tri_faces = {}
-_quad_faces = {}
 _tri_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(2, dtype=numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west')}
-_quad_texture_index: Dict[Union[str, None], numpy.ndarray] = {side: numpy.zeros(1, dtype=numpy.uint32) for side in ('down', 'up', 'north', 'east', 'south', 'west')}
 
 for _face_dir in _cube_face_lut:
 	_verts[_face_dir] = _box_coordinates[_cube_face_lut[_face_dir]].ravel()  # vertex coordinates for this face
 	_texture_coords[_face_dir] = _texture_uv[_uv_slice]  # texture vertices
 	_tint_verts[_face_dir] = numpy.ones(12, dtype=numpy.float)
 	_tri_faces[_face_dir] = _tri_face
-	_quad_faces[_face_dir] = _quad_face
 
 missing_block_tris = minecraft_model_reader.BlockMesh(
 	3,
@@ -50,17 +46,6 @@ missing_block_tris = minecraft_model_reader.BlockMesh(
 	_tint_verts,
 	_tri_faces,
 	_tri_texture_index,
-	[('minecraft', 'missing_no')],
-	0
-)
-
-missing_block_quads = minecraft_model_reader.BlockMesh(
-	4,
-	_verts,
-	_texture_coords,
-	_tint_verts,
-	_quad_faces,
-	_quad_texture_index,
 	[('minecraft', 'missing_no')],
 	0
 )

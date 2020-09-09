@@ -1,7 +1,7 @@
 from typing import Union, Iterable, Dict, Tuple, Optional
 import itertools
 from minecraft_model_reader import BlockMesh, log
-from minecraft_model_reader.api.mesh.block.missing_block import missing_block_tris, missing_block_quads
+from minecraft_model_reader.api.mesh.block.missing_block import missing_block_tris
 from minecraft_model_reader.api import Block
 
 import numpy
@@ -27,7 +27,7 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
     return numpy.matmul(verts - origin, trmtx) + origin
 
 
-def merge_models(models: Iterable[BlockMesh], face_mode: int = 3) -> BlockMesh:
+def merge_models(models: Iterable[BlockMesh]) -> BlockMesh:
     textures = []
     texture_count = 0
     vert_count = {side: 0 for side in FACE_KEYS}
@@ -86,20 +86,20 @@ def merge_models(models: Iterable[BlockMesh], face_mode: int = 3) -> BlockMesh:
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return BlockMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
 
 
-def get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
+def get_model(resource_pack, block: Block) -> BlockMesh:
     """A function to load the model for a block from a resource pack.
     Needs a JavaRPHandler and Block.
     See get_model in JavaRPHandler if you are trying to use from an external application."""
     if block.extra_blocks:
         return merge_models(
-            (_get_model(resource_pack, block.base_block, face_mode),) +
-            tuple(_get_model(resource_pack, block_, face_mode) for block_ in block.extra_blocks)
+            (_get_model(resource_pack, block.base_block),) +
+            tuple(_get_model(resource_pack, block_) for block_ in block.extra_blocks)
         )
     else:
-        return _get_model(resource_pack, block, face_mode)
+        return _get_model(resource_pack, block)
 
 
 def parse_state_val(val) -> list:
@@ -111,23 +111,22 @@ def parse_state_val(val) -> list:
         raise Exception(f'Could not parse state val {val}')
 
 
-def _get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
+def _get_model(resource_pack, block: Block) -> BlockMesh:
     """Get a model for a Block object with no extra blocks"""
-    assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
     if (block.namespace, block.base_name) in resource_pack.blockstate_files:
         blockstate: dict = resource_pack.blockstate_files[(block.namespace, block.base_name)]
         if 'variants' in blockstate:
             for variant in blockstate['variants']:
                 if variant == '':
                     try:
-                        return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
+                        return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
                     except Exception as e:
                         log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
                 else:
                     properties_match = Block.parameters_regex.finditer(f',{variant}')
                     if all(block.properties.get(match.group("name"), amulet_nbt.TAG_String(match.group("value"))).value == match.group("value") for match in properties_match):
                         try:
-                            return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant], face_mode)
+                            return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
                         except Exception as e:
                             log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
 
@@ -151,7 +150,7 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
 
                     if 'apply' in case:
                         try:
-                            models.append(_load_blockstate_model(resource_pack, block, case['apply'], face_mode))
+                            models.append(_load_blockstate_model(resource_pack, block, case['apply']))
 
                         except:
                             pass
@@ -160,10 +159,7 @@ def _get_model(resource_pack, block: Block, face_mode: int = 3) -> BlockMesh:
 
             return merge_models(models)
 
-    if face_mode == 4:
-        return missing_block_quads
-    else:
-        return missing_block_tris
+    return missing_block_tris
 
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
@@ -229,21 +225,17 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
 cull_remap_all = create_cull_map()
 
 
-def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list], face_mode: int = 3) -> BlockMesh:
-    assert face_mode in [3, 4], 'face_mode is the number of verts per face. It must be 3 or 4'
+def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list]) -> BlockMesh:
     if isinstance(blockstate_value, list):
         blockstate_value = blockstate_value[0]
     if 'model' not in blockstate_value:
-        if face_mode == 4:
-            return missing_block_quads
-        else:
-            return missing_block_tris
+        return missing_block_tris
     model_path = blockstate_value['model']
     rotx = int(blockstate_value.get('x', 0) // 90)
     roty = int(blockstate_value.get('y', 0) // 90)
     uvlock = blockstate_value.get('uvlock', False)
 
-    model = copy.deepcopy(_load_block_model(resource_pack, block, model_path, face_mode))
+    model = copy.deepcopy(_load_block_model(resource_pack, block, model_path))
 
     # TODO: rotate model based on uv_lock
     if rotx or roty and (roty, rotx) in cull_remap_all:
@@ -268,9 +260,9 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
     return model
 
 
-def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> BlockMesh:
+def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh:
     # recursively load model files into one dictionary
-    java_model = _recursive_load_block_model(resource_pack, block, model_path, face_mode)
+    java_model = _recursive_load_block_model(resource_pack, block, model_path)
 
     # return immediately if it is already a BlockMesh class. This could be because it is missing_no or a forge model if implemented
     if isinstance(java_model, BlockMesh):
@@ -290,10 +282,7 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
     transparent = 2
 
     if java_model.get("textures", {}) and not java_model.get("elements"):
-        if face_mode == 4:
-            return missing_block_quads
-        else:
-            return missing_block_tris
+        return missing_block_tris
 
     for element in java_model.get('elements', {}):
         # iterate through elements (one cube per element)
@@ -399,12 +388,8 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
                     tint_verts[cull_dir] += [1, 1, 1] * 4
 
                 # merge the face indexes and texture index
-                if face_mode == 4:
-                    face_table = quad_face + vert_count[cull_dir]
-                    texture_indexes[cull_dir] += [texture_index]
-                else:
-                    face_table = tri_face + vert_count[cull_dir]
-                    texture_indexes[cull_dir] += [texture_index, texture_index]
+                face_table = tri_face + vert_count[cull_dir]
+                texture_indexes[cull_dir] += [texture_index, texture_index]
 
                 # faces stored under cull direction because this is the criteria to render them or not
                 faces[cull_dir].append(face_table)
@@ -432,10 +417,10 @@ def _load_block_model(resource_pack, block: Block, model_path: str, face_mode: i
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return BlockMesh(face_mode, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
 
 
-def _recursive_load_block_model(resource_pack, block: Block, model_path: str, face_mode: int = 3) -> dict:
+def _recursive_load_block_model(resource_pack, block: Block, model_path: str) -> dict:
     model_path_list = model_path.split(":", 1)
     if len(model_path_list) == 2:
         namespace, model_path = model_path_list
@@ -445,7 +430,7 @@ def _recursive_load_block_model(resource_pack, block: Block, model_path: str, fa
         model = resource_pack.model_files[(namespace, model_path)]
 
         if 'parent' in model:
-            parent_model = _recursive_load_block_model(resource_pack, block, model['parent'], face_mode)
+            parent_model = _recursive_load_block_model(resource_pack, block, model['parent'])
         else:
             parent_model = {}
         if 'textures' in model:
