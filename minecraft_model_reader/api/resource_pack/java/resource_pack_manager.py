@@ -189,25 +189,11 @@ class JavaResourcePackManager(BaseResourcePackManager):
                 self._model_files[key] = json.load(fi)
 
     @property
-    def blockstate_files(self) -> Dict[Tuple[str, str], dict]:
-        """Returns self._blockstate_files.
-        Keys are a tuple of (namespace, relative paths used in models)
-        Values are the blockstate files themselves (should be a dictionary)"""
-        return self._blockstate_files
-
-    @property
-    def textures(self) -> Dict[Tuple[str, str], str]:
+    def textures(self) -> Dict[Tuple[str, str], str]:  # TODO: change this to be absolute path
         """Returns a deepcopy of self._textures.
         Keys are a tuple of (namespace, relative paths used in models)
         Values are the absolute path to the texture"""
         return self._textures.copy()
-
-    @property
-    def model_files(self) -> Dict[Tuple[str, str], dict]:
-        """Returns self._model_files.
-        Keys are a tuple of (namespace, relative paths used in models)
-        Values are the model files themselves (should be a dictionary or BlockMesh)"""
-        return self._model_files
 
     def get_texture(self, namespace_and_path: Tuple[str, str]) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
@@ -216,7 +202,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         else:
             return self.missing_no
 
-    def texture_is_transparent(self, namespace: str, path: str) -> bool:
+    def texture_is_transparent(self, namespace: str, path: str) -> bool:  # TODO: change this to take absolute path
         return self._texture_is_transparent[self._textures[(namespace, path)]][1]
 
     def get_block_model(self, block: Block) -> BlockMesh:
@@ -246,8 +232,8 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
     def _get_model(self, block: Block) -> BlockMesh:
         """Find the model paths for a given block state and load them."""
-        if (block.namespace, block.base_name) in self.blockstate_files:
-            blockstate: dict = self.blockstate_files[
+        if (block.namespace, block.base_name) in self._blockstate_files:
+            blockstate: dict = self._blockstate_files[
                 (block.namespace, block.base_name)
             ]
             if "variants" in blockstate:
@@ -556,8 +542,8 @@ class JavaResourcePackManager(BaseResourcePackManager):
             namespace, model_path = model_path_list
         else:
             namespace = block.namespace
-        if (namespace, model_path) in self.model_files:
-            model = self.model_files[(namespace, model_path)]
+        if (namespace, model_path) in self._model_files:
+            model = self._model_files[(namespace, model_path)]
 
             if "parent" in model:
                 parent_model = self._recursive_load_block_model(
