@@ -8,17 +8,33 @@ import glob
 
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
-from minecraft_model_reader.api.resource_pack.java import java_block_model, JavaResourcePack
+from minecraft_model_reader.api.resource_pack.java import (
+    java_block_model,
+    JavaResourcePack,
+)
 from minecraft_model_reader import BlockMesh
 
-UselessImageGroups = {"colormap", "effect", "environment", "font", "gui", "map", "mob_effect", "particle"}
+UselessImageGroups = {
+    "colormap",
+    "effect",
+    "environment",
+    "font",
+    "gui",
+    "map",
+    "mob_effect",
+    "particle",
+}
 
 
 class JavaResourcePackManager(BaseResourcePackManager):
     """A class to load and handle the data from the packs.
     Packs are given as a list with the later packs overwriting the earlier ones."""
 
-    def __init__(self, resource_packs: Union[JavaResourcePack, Iterable[JavaResourcePack]], load=True):
+    def __init__(
+        self,
+        resource_packs: Union[JavaResourcePack, Iterable[JavaResourcePack]],
+        load=True,
+    ):
         super().__init__()
         self._blockstate_files: Dict[Tuple[str, str], dict] = {}
         self._textures: Dict[Tuple[str, str], str] = {}
@@ -26,11 +42,13 @@ class JavaResourcePackManager(BaseResourcePackManager):
         self._model_files: Dict[Tuple[str, str], dict] = {}
         self._cached_models: Dict[Block, BlockMesh] = {}
         if isinstance(resource_packs, (list, tuple)):
-            self._packs = [rp for rp in resource_packs if isinstance(rp, JavaResourcePack)]
+            self._packs = [
+                rp for rp in resource_packs if isinstance(rp, JavaResourcePack)
+            ]
         elif isinstance(resource_packs, JavaResourcePack):
             self._packs = [resource_packs]
         else:
-            raise Exception(f'Invalid format {resource_packs}')
+            raise Exception(f"Invalid format {resource_packs}")
         if load:
             for _ in self.reload():
                 pass
@@ -45,14 +63,18 @@ class JavaResourcePackManager(BaseResourcePackManager):
     def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
-        if os.path.isfile(os.path.join(os.path.dirname(__file__), 'transparency_cache.json')):
+        if os.path.isfile(
+            os.path.join(os.path.dirname(__file__), "transparency_cache.json")
+        ):
             try:
-                with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json')) as f:
+                with open(
+                    os.path.join(os.path.dirname(__file__), "transparency_cache.json")
+                ) as f:
                     self._texture_is_transparent = json.load(f)
             except:
                 pass
 
-        self._textures[('minecraft', 'missing_no')] = self.missing_no
+        self._textures[("minecraft", "missing_no")] = self.missing_no
 
         pack_count = len(self._packs)
 
@@ -73,26 +95,34 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         "*",  # namespace
                         "textures",
                         "**",
-                        "*.png"
+                        "*.png",
                     ),
-                    recursive=True
+                    recursive=True,
                 )
                 image_count = len(image_paths)
                 sub_progress = pack_progress
                 for image_index, texture_path in enumerate(image_paths):
-                    _, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(texture_path, pack.root_dir)).split(os.sep)
+                    _, namespace, _, *rel_path_list = os.path.normpath(
+                        os.path.relpath(texture_path, pack.root_dir)
+                    ).split(os.sep)
                     if rel_path_list[0] not in UselessImageGroups:
                         rel_path = "/".join(rel_path_list)[:-4]
                         self._textures[(namespace, rel_path)] = texture_path
-                        if os.stat(texture_path)[8] != self._texture_is_transparent.get(texture_path, [0])[0]:
+                        if (
+                            os.stat(texture_path)[8]
+                            != self._texture_is_transparent.get(texture_path, [0])[0]
+                        ):
                             im: Image.Image = Image.open(texture_path)
-                            if im.mode == 'RGBA':
-                                alpha = numpy.array(im.getchannel('A').getdata())
+                            if im.mode == "RGBA":
+                                alpha = numpy.array(im.getchannel("A").getdata())
                                 texture_is_transparent = numpy.any(alpha != 255)
                             else:
                                 texture_is_transparent = False
 
-                            self._texture_is_transparent[texture_path] = (os.stat(texture_path)[8], bool(texture_is_transparent))
+                            self._texture_is_transparent[texture_path] = (
+                                os.stat(texture_path)[8],
+                                bool(texture_is_transparent),
+                            )
                     yield sub_progress + image_index / (image_count * pack_count * 3)
 
                 blockstate_paths = glob.glob(
@@ -101,15 +131,21 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         "assets",
                         "*",  # namespace
                         "blockstates",
-                        "*.json"
+                        "*.json",
                     )
                 )
                 blockstate_count = len(blockstate_paths)
                 sub_progress = pack_progress + 1 / (pack_count * 3)
                 for blockstate_index, blockstate_path in enumerate(blockstate_paths):
-                    _, namespace, _, blockstate_file = os.path.normpath(os.path.relpath(blockstate_path, pack.root_dir)).split(os.sep)
-                    blockstate_file_paths[(namespace, blockstate_file[:-5])] = blockstate_path
-                    yield sub_progress + (blockstate_index) / (blockstate_count * pack_count * 3)
+                    _, namespace, _, blockstate_file = os.path.normpath(
+                        os.path.relpath(blockstate_path, pack.root_dir)
+                    ).split(os.sep)
+                    blockstate_file_paths[
+                        (namespace, blockstate_file[:-5])
+                    ] = blockstate_path
+                    yield sub_progress + (blockstate_index) / (
+                        blockstate_count * pack_count * 3
+                    )
 
                 model_paths = glob.glob(
                     os.path.join(
@@ -118,19 +154,25 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         "*",  # namespace
                         "models",
                         "**",
-                        "*.json"
+                        "*.json",
                     ),
-                    recursive=True
+                    recursive=True,
                 )
                 model_count = len(model_paths)
                 sub_progress = pack_progress + 2 / (pack_count * 3)
                 for model_index, model_path in enumerate(model_paths):
-                    _, namespace, _, *rel_path_list = os.path.normpath(os.path.relpath(model_path, pack.root_dir)).split(os.sep)
+                    _, namespace, _, *rel_path_list = os.path.normpath(
+                        os.path.relpath(model_path, pack.root_dir)
+                    ).split(os.sep)
                     rel_path = "/".join(rel_path_list)[:-5]
-                    model_file_paths[(namespace, rel_path.replace(os.sep, '/'))] = model_path
+                    model_file_paths[
+                        (namespace, rel_path.replace(os.sep, "/"))
+                    ] = model_path
                     yield sub_progress + (model_index) / (model_count * pack_count * 3)
 
-        with open(os.path.join(os.path.dirname(__file__), 'transparency_cache.json'), 'w') as f:
+        with open(
+            os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
+        ) as f:
             json.dump(self._texture_is_transparent, f)
 
         for key, path in blockstate_file_paths.items():

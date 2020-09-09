@@ -9,7 +9,7 @@ import math
 import copy
 import amulet_nbt
 
-FACE_KEYS = {'down', 'up', 'north', 'east', 'south', 'west', None}
+FACE_KEYS = {"down", "up", "north", "east", "south", "west", None}
 
 
 def rotate_3d(verts, x, y, z, dx, dy, dz):
@@ -20,7 +20,7 @@ def rotate_3d(verts, x, y, z, dx, dy, dz):
         [
             [ch * ca, -ch * sa * cb + sh * sb, ch * sa * sb + sh * cb],
             [sa, ca * cb, -ca * sb],
-            [-sh * ca, sh * sa * cb + ch * sb, -sh * sa * sb + ch * cb]
+            [-sh * ca, sh * sa * cb + ch * sb, -sh * sa * sb + ch * cb],
         ]
     )
     origin = numpy.array([dx, dy, dz])
@@ -50,14 +50,18 @@ def merge_models(models: Iterable[BlockMesh]) -> BlockMesh:
             faces[cull_dir].append(face_table)
             texture_indexes[cull_dir].append(texture_index)
 
-            vert_count[cull_dir] += int(temp_model.verts[cull_dir].shape[0] / temp_model.face_mode)
+            vert_count[cull_dir] += int(
+                temp_model.verts[cull_dir].shape[0] / temp_model.face_mode
+            )
 
         textures += temp_model.textures
         texture_count += len(temp_model.textures)
         transparent = min(transparent, temp_model.is_transparent)
 
     if textures:
-        textures, texture_index_map = numpy.unique(textures, return_inverse=True, axis=0)
+        textures, texture_index_map = numpy.unique(
+            textures, return_inverse=True, axis=0
+        )
         texture_index_map = texture_index_map.astype(numpy.uint32)
         textures = list(zip(textures.T[0], textures.T[1]))
     else:
@@ -76,7 +80,9 @@ def merge_models(models: Iterable[BlockMesh]) -> BlockMesh:
 
         if face_table:
             faces[cull_dir] = numpy.concatenate(face_table, axis=None)
-            texture_indexes[cull_dir] = texture_index_map[numpy.concatenate(texture_indexes[cull_dir], axis=None)]
+            texture_indexes[cull_dir] = texture_index_map[
+                numpy.concatenate(texture_indexes[cull_dir], axis=None)
+            ]
         else:
             remove_faces.append(cull_dir)
 
@@ -86,7 +92,9 @@ def merge_models(models: Iterable[BlockMesh]) -> BlockMesh:
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return BlockMesh(3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(
+        3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent
+    )
 
 
 def get_model(resource_pack, block: Block) -> BlockMesh:
@@ -95,8 +103,8 @@ def get_model(resource_pack, block: Block) -> BlockMesh:
     See get_model in JavaRPHandler if you are trying to use from an external application."""
     if block.extra_blocks:
         return merge_models(
-            (_get_model(resource_pack, block.base_block),) +
-            tuple(_get_model(resource_pack, block_) for block_ in block.extra_blocks)
+            (_get_model(resource_pack, block.base_block),)
+            + tuple(_get_model(resource_pack, block_) for block_ in block.extra_blocks)
         )
     else:
         return _get_model(resource_pack, block)
@@ -104,53 +112,80 @@ def get_model(resource_pack, block: Block) -> BlockMesh:
 
 def parse_state_val(val) -> list:
     if isinstance(val, str):
-        return [amulet_nbt.TAG_String(v) for v in val.split('|')]
+        return [amulet_nbt.TAG_String(v) for v in val.split("|")]
     elif isinstance(val, bool):
-        return [amulet_nbt.TAG_String("true") if val else amulet_nbt.TAG_String("false")]
+        return [
+            amulet_nbt.TAG_String("true") if val else amulet_nbt.TAG_String("false")
+        ]
     else:
-        raise Exception(f'Could not parse state val {val}')
+        raise Exception(f"Could not parse state val {val}")
 
 
 def _get_model(resource_pack, block: Block) -> BlockMesh:
     """Get a model for a Block object with no extra blocks"""
     if (block.namespace, block.base_name) in resource_pack.blockstate_files:
-        blockstate: dict = resource_pack.blockstate_files[(block.namespace, block.base_name)]
-        if 'variants' in blockstate:
-            for variant in blockstate['variants']:
-                if variant == '':
+        blockstate: dict = resource_pack.blockstate_files[
+            (block.namespace, block.base_name)
+        ]
+        if "variants" in blockstate:
+            for variant in blockstate["variants"]:
+                if variant == "":
                     try:
-                        return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
+                        return _load_blockstate_model(
+                            resource_pack, block, blockstate["variants"][variant]
+                        )
                     except Exception as e:
-                        log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
+                        log.error(
+                            f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
+                        )
                 else:
-                    properties_match = Block.parameters_regex.finditer(f',{variant}')
-                    if all(block.properties.get(match.group("name"), amulet_nbt.TAG_String(match.group("value"))).value == match.group("value") for match in properties_match):
+                    properties_match = Block.parameters_regex.finditer(f",{variant}")
+                    if all(
+                        block.properties.get(
+                            match.group("name"),
+                            amulet_nbt.TAG_String(match.group("value")),
+                        ).value
+                        == match.group("value")
+                        for match in properties_match
+                    ):
                         try:
-                            return _load_blockstate_model(resource_pack, block, blockstate['variants'][variant])
+                            return _load_blockstate_model(
+                                resource_pack, block, blockstate["variants"][variant]
+                            )
                         except Exception as e:
-                            log.error(f"Failed to load block model for {blockstate['variants'][variant]}\n{e}")
+                            log.error(
+                                f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
+                            )
 
-        elif 'multipart' in blockstate:
+        elif "multipart" in blockstate:
             models = []
 
-            for case in blockstate['multipart']:
+            for case in blockstate["multipart"]:
                 try:
-                    if 'when' in case:
-                        if 'OR' in case['when']:
+                    if "when" in case:
+                        if "OR" in case["when"]:
                             if not any(
-                                    all(
-                                        block.properties.get(prop, None) in parse_state_val(val) for prop, val in prop_match.items()
-                                    ) for prop_match in case['when']['OR']
+                                all(
+                                    block.properties.get(prop, None)
+                                    in parse_state_val(val)
+                                    for prop, val in prop_match.items()
+                                )
+                                for prop_match in case["when"]["OR"]
                             ):
                                 continue
                         elif not all(
-                                block.properties.get(prop, None) in parse_state_val(val) for prop, val in case['when'].items()
+                            block.properties.get(prop, None) in parse_state_val(val)
+                            for prop, val in case["when"].items()
                         ):
                             continue
 
-                    if 'apply' in case:
+                    if "apply" in case:
                         try:
-                            models.append(_load_blockstate_model(resource_pack, block, case['apply']))
+                            models.append(
+                                _load_blockstate_model(
+                                    resource_pack, block, case["apply"]
+                                )
+                            )
 
                         except:
                             pass
@@ -163,12 +198,12 @@ def _get_model(resource_pack, block: Block) -> BlockMesh:
 
 
 cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
-    'down': numpy.array([0, 4, 5, 1]),
-    'up': numpy.array([3, 7, 6, 2]),
-    'north': numpy.array([4, 0, 2, 6]),
-    'east': numpy.array([5, 4, 6, 7]),
-    'south': numpy.array([1, 5, 7, 3]),
-    'west': numpy.array([0, 1, 3, 2])
+    "down": numpy.array([0, 4, 5, 1]),
+    "up": numpy.array([3, 7, 6, 2]),
+    "north": numpy.array([4, 0, 2, 6]),
+    "east": numpy.array([5, 4, 6, 7]),
+    "south": numpy.array([1, 5, 7, 3]),
+    "west": numpy.array([0, 1, 3, 2]),
 }
 tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
 quad_face = numpy.array([0, 1, 2, 3], numpy.uint32)
@@ -217,7 +252,8 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
             roty_remap = dict(zip(roty_map, roty_map_rotated))
             rotx_remap = dict(zip(rotx_map, rotx_map_rotated))
             cull_remap_[(roty, rotx)] = {
-                key: rotx_remap.get(roty_remap.get(key, key), roty_remap.get(key, key)) for key in FACE_KEYS
+                key: rotx_remap.get(roty_remap.get(key, key), roty_remap.get(key, key))
+                for key in FACE_KEYS
             }
     return cull_remap_
 
@@ -225,15 +261,17 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
 cull_remap_all = create_cull_map()
 
 
-def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[dict, list]) -> BlockMesh:
+def _load_blockstate_model(
+    resource_pack, block: Block, blockstate_value: Union[dict, list]
+) -> BlockMesh:
     if isinstance(blockstate_value, list):
         blockstate_value = blockstate_value[0]
-    if 'model' not in blockstate_value:
+    if "model" not in blockstate_value:
         return missing_block_tris
-    model_path = blockstate_value['model']
-    rotx = int(blockstate_value.get('x', 0) // 90)
-    roty = int(blockstate_value.get('y', 0) // 90)
-    uvlock = blockstate_value.get('uvlock', False)
+    model_path = blockstate_value["model"]
+    rotx = int(blockstate_value.get("x", 0) // 90)
+    roty = int(blockstate_value.get("y", 0) // 90)
+    uvlock = blockstate_value.get("uvlock", False)
 
     model = copy.deepcopy(_load_block_model(resource_pack, block, model_path))
 
@@ -246,16 +284,37 @@ def _load_blockstate_model(resource_pack, block: Block, blockstate_value: Union[
                 cull_remap[cull_dir]: rotate_3d(
                     rotate_3d(
                         model.verts[cull_dir].reshape((-1, model.face_mode)),
-                        rotx * 90, 0, 0, 0.5, 0.5, 0.5),
-                    0, roty * 90, 0, 0.5, 0.5, 0.5).ravel()
+                        rotx * 90,
+                        0,
+                        0,
+                        0.5,
+                        0.5,
+                        0.5,
+                    ),
+                    0,
+                    roty * 90,
+                    0,
+                    0.5,
+                    0.5,
+                    0.5,
+                ).ravel()
                 for cull_dir in model.verts
             },
-            {cull_remap[cull_dir]: model.texture_coords[cull_dir] for cull_dir in model.texture_coords},
-            {cull_remap[cull_dir]: model.tint_verts[cull_dir] for cull_dir in model.tint_verts},
+            {
+                cull_remap[cull_dir]: model.texture_coords[cull_dir]
+                for cull_dir in model.texture_coords
+            },
+            {
+                cull_remap[cull_dir]: model.tint_verts[cull_dir]
+                for cull_dir in model.tint_verts
+            },
             {cull_remap[cull_dir]: model.faces[cull_dir] for cull_dir in model.faces},
-            {cull_remap[cull_dir]: model.texture_index[cull_dir] for cull_dir in model.texture_index},
+            {
+                cull_remap[cull_dir]: model.texture_index[cull_dir]
+                for cull_dir in model.texture_index
+            },
             model.textures,
-            model.is_transparent
+            model.is_transparent,
         )
     return model
 
@@ -284,12 +343,18 @@ def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh
     if java_model.get("textures", {}) and not java_model.get("elements"):
         return missing_block_tris
 
-    for element in java_model.get('elements', {}):
+    for element in java_model.get("elements", {}):
         # iterate through elements (one cube per element)
-        element_faces = element.get('faces', {})
+        element_faces = element.get("faces", {})
 
         opaque_face_count = 0
-        if transparent and 'rotation' not in element and element.get('to', [16, 16, 16]) == [16, 16, 16] and element.get('from', [0, 0, 0]) == [0, 0, 0] and len(element_faces) >= 6:
+        if (
+            transparent
+            and "rotation" not in element
+            and element.get("to", [16, 16, 16]) == [16, 16, 16]
+            and element.get("from", [0, 0, 0]) == [0, 0, 0]
+            and len(element_faces) >= 6
+        ):
             # if the block is not yet defined as a solid block
             # and this element is a full size element
             # check if the texture is opaque
@@ -301,37 +366,29 @@ def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh
         # lower and upper box coordinates
         corners = numpy.sort(
             numpy.array(
-                [
-                    element.get('to', [16, 16, 16]),
-                    element.get('from', [0, 0, 0])
-                ],
-                numpy.float
-            ) / 16,
-            0
+                [element.get("to", [16, 16, 16]), element.get("from", [0, 0, 0])],
+                numpy.float,
+            )
+            / 16,
+            0,
         )
 
         # vertex coordinates of the box
         box_coordinates = numpy.array(
-            list(
-                itertools.product(
-                    corners[:, 0],
-                    corners[:, 1],
-                    corners[:, 2]
-                )
-            )
+            list(itertools.product(corners[:, 0], corners[:, 1], corners[:, 2]))
         )
 
         for face_dir in element_faces:
             if face_dir in cube_face_lut:
                 # get the cull direction. If there is an opaque block in this direction then cull this face
-                cull_dir = element_faces[face_dir].get('cullface', None)
+                cull_dir = element_faces[face_dir].get("cullface", None)
                 if cull_dir not in FACE_KEYS:
                     cull_dir = None
 
                 # get the relative texture path for the texture used
-                texture_path = element_faces[face_dir].get('texture', None)
-                while isinstance(texture_path, str) and texture_path.startswith('#'):
-                    texture_path = java_model['textures'].get(texture_path[1:], None)
+                texture_path = element_faces[face_dir].get("texture", None)
+                while isinstance(texture_path, str) and texture_path.startswith("#"):
+                    texture_path = java_model["textures"].get(texture_path[1:], None)
                 texture_path_list = texture_path.split(":", 1)
                 if len(texture_path_list) == 2:
                     namespace, texture_path = texture_path_list
@@ -355,35 +412,45 @@ def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh
 
                 # get the uv values for each vertex
                 # TODO: get the uv based on box location if not defined
-                texture_uv = numpy.array(element_faces[face_dir].get('uv', [0, 0, 16, 16]), numpy.float) / 16
-                texture_rotation = element_faces[face_dir].get('rotation', 0)
-                uv_slice = uv_lut[2 * int(texture_rotation / 90):] + uv_lut[:2 * int(texture_rotation / 90)]
+                texture_uv = (
+                    numpy.array(
+                        element_faces[face_dir].get("uv", [0, 0, 16, 16]), numpy.float
+                    )
+                    / 16
+                )
+                texture_rotation = element_faces[face_dir].get("rotation", 0)
+                uv_slice = (
+                    uv_lut[2 * int(texture_rotation / 90) :]
+                    + uv_lut[: 2 * int(texture_rotation / 90)]
+                )
 
                 # merge the vertex coordinates and texture coordinates
                 face_verts = box_coordinates[cube_face_lut[face_dir]]
-                if 'rotation' in element:
-                    rotation = element['rotation']
-                    origin = [r / 16 for r in rotation.get('origin', [8, 8, 8])]
-                    angle = rotation.get('angle', 0)
-                    axis = rotation.get('axis', 'x')
+                if "rotation" in element:
+                    rotation = element["rotation"]
+                    origin = [r / 16 for r in rotation.get("origin", [8, 8, 8])]
+                    angle = rotation.get("angle", 0)
+                    axis = rotation.get("axis", "x")
                     angles = [0, 0, 0]
-                    if axis == 'x':
+                    if axis == "x":
                         angles[0] = -angle
-                    elif axis == 'y':
+                    elif axis == "y":
                         angles[1] = -angle
-                    elif axis == 'z':
+                    elif axis == "z":
                         angles[2] = -angle
                     face_verts = rotate_3d(face_verts, *angles, *origin)
 
-                verts[cull_dir].append(
-                    face_verts  # vertex coordinates for this face
-                )
+                verts[cull_dir].append(face_verts)  # vertex coordinates for this face
 
                 tverts[cull_dir].append(
                     texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
                 )
-                if 'tintindex' in element_faces[face_dir]:
-                    tint_verts[cull_dir] += [0, 1, 0] * 4  # TODO: set this up for each supported block
+                if "tintindex" in element_faces[face_dir]:
+                    tint_verts[cull_dir] += [
+                        0,
+                        1,
+                        0,
+                    ] * 4  # TODO: set this up for each supported block
                 else:
                     tint_verts[cull_dir] += [1, 1, 1] * 4
 
@@ -406,7 +473,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh
             tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
             verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
             tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
-            texture_indexes[cull_dir] = numpy.array(texture_indexes[cull_dir], dtype=numpy.uint32)
+            texture_indexes[cull_dir] = numpy.array(
+                texture_indexes[cull_dir], dtype=numpy.uint32
+            )
         else:
             remove_faces.append(cull_dir)
 
@@ -417,7 +486,9 @@ def _load_block_model(resource_pack, block: Block, model_path: str) -> BlockMesh
         del tverts[cull_dir]
         del texture_indexes[cull_dir]
 
-    return BlockMesh(3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent)
+    return BlockMesh(
+        3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent
+    )
 
 
 def _recursive_load_block_model(resource_pack, block: Block, model_path: str) -> dict:
@@ -429,17 +500,19 @@ def _recursive_load_block_model(resource_pack, block: Block, model_path: str) ->
     if (namespace, model_path) in resource_pack.model_files:
         model = resource_pack.model_files[(namespace, model_path)]
 
-        if 'parent' in model:
-            parent_model = _recursive_load_block_model(resource_pack, block, model['parent'])
+        if "parent" in model:
+            parent_model = _recursive_load_block_model(
+                resource_pack, block, model["parent"]
+            )
         else:
             parent_model = {}
-        if 'textures' in model:
-            if 'textures' not in parent_model:
-                parent_model['textures'] = {}
-            for key, val in model['textures'].items():
-                parent_model['textures'][key] = val
-        if 'elements' in model:
-            parent_model['elements'] = model['elements']
+        if "textures" in model:
+            if "textures" not in parent_model:
+                parent_model["textures"] = {}
+            for key, val in model["textures"].items():
+                parent_model["textures"][key] = val
+        if "elements" in model:
+            parent_model["elements"] = model["elements"]
 
         return parent_model
 

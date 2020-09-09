@@ -1,11 +1,12 @@
 from typing import Dict, Tuple, List, Union
 import numpy
 
-face_set = {'down', 'up', 'north', 'east', 'south', 'west', None}
+face_set = {"down", "up", "north", "east", "south", "west", None}
 
 
 class BlockMesh:
     """Class for storing model data"""
+
     def __init__(
         self,
         face_width: int,
@@ -16,7 +17,7 @@ class BlockMesh:
         faces: Dict[Union[str, None], numpy.ndarray],
         texture_index: Dict[Union[str, None], numpy.ndarray],
         textures: List[Tuple[str, Union[None, str]]],
-        transparency: int
+        transparency: int,
     ):
         """
 
@@ -37,28 +38,54 @@ class BlockMesh:
             the face table will tell you which vertices are needed for the face
         """
         assert isinstance(verts, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in verts.items()
-        ), 'The format for verts is incorrect'
+            key in face_set
+            and isinstance(val, numpy.ndarray)
+            and val.ndim == 1
+            and val.shape[0] % 3 == 0
+            for key, val in verts.items()
+        ), "The format for verts is incorrect"
 
         assert isinstance(texture_coords, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 2 == 0 for key, val in texture_coords.items()
-        ), 'The format for texture coords is incorrect'
+            key in face_set
+            and isinstance(val, numpy.ndarray)
+            and val.ndim == 1
+            and val.shape[0] % 2 == 0
+            for key, val in texture_coords.items()
+        ), "The format for texture coords is incorrect"
 
         assert isinstance(tint_verts, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and val.ndim == 1 and val.shape[0] % 3 == 0 for key, val in tint_verts.items()
-        ), 'The format of tint verts is incorrect'
+            key in face_set
+            and isinstance(val, numpy.ndarray)
+            and val.ndim == 1
+            and val.shape[0] % 3 == 0
+            for key, val in tint_verts.items()
+        ), "The format of tint verts is incorrect"
 
         assert isinstance(faces, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.unsignedinteger) and val.ndim == 1 and val.shape[0] % face_width == 0 for key, val in faces.items()
-        ), 'The format of faces is incorrect'
+            key in face_set
+            and isinstance(val, numpy.ndarray)
+            and numpy.issubdtype(val.dtype, numpy.unsignedinteger)
+            and val.ndim == 1
+            and val.shape[0] % face_width == 0
+            for key, val in faces.items()
+        ), "The format of faces is incorrect"
 
         assert isinstance(texture_index, dict) and all(
-            key in face_set and isinstance(val, numpy.ndarray) and numpy.issubdtype(val.dtype, numpy.unsignedinteger) and val.ndim == 1 and val.shape[0] == faces[key].shape[0] / face_width for key, val in texture_index.items()
-        ), 'The format of texture index is incorrect'
+            key in face_set
+            and isinstance(val, numpy.ndarray)
+            and numpy.issubdtype(val.dtype, numpy.unsignedinteger)
+            and val.ndim == 1
+            and val.shape[0] == faces[key].shape[0] / face_width
+            for key, val in texture_index.items()
+        ), "The format of texture index is incorrect"
 
         assert isinstance(textures, list) and all(
-            isinstance(texture, tuple) and len(texture) == 2 and isinstance(texture[0], str) and (isinstance(texture[1], str) or texture[1] is None) for texture in textures
-        ), 'The format of the textures is incorrect'
+            isinstance(texture, tuple)
+            and len(texture) == 2
+            and isinstance(texture[0], str)
+            and (isinstance(texture[1], str) or texture[1] is None)
+            for texture in textures
+        ), "The format of the textures is incorrect"
 
         self._face_mode = face_width
         self._verts = verts
@@ -86,11 +113,13 @@ class BlockMesh:
         """A dictionary of cull dir -> the flat vert table containing vertices, texture coords and (in the future) normals"""
         if self._vert_tables is None:
             self._vert_tables = {
-                key: numpy.hstack((
-                    self._verts[key].reshape(-1, self._face_mode),
-                    self._texture_coords[key].reshape(-1, 2)
-                    # TODO: add in face normals
-                )).ravel()
+                key: numpy.hstack(
+                    (
+                        self._verts[key].reshape(-1, self._face_mode),
+                        self._texture_coords[key].reshape(-1, 2)
+                        # TODO: add in face normals
+                    )
+                ).ravel()
                 for key in self._verts.keys()
             }
             [a.setflags(write=False) for a in self._vert_tables.values()]
