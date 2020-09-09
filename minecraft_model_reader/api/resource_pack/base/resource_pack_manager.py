@@ -10,7 +10,6 @@ class BaseResourcePackManager:
 
     def __init__(self):
         self._packs: List[BaseResourcePack] = []
-        self._missing_no = missing_no_path
 
     @property
     def pack_paths(self):
@@ -32,7 +31,7 @@ class BaseResourcePackManager:
     @property
     def missing_no(self) -> str:
         """The path to the missing_no image"""
-        return self._missing_no
+        return missing_no_path
 
     def get_block_model(self, block: Block) -> BlockMesh:
         raise NotImplemented

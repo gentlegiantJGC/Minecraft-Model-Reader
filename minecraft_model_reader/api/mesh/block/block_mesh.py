@@ -1,11 +1,81 @@
-from typing import Dict, Tuple, List, Union
+from typing import Dict, Tuple, List, Union, Iterable
 import numpy
 
-face_set = {"down", "up", "north", "east", "south", "west", None}
+FACE_KEYS = {"down", "up", "north", "east", "south", "west", None}
 
 
 class BlockMesh:
     """Class for storing model data"""
+
+    @classmethod
+    def merge(cls, models: Iterable["BlockMesh"]) -> "BlockMesh":
+        textures = []
+        texture_count = 0
+        vert_count = {side: 0 for side in FACE_KEYS}
+        verts = {side: [] for side in FACE_KEYS}
+        tverts = {side: [] for side in FACE_KEYS}
+        tint_verts = {side: [] for side in FACE_KEYS}
+        faces = {side: [] for side in FACE_KEYS}
+        texture_indexes = {side: [] for side in FACE_KEYS}
+        transparent = 2
+
+        for temp_model in models:
+            for cull_dir in temp_model.faces.keys():
+                verts[cull_dir].append(temp_model.verts[cull_dir])
+                tverts[cull_dir].append(temp_model.texture_coords[cull_dir])
+                tint_verts[cull_dir].append(temp_model.tint_verts[cull_dir])
+                face_table = temp_model.faces[cull_dir].copy()
+                texture_index = temp_model.texture_index[cull_dir].copy()
+                face_table += vert_count[cull_dir]
+                texture_index += texture_count
+                faces[cull_dir].append(face_table)
+                texture_indexes[cull_dir].append(texture_index)
+
+                vert_count[cull_dir] += int(
+                    temp_model.verts[cull_dir].shape[0] / temp_model.face_mode
+                )
+
+            textures += temp_model.textures
+            texture_count += len(temp_model.textures)
+            transparent = min(transparent, temp_model.is_transparent)
+
+        if textures:
+            textures, texture_index_map = numpy.unique(
+                textures, return_inverse=True, axis=0
+            )
+            texture_index_map = texture_index_map.astype(numpy.uint32)
+            textures = list(zip(textures.T[0], textures.T[1]))
+        else:
+            texture_index_map = numpy.array([], dtype=numpy.uint8)
+
+        remove_faces = []
+        for cull_dir, face_table in faces.items():
+            if verts[cull_dir]:
+                verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
+                tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
+                tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
+            else:
+                verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
+                tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
+                tint_verts[cull_dir] = numpy.zeros(0, numpy.float)
+
+            if face_table:
+                faces[cull_dir] = numpy.concatenate(face_table, axis=None)
+                texture_indexes[cull_dir] = texture_index_map[
+                    numpy.concatenate(texture_indexes[cull_dir], axis=None)
+                ]
+            else:
+                remove_faces.append(cull_dir)
+
+        for cull_dir in remove_faces:
+            del faces[cull_dir]
+            del verts[cull_dir]
+            del tverts[cull_dir]
+            del texture_indexes[cull_dir]
+
+        return cls(
+            3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent
+        )
 
     def __init__(
         self,
@@ -38,7 +108,7 @@ class BlockMesh:
             the face table will tell you which vertices are needed for the face
         """
         assert isinstance(verts, dict) and all(
-            key in face_set
+            key in FACE_KEYS
             and isinstance(val, numpy.ndarray)
             and val.ndim == 1
             and val.shape[0] % 3 == 0
@@ -46,7 +116,7 @@ class BlockMesh:
         ), "The format for verts is incorrect"
 
         assert isinstance(texture_coords, dict) and all(
-            key in face_set
+            key in FACE_KEYS
             and isinstance(val, numpy.ndarray)
             and val.ndim == 1
             and val.shape[0] % 2 == 0
@@ -54,7 +124,7 @@ class BlockMesh:
         ), "The format for texture coords is incorrect"
 
         assert isinstance(tint_verts, dict) and all(
-            key in face_set
+            key in FACE_KEYS
             and isinstance(val, numpy.ndarray)
             and val.ndim == 1
             and val.shape[0] % 3 == 0
@@ -62,7 +132,7 @@ class BlockMesh:
         ), "The format of tint verts is incorrect"
 
         assert isinstance(faces, dict) and all(
-            key in face_set
+            key in FACE_KEYS
             and isinstance(val, numpy.ndarray)
             and numpy.issubdtype(val.dtype, numpy.unsignedinteger)
             and val.ndim == 1
@@ -71,7 +141,7 @@ class BlockMesh:
         ), "The format of faces is incorrect"
 
         assert isinstance(texture_index, dict) and all(
-            key in face_set
+            key in FACE_KEYS
             and isinstance(val, numpy.ndarray)
             and numpy.issubdtype(val.dtype, numpy.unsignedinteger)
             and val.ndim == 1

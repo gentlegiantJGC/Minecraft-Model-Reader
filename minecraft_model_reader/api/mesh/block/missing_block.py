@@ -1,23 +1,15 @@
 import itertools
 import numpy
-import minecraft_model_reader
 from typing import Dict, Union
+
+import minecraft_model_reader
+from .cube import cube_face_lut as _cube_face_lut, tri_face as _tri_face
 
 
 _box_coordinates = numpy.array(list(itertools.product([0, 1], [0, 1], [0, 1])))
 
-_cube_face_lut = {  # This maps face direction to the verticies used (defined in cube_vert_lut)
-    "down": numpy.array([0, 4, 5, 1]),
-    "up": numpy.array([3, 7, 6, 2]),
-    "north": numpy.array([4, 0, 2, 6]),
-    "east": numpy.array([5, 4, 6, 7]),
-    "south": numpy.array([1, 5, 7, 3]),
-    "west": numpy.array([0, 1, 3, 2]),
-}
-
 _texture_uv = numpy.array([0, 0, 1, 1], numpy.float)
 _uv_slice = [0, 1, 2, 1, 2, 3, 0, 3]
-_tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
 
 _verts: Dict[Union[str, None], numpy.ndarray] = {}
 _texture_coords = {}
