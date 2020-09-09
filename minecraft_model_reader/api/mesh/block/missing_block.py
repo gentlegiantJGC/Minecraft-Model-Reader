@@ -1,9 +1,12 @@
 import itertools
 import numpy
-from typing import Dict, Union
+from typing import Dict, Union, TYPE_CHECKING
 
-import minecraft_model_reader
+from .block_mesh import BlockMesh
 from .cube import cube_face_lut as _cube_face_lut, tri_face as _tri_face
+
+if TYPE_CHECKING:
+    from minecraft_model_reader.api.resource_pack.base import BaseResourcePackManager
 
 
 _box_coordinates = numpy.array(list(itertools.product([0, 1], [0, 1], [0, 1])))
@@ -28,13 +31,16 @@ for _face_dir in _cube_face_lut:
     _tint_verts[_face_dir] = numpy.ones(12, dtype=numpy.float)
     _tri_faces[_face_dir] = _tri_face
 
-missing_block_tris = minecraft_model_reader.BlockMesh(
-    3,
-    _verts,
-    _texture_coords,
-    _tint_verts,
-    _tri_faces,
-    _tri_texture_index,
-    [("minecraft", "missing_no")],
-    0,
-)
+
+def get_missing_block(resource_pack: "BaseResourcePackManager") -> BlockMesh:
+    texture_path = resource_pack.get_texture("minecraft", "missing_no")
+    return BlockMesh(
+        3,
+        _verts,
+        _texture_coords,
+        _tint_verts,
+        _tri_faces,
+        _tri_texture_index,
+        (texture_path, ),
+        0,
+    )

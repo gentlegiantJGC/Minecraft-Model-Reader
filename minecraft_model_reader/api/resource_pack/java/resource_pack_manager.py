@@ -13,7 +13,6 @@ from minecraft_model_reader import log
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
-from minecraft_model_reader.api.mesh.block.missing_block import missing_block_tris
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
 from minecraft_model_reader.api.mesh.util import rotate_3d
 from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_lut, tri_face
@@ -189,21 +188,17 @@ class JavaResourcePackManager(BaseResourcePackManager):
                 self._model_files[key] = json.load(fi)
 
     @property
-    def textures(self) -> Dict[Tuple[str, str], str]:  # TODO: change this to be absolute path
-        """Returns a deepcopy of self._textures.
-        Keys are a tuple of (namespace, relative paths used in models)
-        Values are the absolute path to the texture"""
-        return self._textures.copy()
+    def textures(self) -> Tuple[str, ...]:
+        """Returns a tuple of all the texture paths in the resource pack."""
+        return tuple(self._textures.values())
 
-    def get_texture(self, namespace_and_path: Tuple[str, str]) -> str:
+    def get_texture(self, namespace: str, relative_path: str) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
-        if namespace_and_path in self._textures:
-            return self._textures[namespace_and_path]
+        key = (namespace, relative_path)
+        if key in self._textures:
+            return self._textures[key]
         else:
             return self.missing_no
-
-    def texture_is_transparent(self, namespace: str, path: str) -> bool:  # TODO: change this to take absolute path
-        return self._texture_is_transparent[self._textures[(namespace, path)]][1]
 
     def get_block_model(self, block: Block) -> BlockMesh:
         """Get a model for a block state.
@@ -303,7 +298,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
                 return BlockMesh.merge(models)
 
-        return missing_block_tris
+        return self.missing_block
 
     def _load_blockstate_model(
             self, block: Block, blockstate_value: Union[dict, list]
@@ -312,7 +307,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         if isinstance(blockstate_value, list):
             blockstate_value = blockstate_value[0]
         if "model" not in blockstate_value:
-            return missing_block_tris
+            return self.missing_block
         model_path = blockstate_value["model"]
         rotx = int(blockstate_value.get("x", 0) // 90)
         roty = int(blockstate_value.get("y", 0) // 90)
@@ -386,7 +381,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         transparent = 2
 
         if java_model.get("textures", {}) and not java_model.get("elements"):
-            return missing_block_tris
+            return self.missing_block
 
         for element in java_model.get("elements", {}):
             # iterate through elements (one cube per element)
@@ -431,29 +426,31 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         cull_dir = None
 
                     # get the relative texture path for the texture used
-                    texture_path = element_faces[face_dir].get("texture", None)
-                    while isinstance(texture_path, str) and texture_path.startswith("#"):
-                        texture_path = java_model["textures"].get(texture_path[1:], None)
-                    texture_path_list = texture_path.split(":", 1)
+                    texture_relative_path = element_faces[face_dir].get("texture", None)
+                    while isinstance(texture_relative_path, str) and texture_relative_path.startswith("#"):
+                        texture_relative_path = java_model["textures"].get(texture_relative_path[1:], None)
+                    texture_path_list = texture_relative_path.split(":", 1)
                     if len(texture_path_list) == 2:
-                        namespace, texture_path = texture_path_list
+                        namespace, texture_relative_path = texture_path_list
                     else:
                         namespace = block.namespace
 
+                    texture_path = self.get_texture(namespace, texture_relative_path)
+
                     if check_faces:
-                        if self.texture_is_transparent(namespace, texture_path):
+                        if self._texture_is_transparent[texture_path][1]:
                             check_faces = False
                         else:
                             opaque_face_count += 1
 
                     # get the texture
-                    if texture_path not in texture_dict:
-                        texture_dict[texture_path] = texture_count
-                        textures.append((namespace, texture_path))
+                    if texture_relative_path not in texture_dict:
+                        texture_dict[texture_relative_path] = texture_count
+                        textures.append(texture_path)
                         texture_count += 1
 
                     # texture index for the face
-                    texture_index = texture_dict[texture_path]
+                    texture_index = texture_dict[texture_relative_path]
 
                     # get the uv values for each vertex
                     # TODO: get the uv based on box location if not defined
@@ -530,6 +527,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
             del verts[cull_dir]
             del tverts[cull_dir]
             del texture_indexes[cull_dir]
+        textures = tuple(textures)
 
         return BlockMesh(
             3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent

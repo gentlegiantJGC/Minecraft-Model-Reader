@@ -44,7 +44,7 @@ class BlockMesh:
                 textures, return_inverse=True, axis=0
             )
             texture_index_map = texture_index_map.astype(numpy.uint32)
-            textures = list(zip(textures.T[0], textures.T[1]))
+            textures = list(textures)
         else:
             texture_index_map = numpy.array([], dtype=numpy.uint8)
 
@@ -86,7 +86,7 @@ class BlockMesh:
         # normals: Dict[Union[str, None], numpy.ndarray],
         faces: Dict[Union[str, None], numpy.ndarray],
         texture_index: Dict[Union[str, None], numpy.ndarray],
-        textures: List[Tuple[str, Union[None, str]]],
+        textures: Tuple[str],
         transparency: int,
     ):
         """
@@ -149,11 +149,8 @@ class BlockMesh:
             for key, val in texture_index.items()
         ), "The format of texture index is incorrect"
 
-        assert isinstance(textures, list) and all(
-            isinstance(texture, tuple)
-            and len(texture) == 2
-            and isinstance(texture[0], str)
-            and (isinstance(texture[1], str) or texture[1] is None)
+        assert isinstance(textures, (list, tuple)) and all(
+            isinstance(texture, str)
             for texture in textures
         ), "The format of the textures is incorrect"
 
@@ -165,7 +162,7 @@ class BlockMesh:
 
         self._faces = faces
         self._texture_index = texture_index
-        self._textures = textures
+        self._textures = tuple(textures)
         self._transparency = transparency
 
         [a.setflags(write=False) for a in self._verts.values()]
@@ -231,7 +228,7 @@ class BlockMesh:
         return self._texture_index
 
     @property
-    def textures(self) -> List[Tuple[str, Union[None, str]]]:
+    def textures(self) -> Tuple[str, ...]:
         """A list of all the texture paths."""
         return self._textures
 
