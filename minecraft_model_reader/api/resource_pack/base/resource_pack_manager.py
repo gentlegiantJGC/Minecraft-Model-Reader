@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Generator
+from typing import List, Dict, Tuple, Generator, Optional
 
 from minecraft_model_reader.api import Block, BlockMesh
 from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseResourcePack
@@ -46,7 +46,7 @@ class BaseResourcePackManager:
         """Returns a tuple of all the texture paths in the resource pack."""
         raise NotImplementedError
 
-    def get_texture(self, namespace: str, relative_path: str) -> str:
+    def get_texture_path(self, namespace: Optional[str], relative_path: str) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
         raise NotImplementedError
 

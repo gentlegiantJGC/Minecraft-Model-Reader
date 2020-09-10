@@ -192,7 +192,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         """Returns a tuple of all the texture paths in the resource pack."""
         return tuple(self._textures.values())
 
-    def get_texture(self, namespace: str, relative_path: str) -> str:
+    def get_texture_path(self, namespace: str, relative_path: str) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
         key = (namespace, relative_path)
         if key in self._textures:
@@ -435,7 +435,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     else:
                         namespace = block.namespace
 
-                    texture_path = self.get_texture(namespace, texture_relative_path)
+                    texture_path = self.get_texture_path(namespace, texture_relative_path)
 
                     if check_faces:
                         if self._texture_is_transparent[texture_path][1]:

@@ -33,7 +33,7 @@ for _face_dir in _cube_face_lut:
 
 
 def get_missing_block(resource_pack: "BaseResourcePackManager") -> BlockMesh:
-    texture_path = resource_pack.get_texture("minecraft", "missing_no")
+    texture_path = resource_pack.get_texture_path("minecraft", "missing_no")
     return BlockMesh(
         3,
         _verts,

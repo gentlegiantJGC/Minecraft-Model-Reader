@@ -19,7 +19,8 @@ def load_resource_pack(resource_pack_path: str):
 
 
 def load_resource_pack_manager(
-    resource_packs: Iterable[Union[str, BaseResourcePack]]
+    resource_packs: Iterable[Union[str, BaseResourcePack]],
+    load=True
 ) -> BaseResourcePackManager:
     resource_packs_out = []
     for resource_pack in resource_packs:
@@ -38,7 +39,7 @@ def load_resource_pack_manager(
     resource_packs = resource_packs_out
     if resource_packs:
         if isinstance(resource_packs[0], JavaResourcePack):
-            return JavaResourcePackManager(resource_packs)
+            return JavaResourcePackManager(resource_packs, load)
 
     raise NotImplementedError
     # return UnknownResourcePackManager()
