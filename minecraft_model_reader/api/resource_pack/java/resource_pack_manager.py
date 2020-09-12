@@ -59,24 +59,16 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
     def _unload(self):
         """Clear all loaded resources."""
-        self._textures.clear()
         self._blockstate_files.clear()
+        self._textures.clear()
+        self._texture_is_transparent.clear()
         self._model_files.clear()
         self._cached_models.clear()
 
     def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
-        if os.path.isfile(
-            os.path.join(os.path.dirname(__file__), "transparency_cache.json")
-        ):
-            try:
-                with open(
-                    os.path.join(os.path.dirname(__file__), "transparency_cache.json")
-                ) as f:
-                    self._texture_is_transparent = json.load(f)
-            except:
-                pass
+        self._load_transparency_cache()
 
         self._textures[("minecraft", "missing_no")] = self.missing_no
 

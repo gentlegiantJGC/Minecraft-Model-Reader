@@ -1,4 +1,6 @@
 from typing import List, Dict, Tuple, Generator, Optional
+import os
+import json
 
 from minecraft_model_reader.api import Block, BlockMesh
 from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseResourcePack
@@ -12,6 +14,7 @@ class BaseResourcePackManager:
     def __init__(self):
         self._packs: List[BaseResourcePack] = []
         self._missing_block = None
+        self._texture_is_transparent = {}
 
     @property
     def pack_paths(self):
@@ -20,6 +23,18 @@ class BaseResourcePackManager:
     def _unload(self):
         """Clear all loaded resources."""
         raise NotImplementedError
+
+    def _load_transparency_cache(self):
+        if os.path.isfile(
+            os.path.join(os.path.dirname(__file__), "transparency_cache.json")
+        ):
+            try:
+                with open(
+                    os.path.join(os.path.dirname(__file__), "transparency_cache.json")
+                ) as f:
+                    self._texture_is_transparent = json.load(f)
+            except:
+                pass
 
     def _load_iter(self) -> Generator[float, None, None]:
         """Load resources."""
