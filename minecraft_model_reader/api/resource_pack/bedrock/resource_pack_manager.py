@@ -15,7 +15,7 @@ from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.bedrock import BedrockResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
 from minecraft_model_reader.api.mesh.util import rotate_3d
-from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_lut, tri_face
+from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_rotation_lut, tri_face
 
 
 with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
