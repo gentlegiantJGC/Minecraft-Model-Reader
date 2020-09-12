@@ -85,7 +85,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
     def _load_iter(self) -> Generator[float, None, None]:
         self._block_shapes.update(BlockShapes)  # add the default block shapes
-        self._load_transparency_cache()
+        self._load_transparency_cache(__file__)
 
         self._textures["missing_no"] = self.missing_no
 

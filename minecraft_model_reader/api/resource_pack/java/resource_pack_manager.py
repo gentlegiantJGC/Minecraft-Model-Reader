@@ -68,7 +68,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
     def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
-        self._load_transparency_cache()
+        self._load_transparency_cache(__file__)
 
         self._textures[("minecraft", "missing_no")] = self.missing_no
 
