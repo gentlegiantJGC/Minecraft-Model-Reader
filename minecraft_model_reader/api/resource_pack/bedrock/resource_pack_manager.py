@@ -39,7 +39,6 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         self._all_textures = None
 
         self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
-        self._cached_models: Dict[Block, BlockMesh] = {}
 
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
@@ -55,12 +54,12 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
     def _unload(self):
         """Clear all loaded resources."""
+        super()._unload()
         self._block_shapes.clear()
         self._blocks.clear()
         self._texture_data.clear()
         self._textures.clear()
         self._all_textures = None
-        self._cached_models.clear()
 
     def _check_texture(self, texture_path: str) -> str:
         if not os.path.isfile(texture_path):

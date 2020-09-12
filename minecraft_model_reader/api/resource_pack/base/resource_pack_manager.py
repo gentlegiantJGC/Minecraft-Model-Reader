@@ -1,6 +1,7 @@
 from typing import List, Dict, Tuple, Generator, Optional
 import os
 import json
+import copy
 
 from minecraft_model_reader.api import Block, BlockMesh
 from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseResourcePack
@@ -15,6 +16,7 @@ class BaseResourcePackManager:
         self._packs: List[BaseResourcePack] = []
         self._missing_block = None
         self._texture_is_transparent = {}
+        self._cached_models: Dict[Block, BlockMesh] = {}
 
     @property
     def pack_paths(self):
@@ -22,7 +24,8 @@ class BaseResourcePackManager:
 
     def _unload(self):
         """Clear all loaded resources."""
-        raise NotImplementedError
+        self._texture_is_transparent.clear()
+        self._cached_models.clear()
 
     def _load_transparency_cache(self, path: str):
         if os.path.isfile(
@@ -66,4 +69,17 @@ class BaseResourcePackManager:
         raise NotImplementedError
 
     def get_block_model(self, block: Block) -> BlockMesh:
-        raise NotImplemented
+        """Get a model for a block state.
+        The block should already be in the resource pack format"""
+        if block not in self._cached_models:
+            if block.extra_blocks:
+                self._cached_models[block] = BlockMesh.merge(
+                    (self._get_model(block.base_block),)
+                    + tuple(self._get_model(block_) for block_ in block.extra_blocks)
+                )
+            else:
+                self._cached_models[block] = self._get_model(block)
+        return copy.deepcopy(self._cached_models[block])
+
+    def _get_model(self, block: Block) -> BlockMesh:
+        raise NotImplementedError

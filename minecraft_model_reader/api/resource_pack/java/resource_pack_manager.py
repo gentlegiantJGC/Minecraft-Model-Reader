@@ -44,7 +44,6 @@ class JavaResourcePackManager(BaseResourcePackManager):
         self._textures: Dict[Tuple[str, str], str] = {}
         self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
         self._model_files: Dict[Tuple[str, str], dict] = {}
-        self._cached_models: Dict[Block, BlockMesh] = {}
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
                 rp for rp in resource_packs if isinstance(rp, JavaResourcePack)
@@ -59,11 +58,11 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
     def _unload(self):
         """Clear all loaded resources."""
+        super()._unload()
         self._blockstate_files.clear()
         self._textures.clear()
         self._texture_is_transparent.clear()
         self._model_files.clear()
-        self._cached_models.clear()
 
     def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
@@ -191,19 +190,6 @@ class JavaResourcePackManager(BaseResourcePackManager):
             return self._textures[key]
         else:
             return self.missing_no
-
-    def get_block_model(self, block: Block) -> BlockMesh:
-        """Get a model for a block state.
-        The block should already be in the resource pack format"""
-        if block not in self._cached_models:
-            if block.extra_blocks:
-                self._cached_models[block] = BlockMesh.merge(
-                    (self._get_model(block.base_block),)
-                    + tuple(self._get_model(block_) for block_ in block.extra_blocks)
-                )
-            else:
-                self._cached_models[block] = self._get_model(block)
-        return copy.deepcopy(self._cached_models[block])
 
     @staticmethod
     def parse_state_val(val) -> list:
