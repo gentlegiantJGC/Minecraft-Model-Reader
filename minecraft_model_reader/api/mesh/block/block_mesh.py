@@ -86,7 +86,7 @@ class BlockMesh:
         # normals: Dict[Union[str, None], numpy.ndarray],
         faces: Dict[Union[str, None], numpy.ndarray],
         texture_index: Dict[Union[str, None], numpy.ndarray],
-        textures: Tuple[str],
+        textures: Tuple[str, ...],
         transparency: int,
     ):
         """

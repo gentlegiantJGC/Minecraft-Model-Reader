@@ -159,7 +159,18 @@ class BedrockResourcePackManager(BaseResourcePackManager):
             return self.missing_no
 
     def _get_model(self, block: Block) -> BlockMesh:
-        # block_shape = self._block_shapes.get(block.namespaced_name, "cube")
+        block_shape = self._block_shapes.get(block.namespaced_name, "cube")
+        if block_shape == "invisible":
+            return BlockMesh(
+                3,
+                {},
+                {},
+                {},
+                {},
+                {},
+                (),
+                2
+            )
         # if block_shape == "cube":
         #
         # else:
