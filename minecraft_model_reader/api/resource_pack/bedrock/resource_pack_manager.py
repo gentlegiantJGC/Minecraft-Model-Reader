@@ -33,7 +33,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
     ):
         super().__init__()
         self._block_shapes: Dict[str, str] = {}  # block string to block shape
-        self._blocks: Dict[Tuple[str, str], Union[Dict[str, str], str, None]] = {}  # block string to short texture ids
+        self._blocks: Dict[str, Union[Dict[str, str], str, None]] = {}  # block string to short texture ids
         self._texture_data: Dict[str, List[str]] = {}  # texture ids to list of relative paths. Each relates to a different data value.
         self._textures: Dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
@@ -130,12 +130,9 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                             model_count = len(blocks)
                             for model_index, (block_id, data) in enumerate(blocks.items()):
                                 if isinstance(block_id, str) and isinstance(data, dict):
-                                    if ":" in block_id:
-                                        namespace, base_name = block_id.split(":", 1)
-                                    else:
-                                        namespace = "minecraft"
-                                        base_name = block_id
-                                    self._blocks[(namespace, base_name)] = data.get("textures")
+                                    if ":" not in block_id:
+                                        block_id = "minecraft:" + block_id
+                                    self._blocks[block_id] = data.get("textures")
                                 yield sub_progress + (model_index) / (model_count * pack_count * 2)
             yield pack_progress + 1
 
