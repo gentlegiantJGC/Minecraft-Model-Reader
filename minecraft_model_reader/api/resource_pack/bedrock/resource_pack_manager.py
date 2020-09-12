@@ -39,8 +39,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         self._all_textures = None
 
         self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
-        self._model_files: Dict[Tuple[str, str], dict] = {}
         self._cached_models: Dict[Block, BlockMesh] = {}
+
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
                 rp for rp in resource_packs if isinstance(rp, BedrockResourcePack)
@@ -60,7 +60,6 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         self._texture_data.clear()
         self._textures.clear()
         self._all_textures = None
-        self._model_files.clear()
         self._cached_models.clear()
 
     def _check_texture(self, texture_path: str) -> str:
@@ -105,7 +104,9 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                         pass
                     else:
                         if isinstance(terrain_texture, dict) and "texture_data" in terrain_texture and isinstance(terrain_texture["texture_data"], dict):
-                            for texture_id, data in terrain_texture["texture_data"].items():
+                            sub_progress = pack_progress
+                            image_count = len(terrain_texture["texture_data"])
+                            for image_index, (texture_id, data) in enumerate(terrain_texture["texture_data"].items()):
                                 if isinstance(texture_id, str) and isinstance(data, dict) and "textures" in data:
                                     texture_data = data["textures"]
                                     if isinstance(texture_data, list):
@@ -115,6 +116,9 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                     elif isinstance(texture_data, str):
                                         self._texture_data[texture_id] = [texture_data]
                                         self._textures[texture_data] = self._check_texture(os.path.join(pack.root_dir, texture_data))
+                                yield sub_progress + image_index / (image_count * pack_count * 2)
+                sub_progress = pack_progress + 1 / (pack_count * 2)
+                yield sub_progress
                 blocks_path = os.path.join(pack.root_dir, "blocks.json")
                 if os.path.isfile(blocks_path):
                     try:
@@ -124,7 +128,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                         pass
                     else:
                         if isinstance(blocks, dict):
-                            for block_id, data in blocks.items():
+                            model_count = len(blocks)
+                            for model_index, (block_id, data) in enumerate(blocks.items()):
                                 if isinstance(block_id, str) and isinstance(data, dict):
                                     if ":" in block_id:
                                         namespace, base_name = block_id.split(":", 1)
@@ -132,6 +137,13 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                         namespace = "minecraft"
                                         base_name = block_id
                                     self._blocks[(namespace, base_name)] = data.get("textures")
+                                yield sub_progress + (model_index) / (model_count * pack_count * 2)
+            yield pack_progress + 1
+
+        with open(
+            os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
+        ) as f:
+            json.dump(self._texture_is_transparent, f)
 
     @property
     def textures(self) -> Tuple[str, ...]:
