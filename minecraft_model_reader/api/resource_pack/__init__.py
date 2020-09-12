@@ -8,6 +8,10 @@ from minecraft_model_reader.api.resource_pack.java import (
     JavaResourcePack,
     JavaResourcePackManager,
 )
+from minecraft_model_reader.api.resource_pack.bedrock import (
+    BedrockResourcePack,
+    BedrockResourcePackManager,
+)
 from .unknown_resource_pack import UnknownResourcePack
 
 
@@ -40,6 +44,8 @@ def load_resource_pack_manager(
     if resource_packs:
         if isinstance(resource_packs[0], JavaResourcePack):
             return JavaResourcePackManager(resource_packs, load)
+        elif isinstance(resource_packs[0], BedrockResourcePack):
+            return BedrockResourcePackManager(resource_packs, load)
 
     raise NotImplementedError
     # return UnknownResourcePackManager()

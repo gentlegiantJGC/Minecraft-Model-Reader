@@ -1,13 +1,8 @@
 import os
 import json
-import copy
 from typing import Union, Dict, Tuple, Iterable, Generator, List, Optional
 from PIL import Image
 import numpy
-import glob
-import itertools
-
-import amulet_nbt
 
 from minecraft_model_reader import log
 from minecraft_model_reader.api import Block
@@ -15,8 +10,7 @@ from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.bedrock import BedrockResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
 from minecraft_model_reader.api.mesh.util import rotate_3d
-from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_rotation_lut, tri_face
-
+from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_rotation_lut, tri_face, get_unit_cube
 
 with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
     BlockShapes = json.load(f)
@@ -27,14 +21,14 @@ class BedrockResourcePackManager(BaseResourcePackManager):
     Packs are given as a list with the later packs overwriting the earlier ones."""
 
     def __init__(
-        self,
-        resource_packs: Union[BedrockResourcePack, Iterable[BedrockResourcePack]],
-        load=True,
+            self,
+            resource_packs: Union[BedrockResourcePack, Iterable[BedrockResourcePack]],
+            load=True,
     ):
         super().__init__()
         self._block_shapes: Dict[str, str] = {}  # block string to block shape
         self._blocks: Dict[str, Union[Dict[str, str], str, None]] = {}  # block string to short texture ids
-        self._texture_data: Dict[str, List[str]] = {}  # texture ids to list of relative paths. Each relates to a different data value.
+        self._terrain_texture: Dict[str, List[str]] = {}  # texture ids to list of relative paths. Each relates to a different data value.
         self._textures: Dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
 
@@ -57,12 +51,16 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         super()._unload()
         self._block_shapes.clear()
         self._blocks.clear()
-        self._texture_data.clear()
+        self._terrain_texture.clear()
         self._textures.clear()
         self._all_textures = None
 
     def _check_texture(self, texture_path: str) -> str:
-        if not os.path.isfile(texture_path):
+        if os.path.isfile(texture_path + ".png"):
+            texture_path += ".png"
+        elif os.path.isfile(texture_path + ".tga"):
+            texture_path += ".tga"
+        else:
             texture_path = self.missing_no
         if (
                 os.stat(texture_path)[8]
@@ -105,16 +103,23 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                         if isinstance(terrain_texture, dict) and "texture_data" in terrain_texture and isinstance(terrain_texture["texture_data"], dict):
                             sub_progress = pack_progress
                             image_count = len(terrain_texture["texture_data"])
+
+                            def get_texture(_relative_path):
+                                if isinstance(_relative_path, (str, dict)):
+                                    if isinstance(_relative_path, dict):
+                                        _relative_path = _relative_path.get("path", "misssingno")
+                                    self._terrain_texture[texture_id] = [_relative_path]
+                                    self._textures[_relative_path] = self._check_texture(os.path.join(pack.root_dir, _relative_path))
+
                             for image_index, (texture_id, data) in enumerate(terrain_texture["texture_data"].items()):
                                 if isinstance(texture_id, str) and isinstance(data, dict) and "textures" in data:
                                     texture_data = data["textures"]
                                     if isinstance(texture_data, list):
-                                        self._texture_data[texture_id] = texture_data
+                                        self._terrain_texture[texture_id] = texture_data
                                         for relative_path in texture_data:
-                                            self._textures[relative_path] = self._check_texture(os.path.join(pack.root_dir, relative_path))
-                                    elif isinstance(texture_data, str):
-                                        self._texture_data[texture_id] = [texture_data]
-                                        self._textures[texture_data] = self._check_texture(os.path.join(pack.root_dir, texture_data))
+                                            get_texture(relative_path)
+                                    else:
+                                        get_texture(texture_data)
                                 yield sub_progress + image_index / (image_count * pack_count * 2)
                 sub_progress = pack_progress + 1 / (pack_count * 2)
                 yield sub_progress
@@ -137,19 +142,14 @@ class BedrockResourcePackManager(BaseResourcePackManager):
             yield pack_progress + 1
 
         with open(
-            os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
+                os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
         ) as f:
             json.dump(self._texture_is_transparent, f)
 
     @property
     def textures(self) -> Tuple[str, ...]:
         """Returns a tuple of all the texture paths in the resource pack."""
-        if not self._all_textures:
-            all_textures = set()
-            for textures in self._textures.values():
-                all_textures.update(textures)
-            self._all_textures = tuple(all_textures)
-        return self._all_textures
+        return tuple(self._textures.values())
 
     def get_texture_path(self, namespace: Optional[str], relative_path: str) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
@@ -158,3 +158,55 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         else:
             return self.missing_no
 
+    def _get_model(self, block: Block) -> BlockMesh:
+        # block_shape = self._block_shapes.get(block.namespaced_name, "cube")
+        # if block_shape == "cube":
+        #
+        # else:
+        #     return self.missing_block
+
+        if block.namespaced_name in self._blocks:
+            texture_id = self._blocks[block.namespaced_name]
+            if isinstance(texture_id, str):
+                texture = self._get_texture(texture_id)
+                return get_unit_cube(
+                    texture,
+                    texture,
+                    texture,
+                    texture,
+                    texture,
+                    texture,
+                )
+            elif isinstance(texture_id, dict):
+                texture_keys = tuple(sorted(texture_id.keys()))
+                if texture_keys == ('down', 'side', 'up'):
+                    down = self._get_texture(texture_id["down"])
+                    up = self._get_texture(texture_id["up"])
+                    side = self._get_texture(texture_id["side"])
+                    return get_unit_cube(
+                        down,
+                        up,
+                        side,
+                        side,
+                        side,
+                        side,
+                    )
+                elif texture_keys == ('down', 'east', 'north', 'south', 'up', 'west'):
+                    return get_unit_cube(*[self._get_texture(texture_id[face]) for face in (
+                        "down",
+                        "up",
+                        "north",
+                        "east",
+                        "south",
+                        "west",
+                    )])
+
+        return self.missing_block
+
+    def _get_texture(self, texture_id: str):
+        texture = self.missing_no
+        if texture_id in self._terrain_texture:
+            texture_list = self._terrain_texture[texture_id]
+            if texture_list:
+                texture = self.get_texture_path(None, texture_list[0])  # TODO: add support for the other data values
+        return texture
