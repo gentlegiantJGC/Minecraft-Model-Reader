@@ -95,6 +95,7 @@ def get_unit_cube(
         east: str,
         south: str,
         west: str,
+        transparency=0
 ) -> BlockMesh:
     _verts, _texture_coords, _tint_verts, _tri_faces = _unit_cube_attrs
     texture_paths, texture_index = numpy.unique((down, up, north, east, south, west), return_inverse=True)
@@ -112,6 +113,8 @@ def get_unit_cube(
         _tri_faces,
         _tri_texture_index,
         texture_paths,
-        0,
+        transparency,
     )
+
+
 

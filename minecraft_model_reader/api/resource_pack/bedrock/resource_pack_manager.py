@@ -105,21 +105,19 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                             image_count = len(terrain_texture["texture_data"])
 
                             def get_texture(_relative_path):
-                                if isinstance(_relative_path, (str, dict)):
-                                    if isinstance(_relative_path, dict):
-                                        _relative_path = _relative_path.get("path", "misssingno")
-                                    self._terrain_texture[texture_id] = [_relative_path]
+                                if isinstance(_relative_path, dict):
+                                    _relative_path = _relative_path.get("path", "misssingno")
+                                if isinstance(_relative_path, str):
                                     self._textures[_relative_path] = self._check_texture(os.path.join(pack.root_dir, _relative_path))
+                                return _relative_path
 
                             for image_index, (texture_id, data) in enumerate(terrain_texture["texture_data"].items()):
                                 if isinstance(texture_id, str) and isinstance(data, dict) and "textures" in data:
                                     texture_data = data["textures"]
                                     if isinstance(texture_data, list):
-                                        self._terrain_texture[texture_id] = texture_data
-                                        for relative_path in texture_data:
-                                            get_texture(relative_path)
+                                        self._terrain_texture[texture_id] = [get_texture(relative_path) for relative_path in texture_data]
                                     else:
-                                        get_texture(texture_data)
+                                        self._terrain_texture[texture_id] = [get_texture(texture_data)]
                                 yield sub_progress + image_index / (image_count * pack_count * 2)
                 sub_progress = pack_progress + 1 / (pack_count * 2)
                 yield sub_progress
@@ -187,10 +185,11 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                     texture,
                     texture,
                     texture,
+                    int(self._texture_is_transparent[texture][1])
                 )
             elif isinstance(texture_id, dict):
-                texture_keys = tuple(sorted(texture_id.keys()))
-                if texture_keys == ('down', 'side', 'up'):
+                texture_keys = texture_id.keys()
+                if texture_keys == {'down', 'side', 'up'}:
                     down = self._get_texture(texture_id["down"])
                     up = self._get_texture(texture_id["up"])
                     side = self._get_texture(texture_id["side"])
@@ -201,16 +200,18 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                         side,
                         side,
                         side,
+                        int(any(self._texture_is_transparent[t][1] for t in (down, up, side)))
                     )
-                elif texture_keys == ('down', 'east', 'north', 'south', 'up', 'west'):
-                    return get_unit_cube(*[self._get_texture(texture_id[face]) for face in (
+                elif texture_keys == {'down', 'east', 'north', 'south', 'up', 'west'}:
+                    textures = [self._get_texture(texture_id[face]) for face in (
                         "down",
                         "up",
                         "north",
                         "east",
                         "south",
                         "west",
-                    )])
+                    )]
+                    return get_unit_cube(*textures, int(any(self._texture_is_transparent[t][1] for t in textures)))
 
         return self.missing_block
 
