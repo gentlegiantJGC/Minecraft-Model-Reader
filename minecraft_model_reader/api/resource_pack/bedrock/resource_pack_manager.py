@@ -4,16 +4,14 @@ from typing import Union, Dict, Tuple, Iterable, Generator, List, Optional
 from PIL import Image
 import numpy
 
-from minecraft_model_reader import log
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.bedrock import BedrockResourcePack
-from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
-from minecraft_model_reader.api.mesh.util import rotate_3d
-from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_rotation_lut, tri_face, get_unit_cube
+from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
+from .blockshapes import BlockShapeClasses
 
-with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
-    BlockShapes = json.load(f)
+with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f_:
+    BlockShapes = json.load(f_)
 
 
 class BedrockResourcePackManager(BaseResourcePackManager):
@@ -97,7 +95,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                     try:
                         with open(terrain_texture_path) as f:
                             terrain_texture = json.load(f)
-                    except:
+                    except json.JSONDecodeError:
                         pass
                     else:
                         if isinstance(terrain_texture, dict) and "texture_data" in terrain_texture and isinstance(terrain_texture["texture_data"], dict):
@@ -126,7 +124,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                     try:
                         with open(blocks_path) as f:
                             blocks = json.load(f)
-                    except:
+                    except json.JSONDecodeError:
                         pass
                     else:
                         if isinstance(blocks, dict):
@@ -158,6 +156,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
     def _get_model(self, block: Block) -> BlockMesh:
         block_shape = self._block_shapes.get(block.namespaced_name, "cube")
+
         if block_shape == "invisible":
             return BlockMesh(
                 3,
@@ -169,56 +168,68 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                 (),
                 2
             )
-        # if block_shape == "cube":
-        #
-        # else:
-        #     return self.missing_block
+
+        if block_shape in BlockShapeClasses:
+            block_shape_class = BlockShapeClasses[block_shape]
+        else:
+            block_shape_class = BlockShapeClasses["cube"]
+
+        if not block_shape_class.is_valid(block):
+            block_shape_class = BlockShapeClasses["cube"]
+
+        texture_index = block_shape_class.texture_index(block)
 
         if block.namespaced_name in self._blocks:
             texture_id = self._blocks[block.namespaced_name]
             if isinstance(texture_id, str):
-                texture = self._get_texture(texture_id)
-                return get_unit_cube(
-                    texture,
-                    texture,
-                    texture,
-                    texture,
-                    texture,
-                    texture,
-                    int(self._texture_is_transparent[texture][1])
-                )
+                up = down = north = east = south = west = self._get_texture(texture_id, texture_index)
+                transparent = (int(self._texture_is_transparent[up][1]),) * 6
+
             elif isinstance(texture_id, dict):
-                texture_keys = texture_id.keys()
-                if texture_keys == {'down', 'side', 'up'}:
-                    down = self._get_texture(texture_id["down"])
-                    up = self._get_texture(texture_id["up"])
-                    side = self._get_texture(texture_id["side"])
-                    return get_unit_cube(
-                        down,
-                        up,
-                        side,
-                        side,
-                        side,
-                        side,
-                        int(any(self._texture_is_transparent[t][1] for t in (down, up, side)))
+                down = self._get_texture(texture_id.get("down", "missing"), texture_index)
+                up = self._get_texture(texture_id.get("up", "missing"), texture_index)
+
+                if "side" in texture_id:
+                    north = east = south = west = self._get_texture(texture_id.get("side", "missing"), texture_index)
+                    transparent = (
+                                      int(self._texture_is_transparent[down][1]),
+                                      int(self._texture_is_transparent[up][1]),
+                                  ) + (
+                                      int(self._texture_is_transparent[north][1]),
+                                  ) * 4
+                else:
+                    north = self._get_texture(texture_id.get("north", "missing"), texture_index)
+                    east = self._get_texture(texture_id.get("east", "missing"), texture_index)
+                    south = self._get_texture(texture_id.get("south", "missing"), texture_index)
+                    west = self._get_texture(texture_id.get("west", "missing"), texture_index)
+                    transparent = (
+                        int(self._texture_is_transparent[down][1]),
+                        int(self._texture_is_transparent[up][1]),
+                        int(self._texture_is_transparent[north][1]),
+                        int(self._texture_is_transparent[east][1]),
+                        int(self._texture_is_transparent[south][1]),
+                        int(self._texture_is_transparent[west][1]),
                     )
-                elif texture_keys == {'down', 'east', 'north', 'south', 'up', 'west'}:
-                    textures = [self._get_texture(texture_id[face]) for face in (
-                        "down",
-                        "up",
-                        "north",
-                        "east",
-                        "south",
-                        "west",
-                    )]
-                    return get_unit_cube(*textures, int(any(self._texture_is_transparent[t][1] for t in textures)))
+            else:
+                return self.missing_block
+
+            return block_shape_class.get_block_model(
+                block,
+                up,
+                down,
+                north,
+                east,
+                south,
+                west,
+                transparent
+            )
 
         return self.missing_block
 
-    def _get_texture(self, texture_id: str):
+    def _get_texture(self, texture_id: str, index: int):
         texture = self.missing_no
         if texture_id in self._terrain_texture:
             texture_list = self._terrain_texture[texture_id]
-            if texture_list:
-                texture = self.get_texture_path(None, texture_list[0])  # TODO: add support for the other data values
+            if len(texture_list) > index:
+                texture = self.get_texture_path(None, texture_list[index])
         return texture
