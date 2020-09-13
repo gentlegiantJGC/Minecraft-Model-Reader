@@ -4,6 +4,29 @@ import copy
 from sys import getsizeof
 import re
 from typing import Dict, Iterable, Tuple, Union
+import amulet_nbt
+
+PropertyValueType = Union[
+    amulet_nbt.TAG_Byte,
+    amulet_nbt.TAG_Short,
+    amulet_nbt.TAG_Int,
+    amulet_nbt.TAG_Long,
+    amulet_nbt.TAG_String,
+]
+PropertyType = Dict[str, PropertyValueType]
+
+PropertyDataTypes = (
+    amulet_nbt.TAG_Byte,
+    amulet_nbt.TAG_Short,
+    amulet_nbt.TAG_Int,
+    amulet_nbt.TAG_Long,
+    amulet_nbt.TAG_String,
+)
+
+
+def blockstate_to_block(blockstate: str) -> "Block":
+    namespace, base_name, properties = Block.parse_blockstate_string(blockstate)
+    return Block(namespace=namespace, base_name=base_name, properties=properties)
 
 
 class Block:
@@ -20,8 +43,8 @@ class Block:
 
     Creating a new Block object with the base of ``stone`` and has an extra block of ``water[level=1]``:
 
-    >>> stone = Block(blockstate="minecraft:stone")
-    >>> water_level_1 = Block(blockstate="minecraft:water[level=1]")
+    >>> stone = blockstate_to_block("minecraft:stone")
+    >>> water_level_1 = blockstate_to_block("minecraft:water[level=1]")
     >>> stone_with_extra_block = stone + water_level_1
     >>> repr(stone_with_extra_block)
     'Block(minecraft:stone, minecraft:water[level=1])'
@@ -49,7 +72,7 @@ class Block:
 
     Creating a new Block object by removing a specific layer:
 
-    >>> oak_log_axis_x = Block(blockstate="minecraft:oak_log[axis=x]")
+    >>> oak_log_axis_x = blockstate_to_block("minecraft:oak_log[axis=x]")
     >>> stone_water_granite_water_oak_log = stone_water_granite + water_level_1 + oak_log_axis_x
     >>> repr(stone_water_granite_water_oak_log)
     'Block(minecraft:stone, minecraft:water[level=1], minecraft:granite, minecraft:water[level=1], minecraft:oak_log[axis=x])'
@@ -61,6 +84,7 @@ class Block:
     """
 
     __slots__ = (
+        "_namespaced_name",
         "_namespace",
         "_base_name",
         "_properties",
@@ -69,25 +93,36 @@ class Block:
     )  # Reduces memory footprint
 
     blockstate_regex = re.compile(
-        r"(?:(?P<namespace>[a-z0-9_.-]+):)?(?P<base_name>[a-z0-9/._-]+)(?:\[(?P<property_name>[a-z0-9_]+)=(?P<property_value>[a-z0-9_]+)(?P<properties>.*)\])?"
+        r"(?:(?P<namespace>[a-z0-9_.-]+):)?(?P<base_name>[a-z0-9/._-]+)(?:\[(?P<property_name>[a-z0-9_]+)=(?P<property_value>[a-z0-9_\"]+)(?P<properties>.*)\])?"
     )
+    # blockstate_regex = re.compile(
+    #     r"(?:(?P<namespace>[a-z0-9_.-]+):)?(?P<base_name>[a-z0-9/._-]+)(?:\[(?P<property_name>[a-z0-9_]+)=(?P<property_value>[a-z0-9_]+)(?P<properties>.*)\])?"
+    # )
 
-    parameters_regex = re.compile(r"(?:,(?P<name>[a-z0-9_]+)=(?P<value>[a-z0-9_]+))")
+    parameters_regex = re.compile(r"(?:,(?P<name>[a-z0-9_]+)=(?P<value>[a-z0-9_\"]+))")
+
+    # parameters_regex = re.compile(r"(?:,(?P<name>[a-z0-9_]+)=(?P<value>[a-z0-9_]+))")
 
     def __init__(
         self,
-        blockstate: str = None,
-        namespace: str = None,
-        base_name: str = None,
-        properties: Dict[str, Union[str, bool, int]] = None,
+        namespace: str,
+        base_name: str,
+        properties: PropertyType = None,
         extra_blocks: Union[Block, Iterable[Block]] = None,
     ):
-        self._blockstate = blockstate
+        self._blockstate = None
+        self._namespaced_name = None
+        assert (isinstance(namespace, str) or namespace is None) and isinstance(
+            base_name, str
+        ), f"namespace and base_name must be strings {namespace} {base_name}"
         self._namespace = namespace
         self._base_name = base_name
 
-        if namespace is not None and base_name is not None and properties is None:
+        if properties is None:
             properties = {}
+        assert isinstance(properties, dict) and all(
+            isinstance(val, PropertyDataTypes) for val in properties.values()
+        ), properties
 
         self._properties = properties
         self._extra_blocks = ()
@@ -96,8 +131,16 @@ class Block:
                 extra_blocks = [extra_blocks]
             self._extra_blocks = tuple(extra_blocks)
 
-        if blockstate:
-            self._gen_blockstate()
+        self._gen_blockstate()
+
+    @property
+    def namespaced_name(self) -> str:
+        """
+        The namespace:base_name of the blockstate represented by the Block object (IE: `minecraft:stone`)
+
+        :return: The namespace:base_name of the blockstate
+        """
+        return self._namespaced_name
 
     @property
     def namespace(self) -> str:
@@ -106,8 +149,6 @@ class Block:
 
         :return: The namespace of the blockstate
         """
-        if self._namespace is None:
-            self._parse_blockstate_string()
         return self._namespace
 
     @property
@@ -117,19 +158,15 @@ class Block:
 
         :return: The base name of the blockstate
         """
-        if self._base_name is None:
-            self._parse_blockstate_string()
         return self._base_name
 
     @property
-    def properties(self) -> Dict[str, Union[str, bool, int]]:
+    def properties(self) -> PropertyType:
         """
         The mapping of properties of the blockstate represented by the Block object (IE: `{"level": "1"}`)
 
         :return: A dictionary of the properties of the blockstate
         """
-        if self._properties is None:
-            self._parse_blockstate_string()
         return copy.deepcopy(self._properties)
 
     @property
@@ -139,12 +176,26 @@ class Block:
 
         :return: The blockstate string
         """
-        if self._blockstate is None:
-            self._gen_blockstate()
         return self._blockstate
 
     @property
-    def extra_blocks(self) -> Union[Tuple, Tuple[Block]]:
+    def base_block(self) -> Block:
+        """
+        Returns the block without any extra blocks
+
+        :return: A Block object
+        """
+        if len(self.extra_blocks) == 0:
+            return self
+        else:
+            return Block(
+                namespace=self.namespace,
+                base_name=self.base_name,
+                properties=self.properties,
+            )
+
+    @property
+    def extra_blocks(self) -> Tuple[Block, ...]:
         """
         Returns a tuple of the extra blocks contained in the Block instance
 
@@ -152,14 +203,30 @@ class Block:
         """
         return self._extra_blocks
 
+    @property
+    def block_tuple(self) -> Tuple[Block, ...]:
+        """
+        Returns the stack of blocks represented by this object as a tuple.
+        This is a tuple of base_block and extra_blocks
+        :return: A tuple of Block objects
+        """
+        return (self.base_block,) + self.extra_blocks
+
     def _gen_blockstate(self):
-        self._blockstate = f"{self.namespace}:{self.base_name}"
+        self._namespaced_name = self._blockstate = f"{self.namespace}:{self.base_name}"
         if self.properties:
-            props = [f"{key}={value}" for key, value in sorted(self.properties.items())]
-            self._blockstate = f"{self._blockstate}[{','.join(props)}]"
+            props = [
+                f"{key}={value.to_snbt()}"
+                for key, value in sorted(self.properties.items())
+            ]
+            self._blockstate += f"[{','.join(props)}]"
+        if self.extra_blocks:
+            self._blockstate += (
+                f"{{{' , '.join(block.blockstate for block in self.extra_blocks)}}}"
+            )
 
     @staticmethod
-    def parse_blockstate_string(blockstate: str) -> Tuple[str, str, Dict[str, str]]:
+    def parse_blockstate_string(blockstate: str,) -> Tuple[str, str, PropertyType]:
         match = Block.blockstate_regex.match(blockstate)
         namespace = match.group("namespace") or "minecraft"
         base_name = match.group("base_name")
@@ -175,14 +242,11 @@ class Block:
             for match in properties_match:
                 properties[match.group("name")] = match.group("value")
 
-        return namespace, base_name, {k: v for k, v in sorted(properties.items())}
-
-    def _parse_blockstate_string(self):
-        (
-            self._namespace,
-            self._base_name,
-            self._properties,
-        ) = self.parse_blockstate_string(self._blockstate)
+        return (
+            namespace,
+            base_name,
+            {k: amulet_nbt.from_snbt(v) for k, v in sorted(properties.items())},
+        )
 
     def __str__(self) -> str:
         """
@@ -225,6 +289,14 @@ class Block:
             return False
 
         return self.blockstate == other.blockstate and self._compare_extra_blocks(other)
+
+    def __gt__(self, other: Block) -> bool:
+        """
+        Allows blocks to be sorted so numpy.unique can be used on them
+        """
+        if self.__class__ != other.__class__:
+            return False
+        return self.blockstate > other.blockstate
 
     def __hash__(self) -> int:
         """
