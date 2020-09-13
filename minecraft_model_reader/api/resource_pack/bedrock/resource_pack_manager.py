@@ -10,8 +10,47 @@ from minecraft_model_reader.api.resource_pack.bedrock import BedrockResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
 from .blockshapes import BlockShapeClasses
 
-with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f_:
-    BlockShapes = json.load(f_)
+
+def _load_data() -> Tuple[
+    Dict[str, str],
+    Dict[str, Tuple[
+        Tuple[Tuple[str, str], ...],
+        Dict[Tuple[Union[str, int], ...], int]
+    ]]
+]:
+    with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
+        _block_shapes = json.load(f)
+
+    _aux_values = {}
+    with open(os.path.join(os.path.dirname(__file__), "block_palette.json")) as f:
+        _block_palette = json.load(f)
+    for block in _block_palette["blocks"]:
+        data = block["data"]
+        name = block["name"]
+        if name not in _aux_values:
+            _aux_values[name] = (
+                tuple((state["name"], state["value"]) for state in block["states"]),
+                {}
+            )
+        _aux_values[name][1][
+            tuple(state["value"] for state in block["states"])
+        ] = data
+
+    return _block_shapes, _aux_values
+
+
+BlockShapes, AuxValues = _load_data()
+
+
+def get_aux_value(block: Block) -> int:
+    name = block.namespaced_name
+    if name in AuxValues:
+        property_names, aux_map = AuxValues[name]
+        properties = block.properties
+        key = tuple(properties[property_name].value if property_name in properties else default for property_name, default in property_names)
+        return aux_map.get(key, 0)
+    else:
+        return 0
 
 
 class BedrockResourcePackManager(BaseResourcePackManager):
@@ -177,7 +216,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         if not block_shape_class.is_valid(block):
             block_shape_class = BlockShapeClasses["cube"]
 
-        texture_index = block_shape_class.texture_index(block)
+        texture_index = block_shape_class.texture_index(get_aux_value(block))
 
         if block.namespaced_name in self._blocks:
             texture_id = self._blocks[block.namespaced_name]
@@ -215,8 +254,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
             return block_shape_class.get_block_model(
                 block,
-                up,
                 down,
+                up,
                 north,
                 east,
                 south,
