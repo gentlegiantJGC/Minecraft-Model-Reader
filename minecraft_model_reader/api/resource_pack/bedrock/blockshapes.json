@@ -84,7 +84,7 @@
     "minecraft:stone_brick_stairs": "stairs",
     "minecraft:nether_brick_stairs": "stairs",
     "minecraft:nether_wart": "rows",
-    "minecraft:enchanting_table": "block_half",
+    "minecraft:enchanting_table": "enchanting_table",
     "minecraft:activator_rail": "rail",
     "minecraft:sandstone_stairs": "stairs",
     "minecraft:tripwire_hook": "tripwire_hook",
@@ -163,5 +163,45 @@
     "minecraft:prismarine_stairs": "stairs",
     "minecraft:dark_prismarine_stairs": "stairs",
     "minecraft:prismarine_bricks_stairs": "stairs",
-    "minecraft:bubble_column": "bubble_column"
+    "minecraft:bubble_column": "bubble_column",
+
+    "minecraft:acacia_pressure_plate": "pressure_plate",
+    "minecraft:birch_pressure_plate": "pressure_plate",
+    "minecraft:spruce_pressure_plate": "pressure_plate",
+    "minecraft:dark_oak_pressure_plate": "pressure_plate",
+    "minecraft:stone_pressure_plate": "pressure_plate",
+    "minecraft:jungle_pressure_plate": "pressure_plate",
+    "minecraft:wooden_pressure_plate": "pressure_plate",
+    "minecraft:heavy_weighted_pressure_plate": "pressure_plate",
+    "minecraft:light_weighted_pressure_plate": "pressure_plate",
+
+    "minecraft:acacia_button": "button",
+    "minecraft:spruce_button": "button",
+    "minecraft:wooden_button": "button",
+    "minecraft:birch_button": "button",
+    "minecraft:jungle_button": "button",
+    "minecraft:dark_oak_button": "button",
+    "minecraft:stone_button": "button",
+
+    "minecraft:structure_block": "notacube",
+
+    "minecraft:daylight_detector_inverted": "notacube",
+    "minecraft:carved_pumpkin": "notacube",
+    "minecraft:grass": "grass",
+    
+    "minecraft:end_portal": "notacube",
+    "minecraft:lit_furnace": "notacube",
+    "minecraft:dispenser": "notacube",
+    "minecraft:portal": "notacube",
+    "minecraft:pumpkin": "notacube",
+    "minecraft:furnace": "notacube",
+    "minecraft:dropper": "notacube",
+    "minecraft:daylight_detector": "notacube",
+    "minecraft:carpet": "notacube",
+    "minecraft:farmland": "farmland",
+    "minecraft:end_gateway": "notacube",
+    "minecraft:cake": "cake",
+
+    "minecraft:leaves": "greencube",
+    "minecraft:leaves2": "greencube"
 }

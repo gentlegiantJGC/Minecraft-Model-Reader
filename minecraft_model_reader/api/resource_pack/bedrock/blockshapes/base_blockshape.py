@@ -17,5 +17,5 @@ class BaseBlockShape:
         """The texture index to use within the list for the given Block"""
         raise NotImplementedError
 
-    def get_block_model(self, block: Block, up: str, down: str, north: str, east: str, south: str, west: str, transparency: Tuple[int, int, int, int, int, int]) -> BlockMesh:
+    def get_block_model(self, block: Block, up: str, down: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
         raise NotImplementedError

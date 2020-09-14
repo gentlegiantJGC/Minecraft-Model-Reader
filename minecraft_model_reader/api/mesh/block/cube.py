@@ -4,8 +4,11 @@ import itertools
 
 from minecraft_model_reader.api.mesh.block.block_mesh import FACE_KEYS, BlockMesh
 
+BoundsType = Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]
+TextureUVType = Tuple[Tuple[float, float, float, float], Tuple[float, float, float, float], Tuple[float, float, float, float], Tuple[float, float, float, float], Tuple[float, float, float, float], Tuple[float, float, float, float]]
 
-unit_box_coordinates = numpy.array(list(itertools.product([0, 1], [0, 1], [0, 1])))  # X, Y, Z
+
+unit_box_coordinates = numpy.array(list(itertools.product((0, 1), (0, 1), (0, 1))))  # X, Y, Z
 cube_face_lut = {  # This maps face direction to the vertices used (defined in unit_box_coordinates)
     "down": numpy.array([0, 4, 5, 1]),
     "up": numpy.array([3, 7, 6, 2]),
@@ -69,35 +72,41 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
 cull_remap_all = create_cull_map()
 
 
-def _create_unit_cube_attrs():
-    _texture_uv = numpy.array([0, 0, 1, 1], numpy.float)
+def create_cube_attrs(
+        bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
+        texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
+        tint: Tuple[int, int, int] = (1, 1, 1)
+):
+    """Create the vertex data, texture vertex, tint, and face data for a cube model"""
+    box_coordinates = numpy.array(list(itertools.product(*bounds)))
+    _texture_uv: Dict[str, numpy.ndarray] = {face: numpy.array(texture_uv[i], numpy.float) for i, face in enumerate(cube_face_lut)}
     _verts: Dict[str, numpy.ndarray] = {}
     _texture_coords = {}
     _tint_verts = {}
     _tri_faces = {}
     for _face_dir in cube_face_lut:
-        _verts[_face_dir] = unit_box_coordinates[
+        _verts[_face_dir] = box_coordinates[
             cube_face_lut[_face_dir]
         ].ravel()  # vertex coordinates for this face
-        _texture_coords[_face_dir] = _texture_uv[uv_rotation_lut]  # texture vertices
-        _tint_verts[_face_dir] = numpy.ones(12, dtype=numpy.float)
+        _texture_coords[_face_dir] = _texture_uv[_face_dir][uv_rotation_lut]  # texture vertices
+        _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=numpy.float).ravel()
         _tri_faces[_face_dir] = tri_face
     return _verts, _texture_coords, _tint_verts, _tri_faces
 
 
-_unit_cube_attrs = _create_unit_cube_attrs()
-
-
-def get_unit_cube(
+def get_cube(
         down: str,
         up: str,
         north: str,
         east: str,
         south: str,
         west: str,
-        transparency=0
-) -> BlockMesh:
-    _verts, _texture_coords, _tint_verts, _tri_faces = _unit_cube_attrs
+        transparency=0,
+        tint: Tuple[int, int, int] = (1, 1, 1),
+        bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
+        texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
+):
+    _verts, _texture_coords, _tint_verts, _tri_faces = create_cube_attrs(bounds, texture_uv, tint)
     texture_paths, texture_index = numpy.unique((down, up, north, east, south, west), return_inverse=True)
     texture_paths = tuple(texture_paths)
     _tri_texture_index: Dict[str, numpy.ndarray] = {
@@ -114,6 +123,28 @@ def get_unit_cube(
         _tri_texture_index,
         texture_paths,
         transparency,
+    )
+
+
+def get_unit_cube(
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: int = 0,
+        tint: Tuple[int, int, int] = (1, 1, 1)
+) -> BlockMesh:
+    return get_cube(
+        down,
+        up,
+        north,
+        east,
+        south,
+        west,
+        transparency,
+        tint
     )
 
 

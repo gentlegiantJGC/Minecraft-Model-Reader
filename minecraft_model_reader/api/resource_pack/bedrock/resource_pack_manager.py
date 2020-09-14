@@ -65,7 +65,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         super().__init__()
         self._block_shapes: Dict[str, str] = {}  # block string to block shape
         self._blocks: Dict[str, Union[Dict[str, str], str, None]] = {}  # block string to short texture ids
-        self._terrain_texture: Dict[str, List[str]] = {}  # texture ids to list of relative paths. Each relates to a different data value.
+        self._terrain_texture: Dict[str, Tuple[str, ...]] = {}  # texture ids to list of relative paths. Each relates to a different data value.
         self._textures: Dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
 
@@ -145,16 +145,21 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                 if isinstance(_relative_path, dict):
                                     _relative_path = _relative_path.get("path", "misssingno")
                                 if isinstance(_relative_path, str):
-                                    self._textures[_relative_path] = self._check_texture(os.path.join(pack.root_dir, _relative_path))
+                                    full_path = self._check_texture(os.path.join(pack.root_dir, _relative_path))
+                                    if _relative_path in self._textures:
+                                        if full_path != self.missing_no:
+                                            self._textures[_relative_path] = full_path
+                                    else:
+                                        self._textures[_relative_path] = full_path
                                 return _relative_path
 
                             for image_index, (texture_id, data) in enumerate(terrain_texture["texture_data"].items()):
                                 if isinstance(texture_id, str) and isinstance(data, dict) and "textures" in data:
                                     texture_data = data["textures"]
                                     if isinstance(texture_data, list):
-                                        self._terrain_texture[texture_id] = [get_texture(relative_path) for relative_path in texture_data]
+                                        self._terrain_texture[texture_id] = tuple(get_texture(relative_path) for relative_path in texture_data)
                                     else:
-                                        self._terrain_texture[texture_id] = [get_texture(texture_data)]
+                                        self._terrain_texture[texture_id] = (get_texture(texture_data), ) * 16
                                 yield sub_progress + image_index / (image_count * pack_count * 2)
                 sub_progress = pack_progress + 1 / (pack_count * 2)
                 yield sub_progress
@@ -222,7 +227,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
             texture_id = self._blocks[block.namespaced_name]
             if isinstance(texture_id, str):
                 up = down = north = east = south = west = self._get_texture(texture_id, texture_index)
-                transparent = (int(self._texture_is_transparent[up][1]),) * 6
+                transparent = (self._texture_is_transparent[up][1],) * 6
 
             elif isinstance(texture_id, dict):
                 down = self._get_texture(texture_id.get("down", "missing"), texture_index)
@@ -231,10 +236,10 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                 if "side" in texture_id:
                     north = east = south = west = self._get_texture(texture_id.get("side", "missing"), texture_index)
                     transparent = (
-                                      int(self._texture_is_transparent[down][1]),
-                                      int(self._texture_is_transparent[up][1]),
+                                      self._texture_is_transparent[down][1],
+                                      self._texture_is_transparent[up][1],
                                   ) + (
-                                      int(self._texture_is_transparent[north][1]),
+                                      self._texture_is_transparent[north][1],
                                   ) * 4
                 else:
                     north = self._get_texture(texture_id.get("north", "missing"), texture_index)
@@ -242,12 +247,12 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                     south = self._get_texture(texture_id.get("south", "missing"), texture_index)
                     west = self._get_texture(texture_id.get("west", "missing"), texture_index)
                     transparent = (
-                        int(self._texture_is_transparent[down][1]),
-                        int(self._texture_is_transparent[up][1]),
-                        int(self._texture_is_transparent[north][1]),
-                        int(self._texture_is_transparent[east][1]),
-                        int(self._texture_is_transparent[south][1]),
-                        int(self._texture_is_transparent[west][1]),
+                        self._texture_is_transparent[down][1],
+                        self._texture_is_transparent[up][1],
+                        self._texture_is_transparent[north][1],
+                        self._texture_is_transparent[east][1],
+                        self._texture_is_transparent[south][1],
+                        self._texture_is_transparent[west][1],
                     )
             else:
                 return self.missing_block
