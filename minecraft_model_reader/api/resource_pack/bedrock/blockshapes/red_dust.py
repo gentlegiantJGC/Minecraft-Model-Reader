@@ -20,7 +20,7 @@ class RedDust(Cube):
             {None: numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)},
             {None: numpy.array([0, 0], numpy.uint32)},
             (up,),
-            int(transparency[1])
+            2
         )
 
 

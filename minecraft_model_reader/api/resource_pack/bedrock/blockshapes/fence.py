@@ -4,17 +4,17 @@ from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block 
 from minecraft_model_reader.api import Block
 
 
-class PortalFrame(PartialBlock):
+class Fence(PartialBlock):
     @property
     def blockshape(self) -> str:
-        return "portal_frame"
+        return "fence"
 
     def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
-        return (0, 1), (0, 13/16), (0, 1)
+        return (6/16, 1-6/16), (0, 1), (6/16, 1-6/16)
 
     @property
     def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
-        return False, True, False, False, False, False
+        return False, False, True, True, True, True
 
 
-BlockShape = PortalFrame()
+BlockShape = Fence()

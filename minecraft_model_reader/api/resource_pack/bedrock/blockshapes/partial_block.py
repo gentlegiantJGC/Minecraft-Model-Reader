@@ -11,11 +11,15 @@ class PartialBlock(Cube):
     def blockshape(self) -> str:
         raise NotImplementedError
 
-    @property
-    def bounds(self) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         return (0, 1), (0, 1), (0, 1)
 
+    @property
+    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+        return False, False, False, False, False, False
+
     def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+        bounds = self.bounds(block)
         return get_cube(
             down,
             up,
@@ -24,14 +28,14 @@ class PartialBlock(Cube):
             south,
             west,
             2,
-            bounds=self.bounds,
+            bounds=bounds,
             texture_uv=(
-                (self.bounds[0][0], self.bounds[2][0], self.bounds[0][1], self.bounds[2][1]),
-                (self.bounds[0][0], self.bounds[2][0], self.bounds[0][1], self.bounds[2][1]),
-                (self.bounds[0][0], 1-self.bounds[1][1], self.bounds[0][1], 1-self.bounds[1][0]),
-                (self.bounds[2][0], 1-self.bounds[1][1], self.bounds[2][1], 1-self.bounds[1][0]),
-                (self.bounds[0][0], 1-self.bounds[1][1], self.bounds[0][1], 1-self.bounds[1][0]),
-                (self.bounds[2][0], 1-self.bounds[1][1], self.bounds[2][1], 1-self.bounds[1][0]),
+                (bounds[0][0], bounds[2][0], bounds[0][1], bounds[2][1]),
+                (bounds[0][0], bounds[2][0], bounds[0][1], bounds[2][1]),
+                (bounds[0][0], 1-bounds[1][1], bounds[0][1], 1-bounds[1][0]),
+                (bounds[2][0], 1-bounds[1][1], bounds[2][1], 1-bounds[1][0]),
+                (bounds[0][0], 1-bounds[1][1], bounds[0][1], 1-bounds[1][0]),
+                (bounds[2][0], 1-bounds[1][1], bounds[2][1], 1-bounds[1][0]),
             ),
-            do_not_cull=(False, True, False, False, False, False)
+            do_not_cull=self.do_not_cull
         )
