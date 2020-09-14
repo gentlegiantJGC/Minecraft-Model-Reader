@@ -72,28 +72,6 @@ def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]
 cull_remap_all = create_cull_map()
 
 
-def create_cube_attrs(
-        bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
-        texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
-        tint: Tuple[int, int, int] = (1, 1, 1)
-):
-    """Create the vertex data, texture vertex, tint, and face data for a cube model"""
-    box_coordinates = numpy.array(list(itertools.product(*bounds)))
-    _texture_uv: Dict[str, numpy.ndarray] = {face: numpy.array(texture_uv[i], numpy.float) for i, face in enumerate(cube_face_lut)}
-    _verts: Dict[str, numpy.ndarray] = {}
-    _texture_coords = {}
-    _tint_verts = {}
-    _tri_faces = {}
-    for _face_dir in cube_face_lut:
-        _verts[_face_dir] = box_coordinates[
-            cube_face_lut[_face_dir]
-        ].ravel()  # vertex coordinates for this face
-        _texture_coords[_face_dir] = _texture_uv[_face_dir][uv_rotation_lut]  # texture vertices
-        _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=numpy.float).ravel()
-        _tri_faces[_face_dir] = tri_face
-    return _verts, _texture_coords, _tint_verts, _tri_faces
-
-
 def get_cube(
         down: str,
         up: str,
@@ -105,14 +83,38 @@ def get_cube(
         tint: Tuple[int, int, int] = (1, 1, 1),
         bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
         texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
+        do_not_cull: Tuple[bool, bool, bool, bool, bool, bool] = (False, False, False, False, False, False)
 ):
-    _verts, _texture_coords, _tint_verts, _tri_faces = create_cube_attrs(bounds, texture_uv, tint)
+    box_coordinates = numpy.array(list(itertools.product(*bounds)))
+    _texture_uv: Dict[Optional[str], numpy.ndarray] = {face: numpy.array(texture_uv[i], numpy.float) for i, face in enumerate(cube_face_lut)}
+    _verts: Dict[Optional[str], numpy.ndarray] = {}
+    _texture_coords: Dict[Optional[str], numpy.ndarray] = {}
+    _tint_verts: Dict[Optional[str], numpy.ndarray] = {}
+    _tri_faces: Dict[Optional[str], numpy.ndarray] = {}
+    for _face_dir in cube_face_lut:
+        _verts[_face_dir] = box_coordinates[
+            cube_face_lut[_face_dir]
+        ].ravel()  # vertex coordinates for this face
+        _texture_coords[_face_dir] = _texture_uv[_face_dir][uv_rotation_lut]  # texture vertices
+        _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=numpy.float).ravel()
+        _tri_faces[_face_dir] = tri_face
+
     texture_paths, texture_index = numpy.unique((down, up, north, east, south, west), return_inverse=True)
     texture_paths = tuple(texture_paths)
     _tri_texture_index: Dict[str, numpy.ndarray] = {
         side: numpy.full(2, texture_index[side_index], dtype=numpy.uint32)
         for side_index, side in enumerate(cube_face_lut)
     }
+
+    if any(do_not_cull):
+        do_not_cull_faces = tuple(face for face, not_cull in zip(cube_face_lut, do_not_cull) if not_cull)
+        for obj in (_verts, _texture_coords, _tint_verts, _tri_texture_index):
+            obj[None] = numpy.concatenate([obj[key] for key in do_not_cull_faces])
+            for key in do_not_cull_faces:
+                del obj[key]
+        _tri_faces[None] = numpy.concatenate([_tri_faces[key] + 4 * i for i, key in enumerate(do_not_cull_faces)])
+        for key in do_not_cull_faces:
+            del _tri_faces[key]
 
     return BlockMesh(
         3,

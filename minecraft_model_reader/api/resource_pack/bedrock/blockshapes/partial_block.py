@@ -32,5 +32,6 @@ class PartialBlock(Cube):
                 (self.bounds[2][0], 1-self.bounds[1][1], self.bounds[2][1], 1-self.bounds[1][0]),
                 (self.bounds[0][0], 1-self.bounds[1][1], self.bounds[0][1], 1-self.bounds[1][0]),
                 (self.bounds[2][0], 1-self.bounds[1][1], self.bounds[2][1], 1-self.bounds[1][0]),
-            )
+            ),
+            do_not_cull=(False, True, False, False, False, False)
         )
