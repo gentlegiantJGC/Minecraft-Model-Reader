@@ -15,7 +15,7 @@ from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
 from minecraft_model_reader.api.mesh.util import rotate_3d
-from minecraft_model_reader.api.mesh.block.cube import cull_remap_all, cube_face_lut, uv_rotation_lut, tri_face
+from minecraft_model_reader.api.mesh.block.cube import cube_face_lut, uv_rotation_lut, tri_face
 
 
 UselessImageGroups = {
@@ -294,56 +294,12 @@ class JavaResourcePackManager(BaseResourcePackManager):
         model = copy.deepcopy(self._load_block_model(block, model_path))
 
         # TODO: rotate model based on uv_lock
-        if rotx or roty and (roty, rotx) in cull_remap_all:
-            cull_remap = cull_remap_all[(roty, rotx)]
-            return BlockMesh(
-                model.face_mode,
-                {
-                    cull_remap[cull_dir]: rotate_3d(
-                        rotate_3d(
-                            model.verts[cull_dir].reshape((-1, model.face_mode)),
-                            rotx * 90,
-                            0,
-                            0,
-                            0.5,
-                            0.5,
-                            0.5,
-                        ),
-                        0,
-                        roty * 90,
-                        0,
-                        0.5,
-                        0.5,
-                        0.5,
-                    ).ravel()
-                    for cull_dir in model.verts
-                },
-                {
-                    cull_remap[cull_dir]: model.texture_coords[cull_dir]
-                    for cull_dir in model.texture_coords
-                },
-                {
-                    cull_remap[cull_dir]: model.tint_verts[cull_dir]
-                    for cull_dir in model.tint_verts
-                },
-                {cull_remap[cull_dir]: model.faces[cull_dir] for cull_dir in model.faces},
-                {
-                    cull_remap[cull_dir]: model.texture_index[cull_dir]
-                    for cull_dir in model.texture_index
-                },
-                model.textures,
-                model.is_transparent,
-            )
-        return model
+        return model.rotate(rotx, roty)
 
     def _load_block_model(self, block: Block, model_path: str) -> BlockMesh:
         """Load the model file associated with the Block and convert to a BlockMesh."""
         # recursively load model files into one dictionary
         java_model = self._recursive_load_block_model(block, model_path)
-
-        # return immediately if it is already a BlockMesh class. This could be because it is missing_no or a forge model if implemented
-        if isinstance(java_model, BlockMesh):
-            return copy.deepcopy(java_model)
 
         # set up some variables
         texture_dict = {}

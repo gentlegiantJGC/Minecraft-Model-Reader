@@ -1,7 +1,29 @@
-from typing import Dict, Tuple, List, Union, Iterable
+from typing import Dict, Tuple, Union, Iterable, Optional
 import numpy
 
+from minecraft_model_reader.api.mesh.util import rotate_3d
+
 FACE_KEYS = {"down", "up", "north", "east", "south", "west", None}
+
+
+def _create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]]]:
+    cull_remap_ = {}
+    roty_map = ["north", "east", "south", "west"]
+    for roty in range(-3, 4):
+        for rotx in range(-3, 4):
+            roty_map_rotated = roty_map[roty:] + roty_map[:roty]
+            rotx_map = [roty_map_rotated[0], "down", roty_map_rotated[2], "up"]
+            rotx_map_rotated = rotx_map[rotx:] + rotx_map[:rotx]
+            roty_remap = dict(zip(roty_map, roty_map_rotated))
+            rotx_remap = dict(zip(rotx_map, rotx_map_rotated))
+            cull_remap_[(roty, rotx)] = {
+                key: rotx_remap.get(roty_remap.get(key, key), roty_remap.get(key, key))
+                for key in FACE_KEYS
+            }
+    return cull_remap_
+
+
+cull_remap_all = _create_cull_map()
 
 
 class BlockMesh:
@@ -249,3 +271,46 @@ class BlockMesh:
         2 - the block is not a full block
         """
         return self._transparency
+
+    def rotate(self, rotx, roty) -> "BlockMesh":
+        if rotx or roty and (roty, rotx) in cull_remap_all:
+            cull_remap = cull_remap_all[(roty, rotx)]
+            return BlockMesh(
+                self.face_mode,
+                {
+                    cull_remap[cull_dir]: rotate_3d(
+                        rotate_3d(
+                            self.verts[cull_dir].reshape((-1, self.face_mode)),
+                            rotx * 90,
+                            0,
+                            0,
+                            0.5,
+                            0.5,
+                            0.5,
+                        ),
+                        0,
+                        roty * 90,
+                        0,
+                        0.5,
+                        0.5,
+                        0.5,
+                    ).ravel()
+                    for cull_dir in self.verts
+                },
+                {
+                    cull_remap[cull_dir]: self.texture_coords[cull_dir]
+                    for cull_dir in self.texture_coords
+                },
+                {
+                    cull_remap[cull_dir]: self.tint_verts[cull_dir]
+                    for cull_dir in self.tint_verts
+                },
+                {cull_remap[cull_dir]: self.faces[cull_dir] for cull_dir in self.faces},
+                {
+                    cull_remap[cull_dir]: self.texture_index[cull_dir]
+                    for cull_dir in self.texture_index
+                },
+                self.textures,
+                self.is_transparent,
+            )
+        return self

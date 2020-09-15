@@ -52,26 +52,6 @@ uv_rotation_lut = [0, 3, 2, 3, 2, 1, 0, 1]  # remap
 # }
 
 
-def create_cull_map() -> Dict[Tuple[int, int], Dict[Optional[str], Optional[str]]]:
-    cull_remap_ = {}
-    roty_map = ["north", "east", "south", "west"]
-    for roty in range(-3, 4):
-        for rotx in range(-3, 4):
-            roty_map_rotated = roty_map[roty:] + roty_map[:roty]
-            rotx_map = [roty_map_rotated[0], "down", roty_map_rotated[2], "up"]
-            rotx_map_rotated = rotx_map[rotx:] + rotx_map[:rotx]
-            roty_remap = dict(zip(roty_map, roty_map_rotated))
-            rotx_remap = dict(zip(rotx_map, rotx_map_rotated))
-            cull_remap_[(roty, rotx)] = {
-                key: rotx_remap.get(roty_remap.get(key, key), roty_remap.get(key, key))
-                for key in FACE_KEYS
-            }
-    return cull_remap_
-
-
-cull_remap_all = create_cull_map()
-
-
 def get_cube(
         down: str,
         up: str,
@@ -148,6 +128,3 @@ def get_unit_cube(
         transparency,
         tint
     )
-
-
-
