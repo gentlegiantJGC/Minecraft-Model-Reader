@@ -272,7 +272,9 @@ class BlockMesh:
         """
         return self._transparency
 
-    def rotate(self, rotx, roty) -> "BlockMesh":
+    def rotate(self, rotx: int, roty: int) -> "BlockMesh":
+        """Create a rotated version of this block model. Culling directions are also rotated.
+        rotx and roty must be ints in the range -3 to 3 inclusive."""
         if rotx or roty and (roty, rotx) in cull_remap_all:
             cull_remap = cull_remap_all[(roty, rotx)]
             return BlockMesh(
