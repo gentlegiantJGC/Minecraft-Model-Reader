@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Union, Dict, Tuple, Iterable, Generator, List, Optional
+from typing import Union, Dict, Tuple, Iterable, Generator, Optional
 from PIL import Image
 import numpy
 
@@ -221,7 +221,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         if not block_shape_class.is_valid(block):
             block_shape_class = BlockShapeClasses["cube"]
 
-        texture_index = block_shape_class.texture_index(get_aux_value(block))
+        texture_index = block_shape_class.texture_index(block, get_aux_value(block))
 
         if block.namespaced_name in self._blocks:
             texture_id = self._blocks[block.namespaced_name]

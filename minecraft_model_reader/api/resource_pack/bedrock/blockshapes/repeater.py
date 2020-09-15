@@ -3,6 +3,7 @@ from typing import Tuple
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import PartialBlock
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.mesh.block import BlockMesh
+import amulet_nbt
 
 
 class Repeater(PartialBlock):
@@ -12,6 +13,13 @@ class Repeater(PartialBlock):
     @property
     def blockshape(self) -> str:
         return "repeater"
+
+    def texture_index(self, block: Block, aux_value: int) -> int:
+        if block.base_name == "powered_repeater":
+            return 1
+        else:
+            return 0
+
 
     def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         return (0, 1), (0, 2/16), (0, 1)

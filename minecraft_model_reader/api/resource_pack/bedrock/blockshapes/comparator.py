@@ -14,7 +14,7 @@ class Comparator(PartialBlock):
     def blockshape(self) -> str:
         return "comparator"
 
-    def texture_index(self, aux_value: int) -> int:
+    def texture_index(self, block: Block, aux_value: int) -> int:
         return (aux_value >> 3) & 1
 
     def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:

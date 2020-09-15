@@ -17,4 +17,6 @@ for module in __all__:
     if hasattr(mod, "BlockShape"):
         blockshape = getattr(mod, "BlockShape")
         if isinstance(blockshape, BaseBlockShape):
+            if blockshape.blockshape in BlockShapeClasses:
+                print(f"Name conflict with blockshape {blockshape.blockshape}")
             BlockShapeClasses[blockshape.blockshape] = blockshape
