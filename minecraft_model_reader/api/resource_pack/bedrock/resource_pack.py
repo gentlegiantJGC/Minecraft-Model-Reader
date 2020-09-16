@@ -2,6 +2,7 @@ import os
 import json
 
 from minecraft_model_reader.api.resource_pack.base import BaseResourcePack
+from minecraft_model_reader.api import comment_json
 
 
 class BedrockResourcePack(BaseResourcePack):
@@ -15,7 +16,7 @@ class BedrockResourcePack(BaseResourcePack):
         if os.path.isfile(meta_path):
             try:
                 with open(meta_path) as f:
-                    pack_mcmeta = json.load(f)
+                    pack_mcmeta = comment_json.load(f)
             except json.JSONDecodeError:
                 pass
             else:

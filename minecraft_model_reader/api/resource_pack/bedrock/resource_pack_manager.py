@@ -4,7 +4,7 @@ from typing import Union, Dict, Tuple, Iterable, Generator, Optional
 from PIL import Image
 import numpy
 
-from minecraft_model_reader.api import Block
+from minecraft_model_reader.api import Block, comment_json
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.bedrock import BedrockResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
@@ -19,11 +19,11 @@ def _load_data() -> Tuple[
     ]]
 ]:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
-        _block_shapes = json.load(f)
+        _block_shapes = comment_json.load(f)
 
     _aux_values = {}
     with open(os.path.join(os.path.dirname(__file__), "block_palette.json")) as f:
-        _block_palette = json.load(f)
+        _block_palette = comment_json.load(f)
     for block in _block_palette["blocks"]:
         data = block["data"]
         name = block["name"]
@@ -133,7 +133,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                 if os.path.isfile(terrain_texture_path):
                     try:
                         with open(terrain_texture_path) as f:
-                            terrain_texture = json.load(f)
+                            terrain_texture = comment_json.load(f)
                     except json.JSONDecodeError:
                         pass
                     else:
@@ -167,7 +167,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                 if os.path.isfile(blocks_path):
                     try:
                         with open(blocks_path) as f:
-                            blocks = json.load(f)
+                            blocks = comment_json.load(f)
                     except json.JSONDecodeError:
                         pass
                     else:
