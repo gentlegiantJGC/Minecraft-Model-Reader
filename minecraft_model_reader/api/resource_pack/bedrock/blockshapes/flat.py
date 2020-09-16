@@ -11,14 +11,46 @@ class Flat(Default):
     def tint(self) -> Tuple[float, float, float]:
         return 1, 1, 1
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
         return BlockMesh(
             3,
-            {None: numpy.array([0.0, 0.0625, 1.0, 1.0, 0.0625, 1.0, 1.0, 0.0625, 0.0, 0.0, 0.0625, 0.0], dtype=numpy.float32)},
-            {None: numpy.array([0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0], numpy.float32)},
+            {
+                None: numpy.array(
+                    [
+                        0.0,
+                        0.0625,
+                        1.0,
+                        1.0,
+                        0.0625,
+                        1.0,
+                        1.0,
+                        0.0625,
+                        0.0,
+                        0.0,
+                        0.0625,
+                        0.0,
+                    ],
+                    dtype=numpy.float32,
+                )
+            },
+            {
+                None: numpy.array(
+                    [0.0, 1.0, 1.0, 1.0, 1.0, 0.0, 0.0, 0.0], numpy.float32
+                )
+            },
             {None: numpy.array(self.tint * 4, numpy.float32)},
             {None: numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)},
             {None: numpy.array([0, 0], numpy.uint32)},
             (up,),
-            2
+            2,
         )

@@ -16,8 +16,22 @@ class Pumpkin(Cube):
     def texture_index(self, block: Block, aux_value: int) -> int:
         return 2
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
-        return super().get_block_model(block, down, up, north, east, south, west, transparency).rotate(0, block.properties["direction"].value)
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
+        return (
+            super()
+            .get_block_model(block, down, up, north, east, south, west, transparency)
+            .rotate(0, block.properties["direction"].value)
+        )
 
 
 BlockShape = Pumpkin()

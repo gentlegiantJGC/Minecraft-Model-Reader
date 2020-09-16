@@ -1,7 +1,11 @@
 import importlib.util
 import os
 
-__all__ = [module[:-3] for module in os.listdir(os.path.dirname(__file__)) if module.endswith(".py") and module != "__init__.py"]
+__all__ = [
+    module[:-3]
+    for module in os.listdir(os.path.dirname(__file__))
+    if module.endswith(".py") and module != "__init__.py"
+]
 
 from .base_blockshape import BaseBlockShape
 

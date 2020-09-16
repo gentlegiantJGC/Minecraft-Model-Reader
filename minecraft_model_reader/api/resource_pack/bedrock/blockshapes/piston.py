@@ -19,19 +19,28 @@ class Piston(Cube):
 
     @property
     def rotation_map(self) -> Dict[int, Tuple[int, int]]:
-        return {
-            0: (2, 0),
-            1: (0, 0),
-            2: (1, 2),
-            3: (1, 0),
-            4: (1, 1),
-            5: (1, 3)
-        }
+        return {0: (2, 0), 1: (0, 0), 2: (1, 2), 3: (1, 0), 4: (1, 1), 5: (1, 3)}
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
-        rotation = self.rotation_map.get(block.properties["facing_direction"].value, (0, 0))
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
+        rotation = self.rotation_map.get(
+            block.properties["facing_direction"].value, (0, 0)
+        )
 
-        return super().get_block_model(block, down, up, north, east, south, west, transparency).rotate(*rotation)
+        return (
+            super()
+            .get_block_model(block, down, up, north, east, south, west, transparency)
+            .rotate(*rotation)
+        )
 
 
 BlockShape = Piston()

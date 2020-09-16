@@ -3,7 +3,6 @@ from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.door import Do
 
 
 class Door5(Door):
-
     @property
     def blockshape(self) -> str:
         return "door5"

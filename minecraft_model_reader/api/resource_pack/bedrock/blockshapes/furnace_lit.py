@@ -10,12 +10,7 @@ class FurnaceLit(Furnace):
 
     @property
     def rotation_map(self) -> Dict[int, int]:
-        return {
-            2: 3,
-            3: 1,
-            4: 2,
-            5: 0
-        }
+        return {2: 3, 3: 1, 4: 2, 5: 0}
 
 
 BlockShape = FurnaceLit()

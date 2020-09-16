@@ -25,8 +25,7 @@ def load_resource_pack(resource_pack_path: str):
 
 
 def load_resource_pack_manager(
-    resource_packs: Iterable[Union[str, BaseResourcePack]],
-    load=True
+    resource_packs: Iterable[Union[str, BaseResourcePack]], load=True
 ) -> BaseResourcePackManager:
     resource_packs_out = []
     for resource_pack in resource_packs:

@@ -1,6 +1,8 @@
 from typing import Tuple
 
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import PartialBlock
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
+    PartialBlock,
+)
 from minecraft_model_reader.api import Block
 import amulet_nbt
 
@@ -13,7 +15,9 @@ class PressurePlate(PartialBlock):
     def blockshape(self) -> str:
         return "pressure_plate"
 
-    def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    def bounds(
+        self, block: Block
+    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         if block.properties["redstone_signal"].value >= 1:
             return (1 / 16, 15 / 16), (0, 1 / 32), (1 / 16, 15 / 16)
         else:

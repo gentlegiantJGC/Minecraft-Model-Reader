@@ -1,6 +1,8 @@
 from typing import Tuple
 
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import Cross
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import (
+    Cross,
+)
 from minecraft_model_reader.api import Block, BlockMesh
 import amulet_nbt
 
@@ -16,11 +18,23 @@ class DoublePlant(Cross):
     def texture_index(self, block: Block, aux_value: int) -> int:
         return aux_value % 8
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
         if block.properties["upper_block_bit"].value:
             return super().get_block_model(block, up, up, up, up, up, up, transparency)
         else:
-            return super().get_block_model(block, down, down, down, down, down, down, transparency)
+            return super().get_block_model(
+                block, down, down, down, down, down, down, transparency
+            )
         # TODO: add the sunflower face and tint the required blocks
 
 

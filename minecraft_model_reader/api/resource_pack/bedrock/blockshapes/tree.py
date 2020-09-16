@@ -17,10 +17,22 @@ class Tree(Cube):
     def texture_index(self, block: Block, aux_value: int) -> int:
         return aux_value % 4
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
         axis: str = block.properties["pillar_axis"].value
 
-        model = super().get_block_model(block, down, up, north, east, south, west, transparency)
+        model = super().get_block_model(
+            block, down, up, north, east, south, west, transparency
+        )
         if axis == "x":
             return model.rotate(1, 1)
         elif axis == "z":

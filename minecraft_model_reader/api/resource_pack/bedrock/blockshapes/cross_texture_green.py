@@ -1,6 +1,8 @@
 from typing import Tuple
 
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import Cross
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import (
+    Cross,
+)
 
 
 class CrossGreen(Cross):

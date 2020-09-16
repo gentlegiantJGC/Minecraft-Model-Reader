@@ -1,6 +1,8 @@
 from typing import Tuple
 
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import PartialBlock
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
+    PartialBlock,
+)
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.mesh.block import BlockMesh
 import amulet_nbt
@@ -14,8 +16,14 @@ class Cake(PartialBlock):
     def blockshape(self) -> str:
         return "cake"
 
-    def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
-        return (1/16 + block.properties["bite_counter"].value * 2/16, 15/16), (0, 0.5), (1/16, 15/16)
+    def bounds(
+        self, block: Block
+    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+        return (
+            (1 / 16 + block.properties["bite_counter"].value * 2 / 16, 15 / 16),
+            (0, 0.5),
+            (1 / 16, 15 / 16),
+        )
 
     def texture_index(self, block: Block, aux_value: int) -> int:
         return min(block.properties["bite_counter"].value, 1)

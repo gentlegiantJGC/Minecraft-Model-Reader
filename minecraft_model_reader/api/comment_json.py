@@ -48,14 +48,18 @@ def _loads(_json):
                 index = strip_whitespace(_json, index)
             elif _json[index + 1] == "*":
                 index += 2
-                while _json[index: index + 2] != "*/":
+                while _json[index : index + 2] != "*/":
                     index += 1
                     if index + 1 >= len(_json):
-                        raise json.JSONDecodeError("expected */ but reached the end of file", _json, index)
+                        raise json.JSONDecodeError(
+                            "expected */ but reached the end of file", _json, index
+                        )
                 index += 2
                 index = strip_whitespace(_json, index)
             else:
-                raise json.JSONDecodeError(f"unexpected / at index {index}", _json, index)
+                raise json.JSONDecodeError(
+                    f"unexpected / at index {index}", _json, index
+                )
         return index
 
     def parse_json_recursive(_json, index=0):
@@ -82,7 +86,9 @@ def _loads(_json):
                         index += 1
                     else:
                         raise json.JSONDecodeError(
-                            f"expected : got {_json[index]} at index {index}", _json, index
+                            f"expected : got {_json[index]} at index {index}",
+                            _json,
+                            index,
                         )
 
                     index = strip_whitespace(_json, index)
@@ -99,7 +105,9 @@ def _loads(_json):
                     repeat = False
 
             if index >= len(_json):
-                raise json.JSONDecodeError("expected } but reached end of file", _json, index)
+                raise json.JSONDecodeError(
+                    "expected } but reached end of file", _json, index
+                )
             elif _json[index] == "}":
                 index += 1
             else:
@@ -127,7 +135,9 @@ def _loads(_json):
                 index = strip_whitespace(_json, index)
 
             if index >= len(_json):
-                raise json.JSONDecodeError("expected ] but reached end of file", _json, index)
+                raise json.JSONDecodeError(
+                    "expected ] but reached end of file", _json, index
+                )
             elif _json[index] == "]":
                 index += 1
             else:
@@ -157,22 +167,22 @@ def _loads(_json):
             else:
                 return int("".join(json_obj_list)), index
 
-        elif _json[index] == "n" and _json[index: index + 4] == "null":
+        elif _json[index] == "n" and _json[index : index + 4] == "null":
             index += 4
             return None, index
 
-        elif _json[index] == "t" and _json[index: index + 4] == "true":
+        elif _json[index] == "t" and _json[index : index + 4] == "true":
             index += 4
             return True, index
 
-        elif _json[index] == "f" and _json[index: index + 5] == "false":
+        elif _json[index] == "f" and _json[index : index + 5] == "false":
             index += 5
             return False, index
         else:
             raise json.JSONDecodeError(
                 f'unexpected key {_json[index]} at {index}. Expected {{, [, ", num, null, true or false',
                 _json,
-                index
+                index,
             )
 
     # call recursive function and pass back python object

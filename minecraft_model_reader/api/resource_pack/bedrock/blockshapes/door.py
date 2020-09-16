@@ -17,10 +17,24 @@ class Door(Cube):
     def texture_index(self, block: Block, aux_value: int) -> int:
         return 0
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
         if block.properties["upper_block_bit"].value:
-            return super().get_block_model(block, north, north, north, north, north, north, transparency)
-        return super().get_block_model(block, down, down, down, down, down, down, transparency)
+            return super().get_block_model(
+                block, north, north, north, north, north, north, transparency
+            )
+        return super().get_block_model(
+            block, down, down, down, down, down, down, transparency
+        )
 
 
 BlockShape = Door()

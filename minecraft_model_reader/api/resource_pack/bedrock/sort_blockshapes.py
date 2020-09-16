@@ -11,5 +11,5 @@ def main():
         json.dump(shapes2, f, indent=4)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

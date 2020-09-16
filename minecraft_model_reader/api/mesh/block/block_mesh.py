@@ -75,7 +75,9 @@ class BlockMesh:
             if verts[cull_dir]:
                 verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
                 tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
-                tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
+                tint_verts[cull_dir] = numpy.concatenate(
+                    tint_verts[cull_dir], axis=None
+                )
             else:
                 verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
                 tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
@@ -100,16 +102,16 @@ class BlockMesh:
         )
 
     def __init__(
-            self,
-            face_width: int,
-            verts: Dict[Union[str, None], numpy.ndarray],
-            texture_coords: Dict[Union[str, None], numpy.ndarray],
-            tint_verts: Dict[Union[str, None], numpy.ndarray],
-            # normals: Dict[Union[str, None], numpy.ndarray],
-            faces: Dict[Union[str, None], numpy.ndarray],
-            texture_index: Dict[Union[str, None], numpy.ndarray],
-            textures: Tuple[str, ...],
-            transparency: int,
+        self,
+        face_width: int,
+        verts: Dict[Union[str, None], numpy.ndarray],
+        texture_coords: Dict[Union[str, None], numpy.ndarray],
+        tint_verts: Dict[Union[str, None], numpy.ndarray],
+        # normals: Dict[Union[str, None], numpy.ndarray],
+        faces: Dict[Union[str, None], numpy.ndarray],
+        texture_index: Dict[Union[str, None], numpy.ndarray],
+        textures: Tuple[str, ...],
+        transparency: int,
     ):
         """
 
@@ -172,8 +174,7 @@ class BlockMesh:
         ), "The format of texture index is incorrect"
 
         assert isinstance(textures, (list, tuple)) and all(
-            isinstance(texture, str)
-            for texture in textures
+            isinstance(texture, str) for texture in textures
         ), "The format of the textures is incorrect"
 
         self._face_mode = face_width
@@ -318,18 +319,20 @@ class BlockMesh:
         return self
 
     def __eq__(self, other: "BlockMesh"):
-        return isinstance(other, BlockMesh) and \
-               self.face_mode == other.face_mode and \
-               all(
-                   obj1.keys() == obj2.keys() and all(
-                       numpy.array_equal(obj1[key], obj2[key]) for key in obj1.keys()
-                   ) for obj1, obj2 in (
-                       (self.verts, other.verts),
-                       (self.texture_coords, other.texture_coords),
-                       (self.tint_verts, other.tint_verts),
-                       (self.faces, other.faces),
-                       (self.texture_index, other.texture_index)
-                   )
-               ) and \
-               self.textures == other.textures and \
-               self.is_transparent == other.is_transparent
+        return (
+            isinstance(other, BlockMesh)
+            and self.face_mode == other.face_mode
+            and all(
+                obj1.keys() == obj2.keys()
+                and all(numpy.array_equal(obj1[key], obj2[key]) for key in obj1.keys())
+                for obj1, obj2 in (
+                    (self.verts, other.verts),
+                    (self.texture_coords, other.texture_coords),
+                    (self.tint_verts, other.tint_verts),
+                    (self.faces, other.faces),
+                    (self.texture_index, other.texture_index),
+                )
+            )
+            and self.textures == other.textures
+            and self.is_transparent == other.is_transparent
+        )

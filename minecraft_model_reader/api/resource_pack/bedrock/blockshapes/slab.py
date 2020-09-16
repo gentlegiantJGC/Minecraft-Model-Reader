@@ -1,6 +1,8 @@
 from typing import Tuple
 
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import PartialBlock
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
+    PartialBlock,
+)
 from minecraft_model_reader.api import Block
 import amulet_nbt
 
@@ -17,11 +19,13 @@ class Slab(PartialBlock):
         """The texture index to use within the list for the given Block"""
         return aux_value % 8
 
-    def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    def bounds(
+        self, block: Block
+    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         if block.properties["top_slot_bit"].value:
-            return (0, 1), (1/2, 1), (0, 1)
+            return (0, 1), (1 / 2, 1), (0, 1)
         else:
-            return (0, 1), (0, 1/2), (0, 1)
+            return (0, 1), (0, 1 / 2), (0, 1)
 
     @property
     def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:

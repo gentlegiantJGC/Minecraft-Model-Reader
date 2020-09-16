@@ -2,7 +2,9 @@ from typing import Tuple, Dict
 
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import PartialBlock
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
+    PartialBlock,
+)
 import amulet_nbt
 
 
@@ -19,22 +21,51 @@ class PistonArm(PartialBlock):
 
     @property
     def rotation_map(self) -> Dict[int, Tuple[int, int]]:
-        return {
-            0: (2, 0),
-            1: (0, 0),
-            2: (1, 2),
-            3: (1, 0),
-            4: (1, 1),
-            5: (1, 3)
-        }
+        return {0: (2, 0), 1: (0, 0), 2: (1, 2), 3: (1, 0), 4: (1, 1), 5: (1, 3)}
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
-        rotation = self.rotation_map.get(block.properties["facing_direction"].value, (0, 0))
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
+        rotation = self.rotation_map.get(
+            block.properties["facing_direction"].value, (0, 0)
+        )
 
-        return BlockMesh.merge([
-            super().get_block_model(block, down, up, north, north, north, north, transparency, bounds=((0, 1), (12/16, 1), (0, 1)), do_not_cull=(True, False, True, True, True, True)),
-            super().get_block_model(block, west, west, west, west, west, west, (transparency[5],)*6, bounds=((6/16, 10/16), (0, 12/16), (6/16, 10/16)), do_not_cull=(False, False, True, True, True, True))
-        ]).rotate(*rotation)
+        return BlockMesh.merge(
+            [
+                super().get_block_model(
+                    block,
+                    down,
+                    up,
+                    north,
+                    north,
+                    north,
+                    north,
+                    transparency,
+                    bounds=((0, 1), (12 / 16, 1), (0, 1)),
+                    do_not_cull=(True, False, True, True, True, True),
+                ),
+                super().get_block_model(
+                    block,
+                    west,
+                    west,
+                    west,
+                    west,
+                    west,
+                    west,
+                    (transparency[5],) * 6,
+                    bounds=((6 / 16, 10 / 16), (0, 12 / 16), (6 / 16, 10 / 16)),
+                    do_not_cull=(False, False, True, True, True, True),
+                ),
+            ]
+        ).rotate(*rotation)
 
 
 BlockShape = PistonArm()

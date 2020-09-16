@@ -15,7 +15,11 @@ from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
 from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
 from minecraft_model_reader.api.mesh.util import rotate_3d
-from minecraft_model_reader.api.mesh.block.cube import cube_face_lut, uv_rotation_lut, tri_face
+from minecraft_model_reader.api.mesh.block.cube import (
+    cube_face_lut,
+    uv_rotation_lut,
+    tri_face,
+)
 
 
 UselessImageGroups = {
@@ -221,14 +225,16 @@ class JavaResourcePackManager(BaseResourcePackManager):
                                 f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
                             )
                     else:
-                        properties_match = Block.parameters_regex.finditer(f",{variant}")
+                        properties_match = Block.parameters_regex.finditer(
+                            f",{variant}"
+                        )
                         if all(
-                                block.properties.get(
-                                    match.group("name"),
-                                    amulet_nbt.TAG_String(match.group("value")),
-                                ).value
-                                == match.group("value")
-                                for match in properties_match
+                            block.properties.get(
+                                match.group("name"),
+                                amulet_nbt.TAG_String(match.group("value")),
+                            ).value
+                            == match.group("value")
+                            for match in properties_match
                         ):
                             try:
                                 return self._load_blockstate_model(
@@ -247,26 +253,25 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         if "when" in case:
                             if "OR" in case["when"]:
                                 if not any(
-                                        all(
-                                            block.properties.get(prop, None)
-                                            in self.parse_state_val(val)
-                                            for prop, val in prop_match.items()
-                                        )
-                                        for prop_match in case["when"]["OR"]
+                                    all(
+                                        block.properties.get(prop, None)
+                                        in self.parse_state_val(val)
+                                        for prop, val in prop_match.items()
+                                    )
+                                    for prop_match in case["when"]["OR"]
                                 ):
                                     continue
                             elif not all(
-                                    block.properties.get(prop, None) in self.parse_state_val(val)
-                                    for prop, val in case["when"].items()
+                                block.properties.get(prop, None)
+                                in self.parse_state_val(val)
+                                for prop, val in case["when"].items()
                             ):
                                 continue
 
                         if "apply" in case:
                             try:
                                 models.append(
-                                    self._load_blockstate_model(
-                                        block, case["apply"]
-                                    )
+                                    self._load_blockstate_model(block, case["apply"])
                                 )
 
                             except:
@@ -279,7 +284,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         return self.missing_block
 
     def _load_blockstate_model(
-            self, block: Block, blockstate_value: Union[dict, list]
+        self, block: Block, blockstate_value: Union[dict, list]
     ) -> BlockMesh:
         """Load the model(s) associated with a block state and apply rotations if needed."""
         if isinstance(blockstate_value, list):
@@ -323,11 +328,11 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
             opaque_face_count = 0
             if (
-                    transparent
-                    and "rotation" not in element
-                    and element.get("to", [16, 16, 16]) == [16, 16, 16]
-                    and element.get("from", [0, 0, 0]) == [0, 0, 0]
-                    and len(element_faces) >= 6
+                transparent
+                and "rotation" not in element
+                and element.get("to", [16, 16, 16]) == [16, 16, 16]
+                and element.get("from", [0, 0, 0]) == [0, 0, 0]
+                and len(element_faces) >= 6
             ):
                 # if the block is not yet defined as a solid block
                 # and this element is a full size element
@@ -361,15 +366,21 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
                     # get the relative texture path for the texture used
                     texture_relative_path = element_faces[face_dir].get("texture", None)
-                    while isinstance(texture_relative_path, str) and texture_relative_path.startswith("#"):
-                        texture_relative_path = java_model["textures"].get(texture_relative_path[1:], None)
+                    while isinstance(
+                        texture_relative_path, str
+                    ) and texture_relative_path.startswith("#"):
+                        texture_relative_path = java_model["textures"].get(
+                            texture_relative_path[1:], None
+                        )
                     texture_path_list = texture_relative_path.split(":", 1)
                     if len(texture_path_list) == 2:
                         namespace, texture_relative_path = texture_path_list
                     else:
                         namespace = block.namespace
 
-                    texture_path = self.get_texture_path(namespace, texture_relative_path)
+                    texture_path = self.get_texture_path(
+                        namespace, texture_relative_path
+                    )
 
                     if check_faces:
                         if self._texture_is_transparent[texture_path][1]:
@@ -389,15 +400,16 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     # get the uv values for each vertex
                     # TODO: get the uv based on box location if not defined
                     texture_uv = (
-                            numpy.array(
-                                element_faces[face_dir].get("uv", [0, 0, 16, 16]), numpy.float
-                            )
-                            / 16
+                        numpy.array(
+                            element_faces[face_dir].get("uv", [0, 0, 16, 16]),
+                            numpy.float,
+                        )
+                        / 16
                     )
                     texture_rotation = element_faces[face_dir].get("rotation", 0)
                     uv_slice = (
-                            uv_rotation_lut[2 * int(texture_rotation / 90):]
-                            + uv_rotation_lut[: 2 * int(texture_rotation / 90)]
+                        uv_rotation_lut[2 * int(texture_rotation / 90) :]
+                        + uv_rotation_lut[: 2 * int(texture_rotation / 90)]
                     )
 
                     # merge the vertex coordinates and texture coordinates
@@ -416,17 +428,19 @@ class JavaResourcePackManager(BaseResourcePackManager):
                             angles[2] = -angle
                         face_verts = rotate_3d(face_verts, *angles, *origin)
 
-                    verts[cull_dir].append(face_verts)  # vertex coordinates for this face
+                    verts[cull_dir].append(
+                        face_verts
+                    )  # vertex coordinates for this face
 
                     tverts[cull_dir].append(
                         texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
                     )
                     if "tintindex" in element_faces[face_dir]:
                         tint_verts[cull_dir] += [
-                                                    0,
-                                                    1,
-                                                    0,
-                                                ] * 4  # TODO: set this up for each supported block
+                            0,
+                            1,
+                            0,
+                        ] * 4  # TODO: set this up for each supported block
                     else:
                         tint_verts[cull_dir] += [1, 1, 1] * 4
 
@@ -446,7 +460,9 @@ class JavaResourcePackManager(BaseResourcePackManager):
         for cull_dir, face_array in faces.items():
             if len(face_array) > 0:
                 faces[cull_dir] = numpy.concatenate(face_array, axis=None)
-                tint_verts[cull_dir] = numpy.concatenate(tint_verts[cull_dir], axis=None)
+                tint_verts[cull_dir] = numpy.concatenate(
+                    tint_verts[cull_dir], axis=None
+                )
                 verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
                 tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
                 texture_indexes[cull_dir] = numpy.array(
@@ -478,9 +494,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
             model = self._model_files[(namespace, model_path)]
 
             if "parent" in model:
-                parent_model = self._recursive_load_block_model(
-                    block, model["parent"]
-                )
+                parent_model = self._recursive_load_block_model(block, model["parent"])
             else:
                 parent_model = {}
             if "textures" in model:

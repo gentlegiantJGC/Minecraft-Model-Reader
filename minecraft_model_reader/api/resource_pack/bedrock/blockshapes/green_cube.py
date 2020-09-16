@@ -11,16 +11,19 @@ class GreenCube(Cube):
     def blockshape(self) -> str:
         return "greencube"
 
-    def get_block_model(self, block: Block, down: str, up: str, north: str, east: str, south: str, west: str, transparency: Tuple[bool, bool, bool, bool, bool, bool]) -> BlockMesh:
+    def get_block_model(
+        self,
+        block: Block,
+        down: str,
+        up: str,
+        north: str,
+        east: str,
+        south: str,
+        west: str,
+        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+    ) -> BlockMesh:
         return get_unit_cube(
-            down,
-            up,
-            north,
-            east,
-            south,
-            west,
-            int(any(transparency)),
-            (0, 1, 0)
+            down, up, north, east, south, west, int(any(transparency)), (0, 1, 0)
         )
 
 
