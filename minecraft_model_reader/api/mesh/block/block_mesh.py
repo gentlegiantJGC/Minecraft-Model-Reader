@@ -100,16 +100,16 @@ class BlockMesh:
         )
 
     def __init__(
-        self,
-        face_width: int,
-        verts: Dict[Union[str, None], numpy.ndarray],
-        texture_coords: Dict[Union[str, None], numpy.ndarray],
-        tint_verts: Dict[Union[str, None], numpy.ndarray],
-        # normals: Dict[Union[str, None], numpy.ndarray],
-        faces: Dict[Union[str, None], numpy.ndarray],
-        texture_index: Dict[Union[str, None], numpy.ndarray],
-        textures: Tuple[str, ...],
-        transparency: int,
+            self,
+            face_width: int,
+            verts: Dict[Union[str, None], numpy.ndarray],
+            texture_coords: Dict[Union[str, None], numpy.ndarray],
+            tint_verts: Dict[Union[str, None], numpy.ndarray],
+            # normals: Dict[Union[str, None], numpy.ndarray],
+            faces: Dict[Union[str, None], numpy.ndarray],
+            texture_index: Dict[Union[str, None], numpy.ndarray],
+            textures: Tuple[str, ...],
+            transparency: int,
     ):
         """
 
@@ -316,3 +316,20 @@ class BlockMesh:
                 self.is_transparent,
             )
         return self
+
+    def __eq__(self, other: "BlockMesh"):
+        return isinstance(other, BlockMesh) and \
+               self.face_mode == other.face_mode and \
+               all(
+                   obj1.keys() == obj2.keys() and all(
+                       numpy.array_equal(obj1[key], obj2[key]) for key in obj1.keys()
+                   ) for obj1, obj2 in (
+                       (self.verts, other.verts),
+                       (self.texture_coords, other.texture_coords),
+                       (self.tint_verts, other.tint_verts),
+                       (self.faces, other.faces),
+                       (self.texture_index, other.texture_index)
+                   )
+               ) and \
+               self.textures == other.textures and \
+               self.is_transparent == other.is_transparent
