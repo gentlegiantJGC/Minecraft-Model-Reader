@@ -6,6 +6,7 @@ __all__ = [module[:-3] for module in os.listdir(os.path.dirname(__file__)) if mo
 from .base_blockshape import BaseBlockShape
 
 BlockShapeClasses = {}
+_class_names = set()
 
 for module in __all__:
     module_path = os.path.join(os.path.dirname(__file__), module + ".py")
@@ -19,4 +20,8 @@ for module in __all__:
         if isinstance(blockshape, BaseBlockShape):
             if blockshape.blockshape in BlockShapeClasses:
                 print(f"Name conflict with blockshape {blockshape.blockshape}")
+            if blockshape.__class__.__name__ in _class_names:
+                print(f"Duplicate class name {blockshape.__class__.__name__}")
+            else:
+                _class_names.add(blockshape.__class__.__name__)
             BlockShapeClasses[blockshape.blockshape] = blockshape

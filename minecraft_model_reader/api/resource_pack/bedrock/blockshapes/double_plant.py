@@ -5,7 +5,7 @@ from minecraft_model_reader.api import Block, BlockMesh
 import amulet_nbt
 
 
-class CrossGreen(Cross):
+class DoublePlant(Cross):
     def is_valid(self, block: Block) -> bool:
         return isinstance(block.properties.get("upper_block_bit"), amulet_nbt.TAG_Byte)
 
@@ -24,4 +24,4 @@ class CrossGreen(Cross):
         # TODO: add the sunflower face and tint the required blocks
 
 
-BlockShape = CrossGreen()
+BlockShape = DoublePlant()

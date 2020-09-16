@@ -3,14 +3,10 @@ from typing import Tuple
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.mesh.block.cube import get_cube
-from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cube import Cube
+from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.default import Default
 
 
-class PartialBlock(Cube):
-    @property
-    def blockshape(self) -> str:
-        raise NotImplementedError
-
+class PartialBlock(Default):
     def bounds(self, block: Block) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         return (0, 1), (0, 1), (0, 1)
 
