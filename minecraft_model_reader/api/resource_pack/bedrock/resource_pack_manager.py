@@ -201,18 +201,6 @@ class BedrockResourcePackManager(BaseResourcePackManager):
     def _get_model(self, block: Block) -> BlockMesh:
         block_shape = self._block_shapes.get(block.namespaced_name, "cube")
 
-        if block_shape == "invisible":
-            return BlockMesh(
-                3,
-                {},
-                {},
-                {},
-                {},
-                {},
-                (),
-                2
-            )
-
         if block_shape in BlockShapeClasses:
             block_shape_class = BlockShapeClasses[block_shape]
         else:
@@ -255,7 +243,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                         self._texture_is_transparent[west][1],
                     )
             else:
-                return self.missing_block
+                up = down = north = east = south = west = self._get_texture("missing", texture_index)
+                transparent = (self._texture_is_transparent[up][1],) * 6
 
             return block_shape_class.get_block_model(
                 block,

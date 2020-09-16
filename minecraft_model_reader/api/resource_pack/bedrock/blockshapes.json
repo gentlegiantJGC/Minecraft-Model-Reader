@@ -362,7 +362,7 @@
     "minecraft:leaves2": "greencube",
     "minecraft:grindstone": "grindstone",
     "minecraft:hopper": "hopper",
-    "minecraft:air": "invisible",
+    "minecraft:air": "air",
     "minecraft:invisibleBedrock": "invisible",
     "minecraft:skull": "invisible",
     "minecraft:standing_banner": "invisible",
