@@ -120,7 +120,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         self._block_shapes.update(BlockShapes)  # add the default block shapes
         self._load_transparency_cache(__file__)
 
-        self._textures["missing_no"] = self.missing_no
+        self._textures["missing_no"] = self._check_texture("missing")
 
         pack_count = len(self._packs)
 
