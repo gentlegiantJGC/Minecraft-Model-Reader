@@ -2,47 +2,25 @@ import os
 import os.path as op
 from setuptools import setup, find_packages
 
-CYTHON_COMPILE = False
-try:
-    from Cython.Build import cythonize
 
-    CYTHON_COMPILE = True
-except Exception:
-    pass
+with open("requirements.txt") as requirements_fp:
+    requirements = [
+        line for line in requirements_fp.readlines() if not line.startswith("git+")
+    ]
 
-requirements_fp = open(os.path.join(".", "requirements.txt"))
-requirements = [
-    line for line in requirements_fp.readlines() if not line.startswith("git+")
-]
-requirements_fp.close()
+packages = find_packages(include=["minecraft_model_reader", "minecraft_model_reader.*"])
 
-packages = find_packages(
-    include=[
-        "*",
-        "minecraft_model_reader.*",
-        "minecraft_model_reader.api.*",
-        "minecraft_model_reader.java.*",
-        "minecraft_model_reader.lib.*"
-    ],
-    exclude=[],
-)
-
-package_data_locations = (
-    ("api", "image",),
-    ("api", "resource_pack", "java", "resource_packs",)
-)
+package_data_locations = (("api", "image",), ("api", "resource_pack",))
 
 package_data = []
 for location_data_tuple in package_data_locations:
-    location_files = []
     for root, _, filenames in os.walk(
         op.join(op.dirname(__file__), "minecraft_model_reader", *location_data_tuple)
     ):
         for filename in filenames:
-            if "__pycache__" in root:
+            if "__pycache__" in root or filename.endswith(".py"):
                 continue
-            location_files.append(op.join(root, filename))
-    package_data.extend(location_files)
+            package_data.append(op.join(root, filename))
 
 SETUP_PARAMS = {
     "name": "minecraft-model-reader",
