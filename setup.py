@@ -10,17 +10,15 @@ with open("requirements.txt") as requirements_fp:
 
 packages = find_packages(include=["minecraft_model_reader", "minecraft_model_reader.*"])
 
-package_data_locations = (("api", "image",), ("api", "resource_pack",))
 
 package_data = []
-for location_data_tuple in package_data_locations:
-    for root, _, filenames in os.walk(
-        op.join(op.dirname(__file__), "minecraft_model_reader", *location_data_tuple)
-    ):
-        for filename in filenames:
-            if "__pycache__" in root or filename.endswith(".py"):
-                continue
-            package_data.append(op.join(root, filename))
+for root, _, filenames in os.walk(
+    op.join(op.dirname(__file__), "minecraft_model_reader", "api")
+):
+    for filename in filenames:
+        if "__pycache__" in root or filename.endswith(".py"):
+            continue
+        package_data.append(op.join(root, filename))
 
 SETUP_PARAMS = {
     "name": "minecraft-model-reader",
