@@ -1,5 +1,6 @@
 import os
 import os.path as op
+import glob
 from setuptools import setup, find_packages
 
 CYTHON_COMPILE = False
@@ -19,30 +20,34 @@ requirements_fp.close()
 packages = find_packages(
     include=[
         "*",
-        "minecraft_model_reader.*",
-        "minecraft_model_reader.api.*",
-        "minecraft_model_reader.java.*",
-        "minecraft_model_reader.lib.*"
     ],
     exclude=[],
 )
 
 package_data_locations = (
     ("api", "image",),
-    ("api", "resource_pack", "java", "resource_packs",)
+    ("api", "resource_pack", "java", "resource_packs",),
+    ("api", "resource_pack", "bedrock", "resource_packs",),
+    ("api", "resource_pack", "bedrock", "block_palette.json",),
+    ("api", "resource_pack", "bedrock", "blockshapes.json",),
 )
 
 package_data = []
 for location_data_tuple in package_data_locations:
-    location_files = []
-    for root, _, filenames in os.walk(
-        op.join(op.dirname(__file__), "minecraft_model_reader", *location_data_tuple)
-    ):
-        for filename in filenames:
-            if "__pycache__" in root:
+    path = os.path.join(
+            op.dirname(__file__),
+            "minecraft_model_reader",
+            *location_data_tuple
+        )
+    if os.path.isdir(path):
+        for fpath in glob.iglob(
+            os.path.join(path, "**", "*.*"), recursive=True
+        ):
+            if "__pycache__" in fpath:
                 continue
-            location_files.append(op.join(root, filename))
-    package_data.extend(location_files)
+            package_data.append(fpath)
+    elif os.path.isfile(path):
+        package_data.append(path)
 
 SETUP_PARAMS = {
     "name": "minecraft-model-reader",
