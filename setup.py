@@ -43,7 +43,7 @@ for location_data_tuple in package_data_locations:
         for fpath in glob.iglob(
             os.path.join(path, "**", "*.*"), recursive=True
         ):
-            if "__pycache__" in fpath:
+            if "__pycache__" in fpath or fpath.endswith(".py"):
                 continue
             package_data.append(fpath)
     elif os.path.isfile(path):
