@@ -164,7 +164,21 @@ class Cross(BaseBlockShape):
                     numpy.uint32,
                 )
             },
-            {None: numpy.array([0, 0, 0, 0, 0, 0, 0, 0,], numpy.uint32)},
+            {
+                None: numpy.array(
+                    [
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                    ],
+                    numpy.uint32,
+                )
+            },
             (up,),
             2,
         )

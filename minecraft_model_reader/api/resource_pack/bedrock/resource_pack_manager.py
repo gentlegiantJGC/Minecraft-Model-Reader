@@ -69,7 +69,9 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         ] = {}  # block string to short texture ids
         self._terrain_texture: Dict[
             str, Tuple[str, ...]
-        ] = {}  # texture ids to list of relative paths. Each relates to a different data value.
+        ] = (
+            {}
+        )  # texture ids to list of relative paths. Each relates to a different data value.
         self._textures: Dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
 

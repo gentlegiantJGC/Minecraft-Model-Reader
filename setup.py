@@ -1,61 +1,95 @@
-import os
-import os.path as op
-import glob
 from setuptools import setup, find_packages
+import os
+import glob
+import shutil
+import versioneer
 
-CYTHON_COMPILE = False
-try:
-    from Cython.Build import cythonize
+# there were issues with other builds carrying over their cache
+for d in glob.glob("*.egg-info"):
+    shutil.rmtree(d)
 
-    CYTHON_COMPILE = True
-except Exception:
-    pass
 
-requirements_fp = open(os.path.join(".", "requirements.txt"))
-requirements = [
-    line for line in requirements_fp.readlines() if not line.startswith("git+")
-]
-requirements_fp.close()
+def remove_git_and_http_package_links(uris):
+    for uri in uris:
+        if uri.startswith("git+") or uri.startswith("https:"):
+            continue
+        yield uri
 
-packages = find_packages(
-    include=[
-        "*",
-    ],
-    exclude=[],
-)
 
-package_data_locations = (
-    ("api", "image",),
-    ("api", "resource_pack", "java", "resource_packs",),
-    ("api", "resource_pack", "bedrock", "resource_packs",),
-    ("api", "resource_pack", "bedrock", "block_palette.json",),
-    ("api", "resource_pack", "bedrock", "blockshapes.json",),
-)
+with open("./requirements.txt") as requirements_fp:
+    required_packages = [
+        line for line in remove_git_and_http_package_links(requirements_fp.readlines())
+    ]
 
-package_data = []
-for location_data_tuple in package_data_locations:
-    path = os.path.join(
-            op.dirname(__file__),
-            "minecraft_model_reader",
-            *location_data_tuple
+package_data = [
+    os.path.relpath(path, "minecraft_model_reader") for path in
+    set(
+        glob.glob(
+            os.path.join(
+                "minecraft_model_reader",
+                "**",
+                "*.*"
+            ),
+            recursive=True
         )
-    if os.path.isdir(path):
-        for fpath in glob.iglob(
-            os.path.join(path, "**", "*.*"), recursive=True
-        ):
-            if "__pycache__" in fpath or fpath.endswith(".py"):
-                continue
-            package_data.append(fpath)
-    elif os.path.isfile(path):
-        package_data.append(path)
+    ) - set(
+        glob.glob(
+            os.path.join(
+                "minecraft_model_reader",
+                "**",
+                "*.py[cod]"
+            ),
+            recursive=True
+        )
+    ) - set(
+        glob.glob(
+            os.path.join(
+                "minecraft_model_reader",
+                "api",
+                "resource_pack",
+                "bedrock",
+                "resource_packs",
+                "bedrock_vanilla",
+                "**",
+                "*.*"
+            ),
+            recursive=True
+        )
+    ) - set(
+        glob.glob(
+            os.path.join(
+                "minecraft_model_reader",
+                "api",
+                "resource_pack",
+                "java",
+                "resource_packs",
+                "java_vanilla",
+                "**",
+                "*.*"
+            ),
+            recursive=True
+        )
+    )
+]
 
-SETUP_PARAMS = {
-    "name": "minecraft-model-reader",
-    "install_requires": requirements,
-    "packages": packages,
-    "include_package_data": True,
-    "zip_safe": False,
-    "package_data": {"minecraft_model_reader": package_data},
-}
-
-setup(**SETUP_PARAMS)
+setup(
+    name="minecraft-resource-pack",
+    version=versioneer.get_version(),
+    description="A Python library reading Minecraft's various resource pack formats.",
+    author="James Clare",
+    author_email="amuleteditor@gmail.com",
+    install_requires=required_packages,
+    packages=find_packages(),
+    package_data={"minecraft_model_reader": package_data},
+    cmdclass=versioneer.get_cmdclass(),
+    setup_requires=required_packages,
+    dependency_links=[
+        "https://pypi.org/project/Pillow/",
+        "https://pypi.org/project/numpy/",
+    ],
+    classifiers=[
+        "Programming Language :: Python :: 3",
+        "Operating System :: OS Independent",
+    ],
+    python_requires='>=3.6',
+)

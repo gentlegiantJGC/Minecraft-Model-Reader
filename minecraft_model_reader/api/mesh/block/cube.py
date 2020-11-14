@@ -18,14 +18,16 @@ TextureUVType = Tuple[
 unit_box_coordinates = numpy.array(
     list(itertools.product((0, 1), (0, 1), (0, 1)))
 )  # X, Y, Z
-cube_face_lut = {  # This maps face direction to the vertices used (defined in unit_box_coordinates)
-    "down": numpy.array([0, 4, 5, 1]),
-    "up": numpy.array([3, 7, 6, 2]),
-    "north": numpy.array([4, 0, 2, 6]),
-    "east": numpy.array([5, 4, 6, 7]),
-    "south": numpy.array([1, 5, 7, 3]),
-    "west": numpy.array([0, 1, 3, 2]),
-}
+cube_face_lut = (
+    {  # This maps face direction to the vertices used (defined in unit_box_coordinates)
+        "down": numpy.array([0, 4, 5, 1]),
+        "up": numpy.array([3, 7, 6, 2]),
+        "north": numpy.array([4, 0, 2, 6]),
+        "east": numpy.array([5, 4, 6, 7]),
+        "south": numpy.array([1, 5, 7, 3]),
+        "west": numpy.array([0, 1, 3, 2]),
+    }
+)
 tri_face = numpy.array([0, 1, 2, 0, 2, 3], numpy.uint32)
 
 # cube_vert_lut = {  # This maps from vertex index to index in [minx, miny, minz, maxx, maxy, maxz]
