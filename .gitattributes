@@ -1,2 +1,3 @@
 # Auto detect text files and perform LF normalization
 * text=auto
+minecraft_model_reader/_version.py export-subst
