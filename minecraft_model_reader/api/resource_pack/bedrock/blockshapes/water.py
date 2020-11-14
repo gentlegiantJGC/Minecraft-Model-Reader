@@ -22,7 +22,15 @@ class Water(Cube):
         west: str,
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        return get_unit_cube(down, down, down, down, down, down, int(transparency[0]),)
+        return get_unit_cube(
+            down,
+            down,
+            down,
+            down,
+            down,
+            down,
+            int(transparency[0]),
+        )
 
 
 BlockShape = Water()
