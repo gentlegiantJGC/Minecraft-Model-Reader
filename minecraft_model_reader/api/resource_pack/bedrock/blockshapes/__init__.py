@@ -1,26 +1,17 @@
-import importlib.util
-import os
-
-__all__ = [
-    module[:-3]
-    for module in os.listdir(os.path.dirname(__file__))
-    if module.endswith(".py") and module != "__init__.py"
-]
+import importlib
+import pkgutil
+import minecraft_model_reader
 
 from .base_blockshape import BaseBlockShape
 
 BlockShapeClasses = {}
 _class_names = set()
 
-for module in __all__:
-    module_path = os.path.join(os.path.dirname(__file__), module + ".py")
-    spec = importlib.util.spec_from_file_location(
-        os.path.basename(module_path), module_path
-    )
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    if hasattr(mod, "BlockShape"):
-        blockshape = getattr(mod, "BlockShape")
+
+def _load_blockshape(module_name: str):
+    blockshape_module = importlib.import_module(module_name)
+    if hasattr(blockshape_module, "BlockShape"):
+        blockshape = getattr(blockshape_module, "BlockShape")
         if isinstance(blockshape, BaseBlockShape):
             if blockshape.blockshape in BlockShapeClasses:
                 print(f"Name conflict with blockshape {blockshape.blockshape}")
@@ -29,3 +20,23 @@ for module in __all__:
             else:
                 _class_names.add(blockshape.__class__.__name__)
             BlockShapeClasses[blockshape.blockshape] = blockshape
+
+
+def _load_blockshapes():
+    package_prefix = __name__ + "."
+
+    # python file support
+    for _, name, _ in pkgutil.walk_packages(__path__, package_prefix):
+        _load_blockshape(name)
+
+    # pyinstaller support
+    toc = set()
+    for importer in pkgutil.iter_importers(minecraft_model_reader.__name__):
+        if hasattr(importer, "toc"):
+            toc |= importer.toc
+    for module_name in toc:
+        if module_name.startswith(package_prefix):
+            _load_blockshape(module_name)
+
+
+_load_blockshapes()
