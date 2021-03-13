@@ -225,7 +225,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                                 f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
                             )
                     else:
-                        properties_match = Block.parameters_regex.finditer(
+                        properties_match = Block.properties_regex.finditer(
                             f",{variant}"
                         )
                         if all(
