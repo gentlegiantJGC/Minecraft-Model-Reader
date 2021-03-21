@@ -13,17 +13,19 @@ from minecraft_model_reader.api.resource_pack import JavaResourcePack
 RESOURCE_PACK_DIR = os.path.join(
     minecraft_model_reader.path, "api", "resource_pack", "java", "resource_packs"
 )
+launcher_manifest = None
 
-try:
-    log.info("Downloading java launcher manifest file.")
-    launcher_manifest = json.load(
-        urlopen("https://launchermeta.mojang.com/mc/game/version_manifest.json")
-    )
-except Exception as e:
-    log.error(
-        f'Failed to download the launcher manifest. "{e}" This may cause problems if you have not used the program before. Make sure you are connected to the internet and https://mojang.com is not blocked.'
-    )
-    launcher_manifest = {"latest": {"release": None}}
+
+def get_launcher_manifest() -> dict:
+    global launcher_manifest
+    if launcher_manifest is None:
+        log.info("Downloading java launcher manifest file.")
+        with urlopen(
+            "https://launchermeta.mojang.com/mc/game/version_manifest.json", timeout=20
+        ) as manifest:
+            launcher_manifest = json.load(manifest)
+        log.info("Finished downloading java launcher manifest file.")
+    return launcher_manifest
 
 
 def generator_unpacker(gen: Generator):
@@ -39,27 +41,30 @@ def get_latest() -> JavaResourcePack:
 
 
 def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
+    """Download the latest resource pack if required.
+
+    :return: The loaded Java resource pack.
+    :raises:
+        Exception: If the
+    """
     vanilla_rp_path = os.path.join(RESOURCE_PACK_DIR, "java_vanilla")
-    new_version = launcher_manifest["latest"]["release"]
-    if new_version is None:
+    try:
+        new_version = get_launcher_manifest()["latest"]["release"]
+    except Exception as e:
         if os.path.isdir(vanilla_rp_path):
             log.error(
                 "Could not download the launcher manifest. The resource pack seems to be present so using that."
             )
         else:
-            log.error(
-                "Could not download the launcher manifest. The resource pack is not present, blocks may not be rendered correctly."
-            )
+            raise e
     else:
-        if os.path.isdir(vanilla_rp_path):
-            if os.path.isfile(os.path.join(vanilla_rp_path, "version")):
-                with open(os.path.join(vanilla_rp_path, "version")) as f:
-                    old_version = f.read()
-                if old_version != new_version:
-                    yield from _remove_and_download_iter(vanilla_rp_path, new_version)
-            else:
-                yield from _remove_and_download_iter(vanilla_rp_path, new_version)
-        else:
+        has_new_pack = False
+        if os.path.isfile(os.path.join(vanilla_rp_path, "version")):
+            with open(os.path.join(vanilla_rp_path, "version")) as f:
+                old_version = f.read()
+            has_new_pack = old_version != new_version
+
+        if not has_new_pack:
             yield from _remove_and_download_iter(vanilla_rp_path, new_version)
     return JavaResourcePack(vanilla_rp_path)
 
@@ -99,41 +104,41 @@ def _remove_and_download(path, version):
 def _remove_and_download_iter(path, version) -> Generator[float, None, None]:
     if os.path.isdir(path):
         shutil.rmtree(path, ignore_errors=True)
-    exists = yield from download_resources_iter(path, version)
-    if exists:
-        with open(os.path.join(path, "version"), "w") as f:
-            f.write(version)
+    yield from download_resources_iter(path, version)
+    with open(os.path.join(path, "version"), "w") as f:
+        f.write(version)
 
 
-def download_resources(path, version) -> bool:
-    return generator_unpacker(download_resources_iter(path, version))
+def download_resources(path, version):
+    generator_unpacker(download_resources_iter(path, version))
 
 
 def download_resources_iter(
     path, version, chunk_size=4096
-) -> Generator[float, None, bool]:
+) -> Generator[float, None, None]:
     log.info(f"Downloading Java resource pack for version {version}")
     version_url = next(
-        (v["url"] for v in launcher_manifest["versions"] if v["id"] == version), None
+        (v["url"] for v in get_launcher_manifest()["versions"] if v["id"] == version),
+        None,
     )
     if version_url is None:
-        log.error(f"Could not find Java resource pack for version {version}.")
-        return False
+        raise Exception(f"Could not find Java resource pack for version {version}.")
 
     try:
-        version_manifest = json.load(urlopen(version_url))
+        with urlopen(version_url, timeout=20) as vm:
+            version_manifest = json.load(vm)
         version_client_url = version_manifest["downloads"]["client"]["url"]
 
-        response = urlopen(version_client_url)
-        data = []
-        data_size = int(response.headers["content-length"].strip())
-        index = 0
-        chunk = b"hello"
-        while chunk:
-            chunk = response.read(chunk_size)
-            data.append(chunk)
-            index += 1
-            yield min(1.0, (index * chunk_size) / (data_size * 2))
+        with urlopen(version_client_url, timeout=20) as response:
+            data = []
+            data_size = int(response.headers["content-length"].strip())
+            index = 0
+            chunk = b"hello"
+            while chunk:
+                chunk = response.read(chunk_size)
+                data.append(chunk)
+                index += 1
+                yield min(1.0, (index * chunk_size) / (data_size * 2))
 
         client = zipfile.ZipFile(io.BytesIO(b"".join(data)))
         paths = [fpath for fpath in client.namelist() if fpath.startswith("assets/")]
@@ -145,11 +150,10 @@ def download_resources_iter(
         client.extract("pack.mcmeta", path)
         client.extract("pack.png", path)
 
-    except:
+    except Exception as e:
         log.error(
-            f"Failed to download and extract the Java resource pack for version {version}. Make sure you have a connection to the internet.",
+            f"Failed to download and extract the Java resource pack for version {version}.",
             exc_info=True,
         )
-        return False
+        raise e
     log.info(f"Finished downloading Java resource pack for version {version}")
-    return True
