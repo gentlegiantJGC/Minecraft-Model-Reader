@@ -62,7 +62,7 @@ def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
         if os.path.isfile(os.path.join(vanilla_rp_path, "version")):
             with open(os.path.join(vanilla_rp_path, "version")) as f:
                 old_version = f.read()
-            has_new_pack = old_version != new_version
+            has_new_pack = old_version == new_version
 
         if not has_new_pack:
             yield from _remove_and_download_iter(vanilla_rp_path, new_version)
