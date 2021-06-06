@@ -14,6 +14,7 @@ RESOURCE_PACK_DIR = os.path.join(
     minecraft_model_reader.path, "api", "resource_pack", "java", "resource_packs"
 )
 launcher_manifest = None
+INCLUDE_SNAPSHOT = False
 
 
 def get_launcher_manifest() -> dict:
@@ -49,7 +50,10 @@ def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
     """
     vanilla_rp_path = os.path.join(RESOURCE_PACK_DIR, "java_vanilla")
     try:
-        new_version = get_launcher_manifest()["latest"]["release"]
+        if INCLUDE_SNAPSHOT:
+            new_version = get_launcher_manifest()["latest"]["snapshot"]
+        else:
+            new_version = get_launcher_manifest()["latest"]["release"]
     except Exception as e:
         if os.path.isdir(vanilla_rp_path):
             log.error(
