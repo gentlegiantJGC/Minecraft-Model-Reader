@@ -4,7 +4,7 @@ import zipfile
 import json
 from urllib.request import urlopen
 import io
-from typing import Generator
+from typing import Generator, List
 
 import minecraft_model_reader
 from minecraft_model_reader import log
@@ -145,11 +145,14 @@ def download_resources_iter(
                 yield min(1.0, (index * chunk_size) / (data_size * 2))
 
         client = zipfile.ZipFile(io.BytesIO(b"".join(data)))
-        paths = [fpath for fpath in client.namelist() if fpath.startswith("assets/")]
+        paths: List[str] = [fpath for fpath in client.namelist() if fpath.startswith("assets/")]
         path_count = len(paths)
         for path_index, fpath in enumerate(paths):
             if not path_index % 30:
                 yield path_index / (path_count * 2) + 0.5
+            if fpath.endswith("/"):
+                continue
+            os.makedirs(os.path.dirname(os.path.abspath(os.path.join(path, fpath))), exist_ok=True)
             client.extract(fpath, path)
         client.extract("pack.mcmeta", path)
         client.extract("pack.png", path)
