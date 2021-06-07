@@ -145,21 +145,28 @@ def download_resources_iter(
                 yield min(1.0, (index * chunk_size) / (data_size * 2))
 
         client = zipfile.ZipFile(io.BytesIO(b"".join(data)))
-        paths: List[str] = [fpath for fpath in client.namelist() if fpath.startswith("assets/")]
+        paths: List[str] = [
+            fpath for fpath in client.namelist() if fpath.startswith("assets/")
+        ]
         path_count = len(paths)
         for path_index, fpath in enumerate(paths):
             if not path_index % 30:
                 yield path_index / (path_count * 2) + 0.5
             if fpath.endswith("/"):
                 continue
-            os.makedirs(os.path.dirname(os.path.abspath(os.path.join(path, fpath))), exist_ok=True)
+            os.makedirs(
+                os.path.dirname(os.path.abspath(os.path.join(path, fpath))),
+                exist_ok=True,
+            )
             client.extract(fpath, path)
         if "pack.mcmeta" in client.namelist():
             client.extract("pack.mcmeta", path)
         else:
             # TODO: work out proper version support for this
             with open(os.path.join(path, "pack.mcmeta"), "w") as f:
-                f.write('{"pack": {"description": "The default data for Minecraft","pack_format": 7}}')
+                f.write(
+                    '{"pack": {"description": "The default data for Minecraft","pack_format": 7}}'
+                )
         if "pack.png" in client.namelist():
             client.extract("pack.png", path)
 
