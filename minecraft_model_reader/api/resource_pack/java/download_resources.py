@@ -154,8 +154,14 @@ def download_resources_iter(
                 continue
             os.makedirs(os.path.dirname(os.path.abspath(os.path.join(path, fpath))), exist_ok=True)
             client.extract(fpath, path)
-        client.extract("pack.mcmeta", path)
-        client.extract("pack.png", path)
+        if "pack.mcmeta" in client.namelist():
+            client.extract("pack.mcmeta", path)
+        else:
+            # TODO: work out proper version support for this
+            with open(os.path.join(path, "pack.mcmeta"), "w") as f:
+                f.write('{"pack": {"description": "The default data for Minecraft","pack_format": 7}}')
+        if "pack.png" in client.namelist():
+            client.extract("pack.png", path)
 
     except Exception as e:
         log.error(
