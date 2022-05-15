@@ -218,7 +218,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     if variant == "":
                         try:
                             return self._load_blockstate_model(
-                                block, blockstate["variants"][variant]
+                                blockstate["variants"][variant]
                             )
                         except Exception as e:
                             log.error(
@@ -238,7 +238,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         ):
                             try:
                                 return self._load_blockstate_model(
-                                    block, blockstate["variants"][variant]
+                                    blockstate["variants"][variant]
                                 )
                             except Exception as e:
                                 log.error(
@@ -283,9 +283,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
         return self.missing_block
 
-    def _load_blockstate_model(
-        self, block: Block, blockstate_value: Union[dict, list]
-    ) -> BlockMesh:
+    def _load_blockstate_model(self, blockstate_value: Union[dict, list]) -> BlockMesh:
         """Load the model(s) associated with a block state and apply rotations if needed."""
         if isinstance(blockstate_value, list):
             blockstate_value = blockstate_value[0]
@@ -296,15 +294,15 @@ class JavaResourcePackManager(BaseResourcePackManager):
         roty = int(blockstate_value.get("y", 0) // 90)
         uvlock = blockstate_value.get("uvlock", False)
 
-        model = copy.deepcopy(self._load_block_model(block, model_path))
+        model = copy.deepcopy(self._load_block_model(model_path))
 
         # TODO: rotate model based on uv_lock
         return model.rotate(rotx, roty)
 
-    def _load_block_model(self, block: Block, model_path: str) -> BlockMesh:
+    def _load_block_model(self, model_path: str) -> BlockMesh:
         """Load the model file associated with the Block and convert to a BlockMesh."""
         # recursively load model files into one dictionary
-        java_model = self._recursive_load_block_model(block, model_path)
+        java_model = self._recursive_load_block_model(model_path)
 
         # set up some variables
         texture_dict = {}
@@ -376,7 +374,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     if len(texture_path_list) == 2:
                         namespace, texture_relative_path = texture_path_list
                     else:
-                        namespace = block.namespace
+                        namespace = "minecraft"
 
                     texture_path = self.get_texture_path(
                         namespace, texture_relative_path
@@ -483,18 +481,18 @@ class JavaResourcePackManager(BaseResourcePackManager):
             3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent
         )
 
-    def _recursive_load_block_model(self, block: Block, model_path: str) -> dict:
+    def _recursive_load_block_model(self, model_path: str) -> dict:
         """Load a model json file and recursively load and merge the parent entries into one json file."""
         model_path_list = model_path.split(":", 1)
         if len(model_path_list) == 2:
             namespace, model_path = model_path_list
         else:
-            namespace = block.namespace
+            namespace = "minecraft"
         if (namespace, model_path) in self._model_files:
             model = self._model_files[(namespace, model_path)]
 
             if "parent" in model:
-                parent_model = self._recursive_load_block_model(block, model["parent"])
+                parent_model = self._recursive_load_block_model(model["parent"])
             else:
                 parent_model = {}
             if "textures" in model:
