@@ -176,11 +176,17 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
         for key, path in blockstate_file_paths.items():
             with open(path) as fi:
-                self._blockstate_files[key] = json.load(fi)
+                try:
+                    self._blockstate_files[key] = json.load(fi)
+                except json.JSONDecodeError:
+                    log.error(f"Failed to parse blockstate file {path}")
 
         for key, path in model_file_paths.items():
             with open(path) as fi:
-                self._model_files[key] = json.load(fi)
+                try:
+                    self._model_files[key] = json.load(fi)
+                except json.JSONDecodeError:
+                    log.error(f"Failed to parse model file file {path}")
 
     @property
     def textures(self) -> Tuple[str, ...]:
