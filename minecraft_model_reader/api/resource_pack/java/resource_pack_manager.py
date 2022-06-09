@@ -228,7 +228,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                             )
                         except Exception as e:
                             log.error(
-                                f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
+                                f"Failed to load block model {blockstate['variants'][variant]}\n{e}"
                             )
                     else:
                         properties_match = Block.properties_regex.finditer(
@@ -248,7 +248,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                                 )
                             except Exception as e:
                                 log.error(
-                                    f"Failed to load block model for {blockstate['variants'][variant]}\n{e}"
+                                    f"Failed to load block model {blockstate['variants'][variant]}\n{e}"
                                 )
 
             elif "multipart" in blockstate:
@@ -277,13 +277,15 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         if "apply" in case:
                             try:
                                 models.append(
-                                    self._load_blockstate_model(block, case["apply"])
+                                    self._load_blockstate_model(case["apply"])
                                 )
 
-                            except:
-                                pass
-                    except:
-                        pass
+                            except Exception as e:
+                                log.error(
+                                    f"Failed to load block model {case['apply']}\n{e}"
+                                )
+                    except Exception as e:
+                        log.error(f"Failed to parse block state for {block}\n{e}")
 
                 return BlockMesh.merge(models)
 
