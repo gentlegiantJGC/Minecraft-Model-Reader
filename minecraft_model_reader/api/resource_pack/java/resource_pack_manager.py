@@ -285,9 +285,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                                     f"Failed to load block model {case['apply']}\n{e}"
                                 )
                     except Exception as e:
-                        log.error(
-                            f"Failed to parse block state for {block}\n{e}"
-                        )
+                        log.error(f"Failed to parse block state for {block}\n{e}")
 
                 return BlockMesh.merge(models)
 
