@@ -79,9 +79,9 @@ class BlockMesh:
                     tint_verts[cull_dir], axis=None
                 )
             else:
-                verts[cull_dir] = numpy.zeros((0, 3), numpy.float)
-                tverts[cull_dir] = numpy.zeros((0, 2), numpy.float)
-                tint_verts[cull_dir] = numpy.zeros(0, numpy.float)
+                verts[cull_dir] = numpy.zeros((0, 3), float)
+                tverts[cull_dir] = numpy.zeros((0, 2), float)
+                tint_verts[cull_dir] = numpy.zeros(0, float)
 
             if face_table:
                 faces[cull_dir] = numpy.concatenate(face_table, axis=None)

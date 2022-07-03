@@ -85,7 +85,7 @@ def get_cube(
 ):
     box_coordinates = numpy.array(list(itertools.product(*bounds)))
     _texture_uv: Dict[Optional[str], numpy.ndarray] = {
-        face: numpy.array(texture_uv[i], numpy.float)
+        face: numpy.array(texture_uv[i], float)
         for i, face in enumerate(cube_face_lut)
     }
     _verts: Dict[Optional[str], numpy.ndarray] = {}
@@ -99,7 +99,7 @@ def get_cube(
         _texture_coords[_face_dir] = _texture_uv[_face_dir][
             uv_rotation_lut
         ]  # texture vertices
-        _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=numpy.float).ravel()
+        _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=float).ravel()
         _tri_faces[_face_dir] = tri_face
 
     texture_paths, texture_index = numpy.unique(

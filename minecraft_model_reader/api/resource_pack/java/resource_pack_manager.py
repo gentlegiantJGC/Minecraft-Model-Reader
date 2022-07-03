@@ -352,7 +352,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
             corners = numpy.sort(
                 numpy.array(
                     [element.get("to", [16, 16, 16]), element.get("from", [0, 0, 0])],
-                    numpy.float,
+                    float,
                 )
                 / 16,
                 0,
@@ -408,7 +408,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     texture_uv = (
                         numpy.array(
                             element_faces[face_dir].get("uv", [0, 0, 16, 16]),
-                            numpy.float,
+                            float,
                         )
                         / 16
                     )
