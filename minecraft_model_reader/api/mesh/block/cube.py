@@ -85,8 +85,7 @@ def get_cube(
 ):
     box_coordinates = numpy.array(list(itertools.product(*bounds)))
     _texture_uv: Dict[Optional[str], numpy.ndarray] = {
-        face: numpy.array(texture_uv[i], float)
-        for i, face in enumerate(cube_face_lut)
+        face: numpy.array(texture_uv[i], float) for i, face in enumerate(cube_face_lut)
     }
     _verts: Dict[Optional[str], numpy.ndarray] = {}
     _texture_coords: Dict[Optional[str], numpy.ndarray] = {}
