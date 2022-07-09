@@ -1,11 +1,6 @@
-graft minecraft_model_reader
+recursive-include minecraft_model_reader *.py *.png *.json
+graft minecraft_model_reader/api/resource_pack/java/resource_packs/java_vanilla_fix
+graft minecraft_model_reader/api/resource_pack/bedrock/resource_packs/bedrock_vanilla_fix
+
 prune minecraft_model_reader/api/resource_pack/java/resource_packs/java_vanilla
-prune minecraft_model_reader/api/resource_pack/java/resource_packs/java_vanilla/*
 prune minecraft_model_reader/api/resource_pack/bedrock/resource_packs/bedrock_vanilla
-prune minecraft_model_reader/api/resource_pack/bedrock/resource_packs/bedrock_vanilla/*
-include README.md
-include requirements.txt
-include versioneer.py
-include minecraft_model_reader/_version.py
-prune */__pycache__/*
-global-exclude *.py[cod]
