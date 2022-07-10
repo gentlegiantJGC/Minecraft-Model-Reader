@@ -34,7 +34,7 @@ class Vine(FlatWall):
         modify_uv=True,
     ) -> BlockMesh:
         models = []
-        data: int = block.properties["vine_direction_bits"].value
+        data: int = block.properties["vine_direction_bits"].py_data
         if data:
             model = super().get_block_model(
                 block, down, up, north, east, south, west, transparency

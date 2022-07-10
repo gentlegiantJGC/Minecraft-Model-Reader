@@ -28,7 +28,7 @@ class Tree(Cube):
         west: str,
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        axis: str = block.properties["pillar_axis"].value
+        axis: str = block.properties["pillar_axis"].py_data
 
         model = super().get_block_model(
             block, down, up, north, east, south, west, transparency

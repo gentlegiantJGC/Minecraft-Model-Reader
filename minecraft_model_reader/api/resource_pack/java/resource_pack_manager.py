@@ -238,7 +238,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                             block.properties.get(
                                 match.group("name"),
                                 amulet_nbt.TAG_String(match.group("value")),
-                            ).value
+                            ).py_data
                             == match.group("value")
                             for match in properties_match
                         ):
