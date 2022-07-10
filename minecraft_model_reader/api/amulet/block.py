@@ -196,7 +196,7 @@ class Block:
             self._blockstate = self.namespaced_name
             if self.properties:
                 props = [
-                    f"{key}={value.value}"
+                    f"{key}={value.py_data}"
                     for key, value in sorted(self.properties.items())
                     if isinstance(value, amulet_nbt.TAG_String)
                 ]

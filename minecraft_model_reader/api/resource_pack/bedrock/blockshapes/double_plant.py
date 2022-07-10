@@ -29,7 +29,7 @@ class DoublePlant(Cross):
         west: str,
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        if block.properties["upper_block_bit"].value:
+        if block.properties["upper_block_bit"].py_data:
             return super().get_block_model(block, up, up, up, up, up, up, transparency)
         else:
             return super().get_block_model(

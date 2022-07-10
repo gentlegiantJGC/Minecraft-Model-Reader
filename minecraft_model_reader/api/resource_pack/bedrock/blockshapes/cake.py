@@ -20,13 +20,13 @@ class Cake(PartialBlock):
         self, block: Block
     ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
         return (
-            (1 / 16 + block.properties["bite_counter"].value * 2 / 16, 15 / 16),
+            (1 / 16 + block.properties["bite_counter"].py_data * 2 / 16, 15 / 16),
             (0, 0.5),
             (1 / 16, 15 / 16),
         )
 
     def texture_index(self, block: Block, aux_value: int) -> int:
-        return min(block.properties["bite_counter"].value, 1)
+        return min(block.properties["bite_counter"].py_data, 1)
 
     @property
     def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:

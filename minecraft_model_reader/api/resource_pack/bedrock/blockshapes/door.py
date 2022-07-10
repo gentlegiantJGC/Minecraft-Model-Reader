@@ -28,7 +28,7 @@ class Door(Cube):
         west: str,
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        if block.properties["upper_block_bit"].value:
+        if block.properties["upper_block_bit"].py_data:
             return super().get_block_model(
                 block, north, north, north, north, north, north, transparency
             )
