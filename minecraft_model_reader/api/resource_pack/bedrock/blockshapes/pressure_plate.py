@@ -18,7 +18,7 @@ class PressurePlate(PartialBlock):
     def bounds(
         self, block: Block
     ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
-        if block.properties["redstone_signal"].value >= 1:
+        if block.properties["redstone_signal"].py_data >= 1:
             return (1 / 16, 15 / 16), (0, 1 / 32), (1 / 16, 15 / 16)
         else:
             return (1 / 16, 15 / 16), (0, 1 / 16), (1 / 16, 15 / 16)
