@@ -32,7 +32,9 @@ class Furnace(Cube):
         west: str,
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        rotation = self.rotation_map.get(block.properties["facing_direction"].py_data, 0)
+        rotation = self.rotation_map.get(
+            block.properties["facing_direction"].py_data, 0
+        )
 
         return (
             super()

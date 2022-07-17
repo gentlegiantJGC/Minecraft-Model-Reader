@@ -45,7 +45,9 @@ def get_aux_value(block: Block) -> int:
         property_names, aux_map = AuxValues[name]
         properties = block.properties
         key = tuple(
-            properties[property_name].py_data if property_name in properties else default
+            properties[property_name].py_data
+            if property_name in properties
+            else default
             for property_name, default in property_names
         )
         return aux_map.get(key, 0)
