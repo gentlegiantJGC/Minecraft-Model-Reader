@@ -35,7 +35,7 @@ class PistonArm(PartialBlock):
         transparency: Tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         rotation = self.rotation_map.get(
-            block.properties["facing_direction"].value, (0, 0)
+            block.properties["facing_direction"].py_data, (0, 0)
         )
 
         return BlockMesh.merge(

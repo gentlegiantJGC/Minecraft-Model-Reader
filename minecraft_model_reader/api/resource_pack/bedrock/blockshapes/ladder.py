@@ -24,7 +24,7 @@ class Ladder(FlatWall):
         modify_uv=True,
     ) -> BlockMesh:
         rotation = {2: 2, 3: 0, 4: 1, 5: 3}.get(
-            block.properties["facing_direction"].value, 0
+            block.properties["facing_direction"].py_data, 0
         )
 
         return (

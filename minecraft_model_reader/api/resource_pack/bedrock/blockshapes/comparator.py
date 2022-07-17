@@ -42,7 +42,7 @@ class Comparator(PartialBlock):
         return (
             super()
             .get_block_model(block, down, up, north, east, south, west, transparency)
-            .rotate(0, block.properties["direction"].value)
+            .rotate(0, block.properties["direction"].py_data)
         )
 
 
