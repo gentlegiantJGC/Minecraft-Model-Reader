@@ -5,10 +5,12 @@ import json
 from urllib.request import urlopen
 import io
 from typing import Generator, List
+import logging
 
 import minecraft_model_reader
-from minecraft_model_reader import log
 from minecraft_model_reader.api.resource_pack import JavaResourcePack
+
+log = logging.getLogger(__name__)
 
 RESOURCE_PACK_DIR = os.path.join(
     minecraft_model_reader.path, "api", "resource_pack", "java", "resource_packs"

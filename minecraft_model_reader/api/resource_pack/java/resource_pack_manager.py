@@ -6,10 +6,10 @@ from PIL import Image
 import numpy
 import glob
 import itertools
+import logging
 
 import amulet_nbt
 
-from minecraft_model_reader import log
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
@@ -20,6 +20,8 @@ from minecraft_model_reader.api.mesh.block.cube import (
     uv_rotation_lut,
     tri_face,
 )
+
+log = logging.getLogger(__name__)
 
 
 UselessImageGroups = {
