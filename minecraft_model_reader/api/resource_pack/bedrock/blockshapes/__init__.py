@@ -25,18 +25,8 @@ def _load_blockshape(module_name: str):
 def _load_blockshapes():
     package_prefix = __name__ + "."
 
-    # python file support
     for _, name, _ in pkgutil.walk_packages(__path__, package_prefix):
         _load_blockshape(name)
-
-    # pyinstaller support
-    toc = set()
-    for importer in pkgutil.iter_importers(minecraft_model_reader.__name__):
-        if hasattr(importer, "toc"):
-            toc |= importer.toc
-    for module_name in toc:
-        if module_name.startswith(package_prefix):
-            _load_blockshape(module_name)
 
 
 _load_blockshapes()
