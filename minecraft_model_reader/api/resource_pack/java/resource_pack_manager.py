@@ -73,7 +73,11 @@ class JavaResourcePackManager(BaseResourcePackManager):
     def _load_iter(self) -> Generator[float, None, None]:
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
-        self._load_transparency_cache(__file__)
+
+        transparency_cache_path = os.path.join(
+            os.environ["CACHE_DIR"], "resource_packs", "java", "transparency_cache.json"
+        )
+        self._load_transparency_cache(transparency_cache_path)
 
         self._textures[("minecraft", "missing_no")] = self.missing_no
 
@@ -171,9 +175,8 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     ] = model_path
                     yield sub_progress + (model_index) / (model_count * pack_count * 3)
 
-        with open(
-            os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
-        ) as f:
+        os.makedirs(os.path.dirname(transparency_cache_path), exist_ok=True)
+        with open(transparency_cache_path, "w") as f:
             json.dump(self._texture_is_transparent, f)
 
         for key, path in blockstate_file_paths.items():

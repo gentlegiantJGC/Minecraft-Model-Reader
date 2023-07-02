@@ -11,12 +11,15 @@ from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
 from .blockshapes import BlockShapeClasses
 
 
-def _load_data() -> Tuple[
-    Dict[str, str],
-    Dict[
-        str, Tuple[Tuple[Tuple[str, str], ...], Dict[Tuple[Union[str, int], ...], int]]
-    ],
-]:
+def _load_data() -> (
+    Tuple[
+        Dict[str, str],
+        Dict[
+            str,
+            Tuple[Tuple[Tuple[str, str], ...], Dict[Tuple[Union[str, int], ...], int]],
+        ],
+    ]
+):
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
         _block_shapes = comment_json.load(f)
 
@@ -126,7 +129,14 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
     def _load_iter(self) -> Generator[float, None, None]:
         self._block_shapes.update(BlockShapes)  # add the default block shapes
-        self._load_transparency_cache(__file__)
+
+        transparency_cache_path = os.path.join(
+            os.environ["CACHE_DIR"],
+            "resource_packs",
+            "bedrock",
+            "transparency_cache.json",
+        )
+        self._load_transparency_cache(transparency_cache_path)
 
         self._textures["missing_no"] = self._check_texture("missing")
 
@@ -216,9 +226,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                 )
             yield pack_progress + 1
 
-        with open(
-            os.path.join(os.path.dirname(__file__), "transparency_cache.json"), "w"
-        ) as f:
+        os.makedirs(os.path.dirname(transparency_cache_path), exist_ok=True)
+        with open(transparency_cache_path, "w") as f:
             json.dump(self._texture_is_transparent, f)
 
     @property
