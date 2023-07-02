@@ -74,7 +74,9 @@ class JavaResourcePackManager(BaseResourcePackManager):
         blockstate_file_paths: Dict[Tuple[str, str], str] = {}
         model_file_paths: Dict[Tuple[str, str], str] = {}
 
-        transparency_cache_path = os.path.join(os.environ["CACHE_DIR"], "resource_packs", "java", "transparency_cache.json")
+        transparency_cache_path = os.path.join(
+            os.environ["CACHE_DIR"], "resource_packs", "java", "transparency_cache.json"
+        )
         self._load_transparency_cache(transparency_cache_path)
 
         self._textures[("minecraft", "missing_no")] = self.missing_no

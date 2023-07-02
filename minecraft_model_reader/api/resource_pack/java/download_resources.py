@@ -46,7 +46,9 @@ def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
     :raises:
         Exception: If the
     """
-    vanilla_rp_path = os.path.join(os.environ["CACHE_DIR"], "resource_packs", "java", "vanilla")
+    vanilla_rp_path = os.path.join(
+        os.environ["CACHE_DIR"], "resource_packs", "java", "vanilla"
+    )
     try:
         if INCLUDE_SNAPSHOT:
             new_version = get_launcher_manifest()["latest"]["snapshot"]

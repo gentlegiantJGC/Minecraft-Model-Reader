@@ -1,4 +1,5 @@
 import os
+
 # import shutil
 # import zipfile
 # import json
@@ -25,7 +26,9 @@ def get_latest() -> BedrockResourcePack:
 
 
 def get_latest_iter() -> Generator[float, None, BedrockResourcePack]:
-    vanilla_rp_path = os.path.join(os.environ["CACHE_DIR"], "resource_packs", "bedrock", "vanilla")
+    vanilla_rp_path = os.path.join(
+        os.environ["CACHE_DIR"], "resource_packs", "bedrock", "vanilla"
+    )
     yield 0
     # new_version = launcher_manifest["latest"]["release"]
     # if new_version is None:
