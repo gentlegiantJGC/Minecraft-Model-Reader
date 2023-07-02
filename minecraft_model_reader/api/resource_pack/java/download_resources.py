@@ -7,14 +7,10 @@ import io
 from typing import Generator, List
 import logging
 
-import minecraft_model_reader
 from minecraft_model_reader.api.resource_pack import JavaResourcePack
 
 log = logging.getLogger(__name__)
 
-RESOURCE_PACK_DIR = os.path.join(
-    minecraft_model_reader.path, "api", "resource_pack", "java", "resource_packs"
-)
 launcher_manifest = None
 INCLUDE_SNAPSHOT = False
 
@@ -50,7 +46,7 @@ def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
     :raises:
         Exception: If the
     """
-    vanilla_rp_path = os.path.join(RESOURCE_PACK_DIR, "java_vanilla")
+    vanilla_rp_path = os.path.join(os.environ["CACHE_DIR"], "resource_packs", "java", "vanilla")
     try:
         if INCLUDE_SNAPSHOT:
             new_version = get_launcher_manifest()["latest"]["snapshot"]
@@ -83,7 +79,7 @@ def get_java_vanilla_fix():
     global _java_vanilla_fix
     if _java_vanilla_fix is None:
         _java_vanilla_fix = JavaResourcePack(
-            os.path.join(RESOURCE_PACK_DIR, "java_vanilla_fix")
+            os.path.join(os.path.dirname(__file__), "java_vanilla_fix")
         )
     return _java_vanilla_fix
 

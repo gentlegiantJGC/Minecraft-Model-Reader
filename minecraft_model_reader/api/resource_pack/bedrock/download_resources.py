@@ -1,18 +1,13 @@
 import os
-import shutil
-import zipfile
-import json
-from urllib.request import urlopen
-import io
-from typing import Generator
+# import shutil
+# import zipfile
+# import json
+# from urllib.request import urlopen
+# import io
+from typing import Generator, Optional
 import logging
 
-import minecraft_model_reader
 from minecraft_model_reader.api.resource_pack import BedrockResourcePack
-
-RESOURCE_PACK_DIR = os.path.join(
-    minecraft_model_reader.path, "api", "resource_pack", "bedrock", "resource_packs"
-)
 
 log = logging.getLogger(__name__)
 
@@ -30,7 +25,7 @@ def get_latest() -> BedrockResourcePack:
 
 
 def get_latest_iter() -> Generator[float, None, BedrockResourcePack]:
-    vanilla_rp_path = os.path.join(RESOURCE_PACK_DIR, "bedrock_vanilla")
+    vanilla_rp_path = os.path.join(os.environ["CACHE_DIR"], "resource_packs", "bedrock", "vanilla")
     yield 0
     # new_version = launcher_manifest["latest"]["release"]
     # if new_version is None:
@@ -56,15 +51,15 @@ def get_latest_iter() -> Generator[float, None, BedrockResourcePack]:
     return BedrockResourcePack(vanilla_rp_path)
 
 
-_bedrock_vanilla_fix = None
-_bedrock_vanilla_latest = None
+_bedrock_vanilla_fix: Optional[BedrockResourcePack] = None
+_bedrock_vanilla_latest: Optional[BedrockResourcePack] = None
 
 
-def get_bedrock_vanilla_fix():
+def get_bedrock_vanilla_fix() -> BedrockResourcePack:
     global _bedrock_vanilla_fix
     if _bedrock_vanilla_fix is None:
         _bedrock_vanilla_fix = BedrockResourcePack(
-            os.path.join(RESOURCE_PACK_DIR, "bedrock_vanilla_fix")
+            os.path.join(os.path.dirname(__file__), "bedrock_vanilla_fix")
         )
     return _bedrock_vanilla_fix
 

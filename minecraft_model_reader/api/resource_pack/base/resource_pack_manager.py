@@ -28,16 +28,11 @@ class BaseResourcePackManager:
         self._cached_models.clear()
 
     def _load_transparency_cache(self, path: str):
-        if os.path.isfile(
-            os.path.join(os.path.dirname(path), "transparency_cache.json")
-        ):
-            try:
-                with open(
-                    os.path.join(os.path.dirname(path), "transparency_cache.json")
-                ) as f:
-                    self._texture_is_transparent = json.load(f)
-            except:
-                pass
+        try:
+            with open(path) as f:
+                self._texture_is_transparent = json.load(f)
+        except:
+            pass
 
     def _load_iter(self) -> Generator[float, None, None]:
         """Load resources."""
