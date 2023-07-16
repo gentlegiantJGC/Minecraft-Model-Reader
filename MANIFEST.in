@@ -1,3 +1,3 @@
 recursive-include minecraft_model_reader *.py *.png *.json
-graft minecraft_model_reader/api/resource_pack/java/resource_packs/java_vanilla_fix
-graft minecraft_model_reader/api/resource_pack/bedrock/resource_packs/bedrock_vanilla_fix
+graft minecraft_model_reader/api/resource_pack/java/java_vanilla_fix
+graft minecraft_model_reader/api/resource_pack/bedrock/bedrock_vanilla_fix
