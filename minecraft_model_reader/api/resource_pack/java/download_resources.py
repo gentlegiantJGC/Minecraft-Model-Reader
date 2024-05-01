@@ -114,18 +114,14 @@ def _remove_and_download_iter(path, version) -> Generator[float, None, None]:
     elif os.path.isdir(temp_path):
         shutil.rmtree(temp_path, ignore_errors=True)
 
-    try:
-        yield from download_resources_iter(temp_path, version)
-    except:
-        pass
-    else:
-        if os.path.isdir(path):
-            shutil.rmtree(path, ignore_errors=True)
+    yield from download_resources_iter(temp_path, version)
+    if os.path.isdir(path):
+        shutil.rmtree(path, ignore_errors=True)
 
-        shutil.move(temp_path, path)
+    shutil.move(temp_path, path)
 
-        with open(os.path.join(path, "version"), "w") as f:
-            f.write(version)
+    with open(os.path.join(path, "version"), "w") as f:
+        f.write(version)
 
 
 def download_with_retry(
