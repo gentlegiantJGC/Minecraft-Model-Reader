@@ -11,15 +11,13 @@ from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
 from .blockshapes import BlockShapeClasses
 
 
-def _load_data() -> (
-    Tuple[
-        Dict[str, str],
-        Dict[
-            str,
-            Tuple[Tuple[Tuple[str, str], ...], Dict[Tuple[Union[str, int], ...], int]],
-        ],
-    ]
-):
+def _load_data() -> Tuple[
+    Dict[str, str],
+    Dict[
+        str,
+        Tuple[Tuple[Tuple[str, str], ...], Dict[Tuple[Union[str, int], ...], int]],
+    ],
+]:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
         _block_shapes = comment_json.load(f)
 
@@ -48,9 +46,11 @@ def get_aux_value(block: Block) -> int:
         property_names, aux_map = AuxValues[name]
         properties = block.properties
         key = tuple(
-            properties[property_name].py_data
-            if property_name in properties
-            else default
+            (
+                properties[property_name].py_data
+                if property_name in properties
+                else default
+            )
             for property_name, default in property_names
         )
         return aux_map.get(key, 0)
@@ -69,12 +69,10 @@ class BedrockResourcePackManager(BaseResourcePackManager):
     ):
         super().__init__()
         self._block_shapes: Dict[str, str] = {}  # block string to block shape
-        self._blocks: Dict[
-            str, Union[Dict[str, str], str, None]
-        ] = {}  # block string to short texture ids
-        self._terrain_texture: Dict[
-            str, Tuple[str, ...]
-        ] = (
+        self._blocks: Dict[str, Union[Dict[str, str], str, None]] = (
+            {}
+        )  # block string to short texture ids
+        self._terrain_texture: Dict[str, Tuple[str, ...]] = (
             {}
         )  # texture ids to list of relative paths. Each relates to a different data value.
         self._textures: Dict[str, str] = {}  # relative path to texture path

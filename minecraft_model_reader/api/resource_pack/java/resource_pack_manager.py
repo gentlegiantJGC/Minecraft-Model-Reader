@@ -145,9 +145,9 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     _, namespace, _, blockstate_file = os.path.normpath(
                         os.path.relpath(blockstate_path, pack.root_dir)
                     ).split(os.sep)
-                    blockstate_file_paths[
-                        (namespace, blockstate_file[:-5])
-                    ] = blockstate_path
+                    blockstate_file_paths[(namespace, blockstate_file[:-5])] = (
+                        blockstate_path
+                    )
                     yield sub_progress + (blockstate_index) / (
                         blockstate_count * pack_count * 3
                     )
@@ -170,9 +170,9 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         os.path.relpath(model_path, pack.root_dir)
                     ).split(os.sep)
                     rel_path = "/".join(rel_path_list)[:-5]
-                    model_file_paths[
-                        (namespace, rel_path.replace(os.sep, "/"))
-                    ] = model_path
+                    model_file_paths[(namespace, rel_path.replace(os.sep, "/"))] = (
+                        model_path
+                    )
                     yield sub_progress + (model_index) / (model_count * pack_count * 3)
 
         os.makedirs(os.path.dirname(transparency_cache_path), exist_ok=True)
