@@ -206,7 +206,7 @@ class BlockMesh:
                 key: numpy.hstack(
                     (
                         self._verts[key].reshape(-1, self._face_mode),
-                        self._texture_coords[key].reshape(-1, 2)
+                        self._texture_coords[key].reshape(-1, 2),
                         # TODO: add in face normals
                     )
                 ).ravel()

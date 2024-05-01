@@ -2,7 +2,7 @@ import os
 import shutil
 import zipfile
 import json
-from urllib.request import urlopen
+from urllib.request import urlopen, Request
 import io
 from typing import Generator, List
 import logging
@@ -114,18 +114,38 @@ def _remove_and_download_iter(path, version) -> Generator[float, None, None]:
     elif os.path.isdir(temp_path):
         shutil.rmtree(temp_path, ignore_errors=True)
 
-    try:
-        yield from download_resources_iter(temp_path, version)
-    except:
-        pass
+    yield from download_resources_iter(temp_path, version)
+    if os.path.isdir(path):
+        shutil.rmtree(path, ignore_errors=True)
+
+    shutil.move(temp_path, path)
+
+    with open(os.path.join(path, "version"), "w") as f:
+        f.write(version)
+
+
+def download_with_retry(
+    url: str, chunk_size: int = 4096, attempts: int = 5
+) -> Generator[float, None, bytes]:
+    content_length_found = 0
+    content = []
+
+    for _ in range(attempts):
+        request = Request(url, headers={"Range": f"bytes={content_length_found}-"})
+        with urlopen(request, timeout=20) as response:
+            content_length = int(response.headers["content-length"].strip())
+            while content_length_found < content_length:
+                chunk = response.read(chunk_size)
+                if not chunk:
+                    break
+                content.append(chunk)
+                content_length_found += len(chunk)
+                yield min(1.0, content_length_found / content_length)
+        if content_length == content_length_found:
+            break
     else:
-        if os.path.isdir(path):
-            shutil.rmtree(path, ignore_errors=True)
-
-        shutil.move(temp_path, path)
-
-        with open(os.path.join(path, "version"), "w") as f:
-            f.write(version)
+        raise RuntimeError(f"Failed to download")
+    return b"".join(content)
 
 
 def download_resources(path, version):
@@ -148,18 +168,14 @@ def download_resources_iter(
             version_manifest = json.load(vm)
         version_client_url = version_manifest["downloads"]["client"]["url"]
 
-        with urlopen(version_client_url, timeout=20) as response:
-            data = []
-            data_size = int(response.headers["content-length"].strip())
-            index = 0
-            chunk = b"hello"
-            while chunk:
-                chunk = response.read(chunk_size)
-                data.append(chunk)
-                index += 1
-                yield min(1.0, (index * chunk_size) / (data_size * 2))
+        downloader = download_with_retry(version_client_url)
+        try:
+            while True:
+                yield next(downloader) / 2
+        except StopIteration as e:
+            data = e.value
 
-        client = zipfile.ZipFile(io.BytesIO(b"".join(data)))
+        client = zipfile.ZipFile(io.BytesIO(data))
         paths: List[str] = [
             fpath for fpath in client.namelist() if fpath.startswith("assets/")
         ]
