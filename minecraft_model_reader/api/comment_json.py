@@ -1,4 +1,4 @@
-import json
+from json import JSONDecodeError, loads as json_loads
 from typing import TextIO, TypeAlias
 
 """
@@ -12,7 +12,7 @@ JSONDict: TypeAlias = dict[str, JSONValue]
 JSONList: TypeAlias = list[JSONValue]
 
 
-class CommentJSONDecodeError(json.JSONDecodeError):
+class CommentJSONDecodeError(JSONDecodeError):
     pass
 
 
@@ -27,12 +27,12 @@ def load(obj: TextIO) -> JSONValue:
 
 def loads(s: str) -> JSONValue:
     try:
-        return json.loads(s)  # type: ignore
-    except json.JSONDecodeError:
+        return json_loads(s)  # type: ignore
+    except JSONDecodeError:
         return _loads(s)
 
 
-def _loads(_json: str) -> JSONValue:
+def _loads(text: str) -> JSONValue:
     # given a valid MinecraftJSON string will return the values as python objects
     # in this context MinecraftJSON is standard JSON but with comment blocks and
     # line comments that would normally be illegal in standard JSON
@@ -43,33 +43,33 @@ def _loads(_json: str) -> JSONValue:
     def strip_whitespace(index: int) -> int:
         # skips whitespace characters (<space>, <tab>, <charrage return> and <newline>)
         # as well as block comments and line comments
-        while _json[index] in _whitespace:
+        while text[index] in _whitespace:
             index += 1
-        if _json[index] == "/":
-            if _json[index + 1] == "/":
+        if text[index] == "/":
+            if text[index + 1] == "/":
                 index += 2
-                while _json[index] != "\n":
+                while text[index] != "\n":
                     index += 1
                 index = strip_whitespace(index)
-            elif _json[index + 1] == "*":
+            elif text[index + 1] == "*":
                 index += 2
-                while _json[index : index + 2] != "*/":
+                while text[index : index + 2] != "*/":
                     index += 1
-                    if index + 1 >= len(_json):
-                        raise json.JSONDecodeError(
-                            "expected */ but reached the end of file", _json, index
+                    if index + 1 >= len(text):
+                        raise JSONDecodeError(
+                            "expected */ but reached the end of file", text, index
                         )
                 index += 2
                 index = strip_whitespace(index)
             else:
-                raise json.JSONDecodeError(
-                    f"unexpected / at index {index}", _json, index
+                raise JSONDecodeError(
+                    f"unexpected / at index {index}", text, index
                 )
         return index
 
     def parse_json_recursive(index: int = 0) -> tuple[JSONValue, int]:
         index = strip_whitespace(index)
-        if _json[index] == "{":
+        if text[index] == "{":
             index += 1
             # dictionary
             json_obj = {}
@@ -77,22 +77,22 @@ def _loads(_json: str) -> JSONValue:
             while repeat:
                 index = strip_whitespace(index)
                 # }"
-                if _json[index] == '"':
+                if text[index] == '"':
                     index += 1
                     key = ""
-                    while _json[index] != '"':
-                        key += _json[index]
+                    while text[index] != '"':
+                        key += text[index]
                         index += 1
                     index += 1
 
                     index = strip_whitespace(index)
 
-                    if _json[index] == ":":
+                    if text[index] == ":":
                         index += 1
                     else:
-                        raise json.JSONDecodeError(
-                            f"expected : got {_json[index]} at index {index}",
-                            _json,
+                        raise JSONDecodeError(
+                            f"expected : got {text[index]} at index {index}",
+                            text,
                             index,
                         )
 
@@ -102,91 +102,91 @@ def _loads(_json: str) -> JSONValue:
 
                     index = strip_whitespace(index)
 
-                    if _json[index] == ",":
+                    if text[index] == ",":
                         index += 1
                     else:
                         repeat = False
                 else:
                     repeat = False
 
-            if index >= len(_json):
-                raise json.JSONDecodeError(
-                    "expected } but reached end of file", _json, index
+            if index >= len(text):
+                raise JSONDecodeError(
+                    "expected } but reached end of file", text, index
                 )
-            elif _json[index] == "}":
+            elif text[index] == "}":
                 index += 1
             else:
-                raise json.JSONDecodeError(
-                    f"expected }} got {_json[index]} at index {index}", _json, index
+                raise JSONDecodeError(
+                    f"expected }} got {text[index]} at index {index}", text, index
                 )
             return json_obj, index
 
-        elif _json[index] == "[":
+        elif text[index] == "[":
             index += 1
             # list
             json_array = []
             index = strip_whitespace(index)
-            repeat = _json[index] != "]"
+            repeat = text[index] != "]"
             while repeat:
                 val, index = parse_json_recursive(index)
                 json_array.append(val)
 
                 index = strip_whitespace(index)
 
-                if _json[index] == ",":
+                if text[index] == ",":
                     index += 1
                 else:
                     repeat = False
                 index = strip_whitespace(index)
 
-            if index >= len(_json):
-                raise json.JSONDecodeError(
-                    "expected ] but reached end of file", _json, index
+            if index >= len(text):
+                raise JSONDecodeError(
+                    "expected ] but reached end of file", text, index
                 )
-            elif _json[index] == "]":
+            elif text[index] == "]":
                 index += 1
             else:
-                raise json.JSONDecodeError(
-                    f"expected ] got {_json[index]} at index {index}", _json, index
+                raise JSONDecodeError(
+                    f"expected ] got {text[index]} at index {index}", text, index
                 )
             return json_array, index
 
-        elif _json[index] == '"':
+        elif text[index] == '"':
             index += 1
             # string
             json_obj_list = []
-            while _json[index] != '"':
-                json_obj_list.append(_json[index])
+            while text[index] != '"':
+                json_obj_list.append(text[index])
                 index += 1
             index += 1
             return "".join(json_obj_list), index
 
-        elif _json[index] in _number:
+        elif text[index] in _number:
             # number
             json_obj_list = []
-            while _json[index] in _float:
-                json_obj_list += _json[index]
+            while text[index] in _float:
+                json_obj_list += text[index]
                 index += 1
             if "." in json_obj_list:
                 return float("".join(json_obj_list)), index
             else:
                 return int("".join(json_obj_list)), index
 
-        elif _json[index] == "n" and _json[index : index + 4] == "null":
+        elif text[index] == "n" and text[index : index + 4] == "null":
             index += 4
             return None, index
 
-        elif _json[index] == "t" and _json[index : index + 4] == "true":
+        elif text[index] == "t" and text[index : index + 4] == "true":
             index += 4
             return True, index
 
-        elif _json[index] == "f" and _json[index : index + 5] == "false":
+        elif text[index] == "f" and text[index : index + 5] == "false":
             index += 5
             return False, index
         else:
-            raise json.JSONDecodeError(
-                f'unexpected key {_json[index]} at {index}. Expected {{, [, ", num, null, true or false',
-                _json,
+            raise JSONDecodeError(
+                f'unexpected key {text[index]} at {index}. Expected {{, [, ", num, null, true or false',
+                text,
                 index,
             )
 
