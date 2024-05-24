@@ -3,6 +3,7 @@ from typing import Optional, Any
 from collections.abc import Iterable
 import numpy
 import itertools
+from enum import IntEnum
 
 from minecraft_model_reader.api.mesh.util import rotate_3d
 
@@ -33,6 +34,12 @@ def _create_cull_map() -> dict[tuple[int, int], dict[Optional[str], Optional[str
 cull_remap_all = _create_cull_map()
 
 
+class Transparency(IntEnum):
+    FullOpaque = 0  # the block is a full block with opaque textures
+    FullTranslucent = 1  # the block is a full block with transparent/translucent textures
+    Partial = 2  # the block is not a full block
+
+
 class BlockMesh:
     """Class for storing model data"""
 
@@ -46,7 +53,7 @@ class BlockMesh:
         tint_verts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
         faces_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
         texture_indexes_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        transparent = 2
+        transparent: Transparency = Transparency.Partial
 
         cull_dir: Optional[str]
         for temp_model in models:
@@ -116,7 +123,7 @@ class BlockMesh:
         faces: dict[Optional[str], numpy.ndarray],
         texture_index: dict[Optional[str], numpy.ndarray],
         textures: tuple[str, ...],
-        transparency: int,
+        transparency: Transparency,
     ):
         """
 
@@ -273,7 +280,7 @@ class BlockMesh:
         return not self._transparency
 
     @property
-    def is_transparent(self) -> int:
+    def is_transparent(self) -> Transparency:
         """
         The transparency mode of the block
         0 - the block is a full block with opaque textures

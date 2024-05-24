@@ -18,8 +18,8 @@ class BaseBlockShape:
     def get_block_model(
         self,
         block: Block,
-        up: str,
         down: str,
+        up: str,
         north: str,
         east: str,
         south: str,

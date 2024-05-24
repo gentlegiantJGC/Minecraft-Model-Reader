@@ -2,7 +2,7 @@ from typing import Optional
 import numpy
 import itertools
 
-from minecraft_model_reader.api.mesh.block.block_mesh import FACE_KEYS, BlockMesh
+from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, Transparency
 
 BoundsType = tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
 TextureUVType = tuple[
@@ -70,7 +70,7 @@ def get_cube(
     east: str,
     south: str,
     west: str,
-    transparency=0,
+    transparency: Transparency = Transparency.FullOpaque,
     tint: tuple[int, int, int] = (1, 1, 1),
     bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
     texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
@@ -82,7 +82,7 @@ def get_cube(
         False,
         False,
     ),
-):
+) -> BlockMesh:
     box_coordinates = numpy.array(list(itertools.product(*bounds)))
     _texture_uv: dict[Optional[str], numpy.ndarray] = {
         face: numpy.array(texture_uv[i], float) for i, face in enumerate(cube_face_lut)
@@ -101,10 +101,10 @@ def get_cube(
         _tint_verts[_face_dir] = numpy.full((4, 3), tint, dtype=float).ravel()
         _tri_faces[_face_dir] = tri_face
 
-    texture_paths, texture_index = numpy.unique(
+    texture_paths_arr, texture_index = numpy.unique(
         (down, up, north, east, south, west), return_inverse=True
     )
-    texture_paths = tuple(texture_paths)
+    texture_paths = tuple(texture_paths_arr)
     _tri_texture_index: dict[Optional[str], numpy.ndarray] = {
         side: numpy.full(2, texture_index[side_index], dtype=numpy.uint32)
         for side_index, side in enumerate(cube_face_lut)
@@ -143,7 +143,7 @@ def get_unit_cube(
     east: str,
     south: str,
     west: str,
-    transparency: int = 0,
+    transparency: Transparency = Transparency.FullOpaque,
     tint: tuple[int, int, int] = (1, 1, 1),
 ) -> BlockMesh:
     return get_cube(down, up, north, east, south, west, transparency, tint)

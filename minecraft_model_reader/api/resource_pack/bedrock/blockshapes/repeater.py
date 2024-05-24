@@ -1,3 +1,4 @@
+from typing import Any
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -39,6 +40,8 @@ class Repeater(PartialBlock):
         south: str,
         west: str,
         transparency: tuple[bool, bool, bool, bool, bool, bool],
+        *args: Any,
+        **kwargs: Any
     ) -> BlockMesh:
         return (
             super()

@@ -1,7 +1,7 @@
 import os
 import json
 import copy
-from typing import Union, Iterable, Generator
+from typing import Union, Iterable, Iterator, Optional
 from PIL import Image
 import numpy
 import glob
@@ -13,7 +13,7 @@ import amulet_nbt
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
-from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS
+from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS, Transparency
 from minecraft_model_reader.api.mesh.util import rotate_3d
 from minecraft_model_reader.api.mesh.block.cube import (
     cube_face_lut,
@@ -36,24 +36,22 @@ UselessImageGroups = {
 }
 
 
-class JavaResourcePackManager(BaseResourcePackManager):
+class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
     """A class to load and handle the data from the packs.
     Packs are given as a list with the later packs overwriting the earlier ones."""
 
     def __init__(
         self,
         resource_packs: Union[JavaResourcePack, Iterable[JavaResourcePack]],
-        load=True,
-    ):
+        load: bool = True,
+    ) -> None:
         super().__init__()
         self._blockstate_files: dict[tuple[str, str], dict] = {}
         self._textures: dict[tuple[str, str], str] = {}
-        self._texture_is_transparent: dict[str, tuple[int, bool]] = {}
+        self._texture_is_transparent: dict[str, tuple[float, bool]] = {}
         self._model_files: dict[tuple[str, str], dict] = {}
-        if isinstance(resource_packs, (list, tuple)):
-            self._packs = [
-                rp for rp in resource_packs if isinstance(rp, JavaResourcePack)
-            ]
+        if isinstance(resource_packs, Iterable):
+            self._packs = list(resource_packs)
         elif isinstance(resource_packs, JavaResourcePack):
             self._packs = [resource_packs]
         else:
@@ -62,7 +60,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
             for _ in self.reload():
                 pass
 
-    def _unload(self):
+    def _unload(self) -> None:
         """Clear all loaded resources."""
         super()._unload()
         self._blockstate_files.clear()
@@ -70,7 +68,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
         self._texture_is_transparent.clear()
         self._model_files.clear()
 
-    def _load_iter(self) -> Generator[float, None, None]:
+    def _load_iter(self) -> Iterator[float]:
         blockstate_file_paths: dict[tuple[str, str], str] = {}
         model_file_paths: dict[tuple[str, str], str] = {}
 
@@ -114,19 +112,19 @@ class JavaResourcePackManager(BaseResourcePackManager):
                         rel_path = "/".join(rel_path_list)[:-4]
                         self._textures[(namespace, rel_path)] = texture_path
                         if (
-                            os.stat(texture_path)[8]
+                            os.stat(texture_path).st_mtime
                             != self._texture_is_transparent.get(texture_path, [0])[0]
                         ):
                             im: Image.Image = Image.open(texture_path)
                             if im.mode == "RGBA":
                                 alpha = numpy.array(im.getchannel("A").getdata())
-                                texture_is_transparent = numpy.any(alpha != 255)
+                                texture_is_transparent = bool(numpy.any(alpha != 255))
                             else:
                                 texture_is_transparent = False
 
                             self._texture_is_transparent[texture_path] = (
-                                os.stat(texture_path)[8],
-                                bool(texture_is_transparent),
+                                os.stat(texture_path).st_mtime,
+                                texture_is_transparent,
                             )
                     yield sub_progress + image_index / (image_count * pack_count * 3)
 
@@ -198,8 +196,10 @@ class JavaResourcePackManager(BaseResourcePackManager):
         """Returns a tuple of all the texture paths in the resource pack."""
         return tuple(self._textures.values())
 
-    def get_texture_path(self, namespace: str, relative_path: str) -> str:
+    def get_texture_path(self, namespace: Optional[str], relative_path: str) -> str:
         """Get the absolute texture path from the namespace and relative path pair"""
+        if namespace is None:
+            return self.missing_no
         key = (namespace, relative_path)
         if key in self._textures:
             return self._textures[key]
@@ -207,7 +207,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
             return self.missing_no
 
     @staticmethod
-    def parse_state_val(val) -> list:
+    def parse_state_val(val: Union[str, bool]) -> list:
         """Convert the json block state format into a consistent format."""
         if isinstance(val, str):
             return [amulet_nbt.TAG_String(v) for v in val.split("|")]
@@ -296,7 +296,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
 
         return self.missing_block
 
-    def _load_blockstate_model(self, blockstate_value: Union[dict, list]) -> BlockMesh:
+    def _load_blockstate_model(self, blockstate_value: Union[dict, list[dict]]) -> BlockMesh:
         """Load the model(s) associated with a block state and apply rotations if needed."""
         if isinstance(blockstate_value, list):
             blockstate_value = blockstate_value[0]
@@ -322,13 +322,13 @@ class JavaResourcePackManager(BaseResourcePackManager):
         textures = []
         texture_count = 0
         vert_count = {side: 0 for side in FACE_KEYS}
-        verts = {side: [] for side in FACE_KEYS}
-        tverts = {side: [] for side in FACE_KEYS}
-        tint_verts = {side: [] for side in FACE_KEYS}
-        faces = {side: [] for side in FACE_KEYS}
+        verts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
+        tverts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
+        tint_verts_src: dict[Optional[str], list[float]] = {side: [] for side in FACE_KEYS}
+        faces_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
 
-        texture_indexes = {side: [] for side in FACE_KEYS}
-        transparent = 2
+        texture_indexes_src: dict[Optional[str], list[int]] = {side: [] for side in FACE_KEYS}
+        transparent = Transparency.Partial
 
         if java_model.get("textures", {}) and not java_model.get("elements"):
             return self.missing_block
@@ -348,7 +348,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                 # if the block is not yet defined as a solid block
                 # and this element is a full size element
                 # check if the texture is opaque
-                transparent = 1
+                transparent = Transparency.FullTranslucent
                 check_faces = True
             else:
                 check_faces = False
@@ -439,59 +439,55 @@ class JavaResourcePackManager(BaseResourcePackManager):
                             angles[2] = -angle
                         face_verts = rotate_3d(face_verts, *angles, *origin)
 
-                    verts[cull_dir].append(
+                    verts_src[cull_dir].append(
                         face_verts
                     )  # vertex coordinates for this face
 
-                    tverts[cull_dir].append(
+                    tverts_src[cull_dir].append(
                         texture_uv[uv_slice].reshape((-1, 2))  # texture vertices
                     )
                     if "tintindex" in element_faces[face_dir]:
-                        tint_verts[cull_dir] += [
+                        tint_verts_src[cull_dir] += [
                             0,
                             1,
                             0,
                         ] * 4  # TODO: set this up for each supported block
                     else:
-                        tint_verts[cull_dir] += [1, 1, 1] * 4
+                        tint_verts_src[cull_dir] += [1, 1, 1] * 4
 
                     # merge the face indexes and texture index
                     face_table = tri_face + vert_count[cull_dir]
-                    texture_indexes[cull_dir] += [texture_index, texture_index]
+                    texture_indexes_src[cull_dir] += [texture_index, texture_index]
 
                     # faces stored under cull direction because this is the criteria to render them or not
-                    faces[cull_dir].append(face_table)
+                    faces_src[cull_dir].append(face_table)
 
                     vert_count[cull_dir] += 4
 
             if opaque_face_count == 6:
-                transparent = 0
+                transparent = Transparency.FullOpaque
 
-        remove_faces = []
-        for cull_dir, face_array in faces.items():
+        verts: dict[Optional[str], numpy.ndarray] = {}
+        tverts: dict[Optional[str], numpy.ndarray] = {}
+        tint_verts: dict[Optional[str], numpy.ndarray] = {}
+        faces: dict[Optional[str], numpy.ndarray] = {}
+        texture_indexes: dict[Optional[str], numpy.ndarray] = {}
+
+        for cull_dir in FACE_KEYS:
+            face_array = faces_src[cull_dir]
             if len(face_array) > 0:
                 faces[cull_dir] = numpy.concatenate(face_array, axis=None)
                 tint_verts[cull_dir] = numpy.concatenate(
-                    tint_verts[cull_dir], axis=None
+                    tint_verts_src[cull_dir], axis=None
                 )
-                verts[cull_dir] = numpy.concatenate(verts[cull_dir], axis=None)
-                tverts[cull_dir] = numpy.concatenate(tverts[cull_dir], axis=None)
+                verts[cull_dir] = numpy.concatenate(verts_src[cull_dir], axis=None)
+                tverts[cull_dir] = numpy.concatenate(tverts_src[cull_dir], axis=None)
                 texture_indexes[cull_dir] = numpy.array(
-                    texture_indexes[cull_dir], dtype=numpy.uint32
+                    texture_indexes_src[cull_dir], dtype=numpy.uint32
                 )
-            else:
-                remove_faces.append(cull_dir)
-
-        for cull_dir in remove_faces:
-            del faces[cull_dir]
-            del tint_verts[cull_dir]
-            del verts[cull_dir]
-            del tverts[cull_dir]
-            del texture_indexes[cull_dir]
-        textures = tuple(textures)
 
         return BlockMesh(
-            3, verts, tverts, tint_verts, faces, texture_indexes, textures, transparent
+            3, verts, tverts, tint_verts, faces, texture_indexes, tuple(textures), transparent
         )
 
     def _recursive_load_block_model(self, model_path: str) -> dict:

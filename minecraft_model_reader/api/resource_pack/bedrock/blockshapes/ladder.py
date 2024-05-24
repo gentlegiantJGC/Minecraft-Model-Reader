@@ -19,7 +19,7 @@ class Ladder(FlatWall):
         south: str,
         west: str,
         transparency: tuple[bool, bool, bool, bool, bool, bool],
-        modify_uv=True,
+        modify_uv: bool = True,
     ) -> BlockMesh:
         rotation = {2: 2, 3: 0, 4: 1, 5: 3}.get(
             block.properties["facing_direction"].py_data, 0

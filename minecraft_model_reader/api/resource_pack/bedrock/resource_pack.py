@@ -6,7 +6,7 @@ from minecraft_model_reader.api import comment_json
 
 
 class BedrockResourcePack(BaseResourcePack):
-    """A class to hold the bare bones information about the resource pack.
+    """A class to hold the bare-bones information about the resource pack.
     Holds the pack format, description and if the pack is valid.
     This information can be used in a viewer to display the packs to the user."""
 
@@ -20,9 +20,13 @@ class BedrockResourcePack(BaseResourcePack):
             except json.JSONDecodeError:
                 pass
             else:
-                if "header" in pack_mcmeta and "description" in pack_mcmeta["header"]:
-                    self._pack_description = str(pack_mcmeta["header"]["description"])
-                    self._valid_pack = True
+                if isinstance(pack_mcmeta, dict):
+                    header = pack_mcmeta.get("header", None)
+                    if isinstance(header, dict):
+                        description = header.get("description", None)
+                        if isinstance(description, str):
+                            self._pack_description = description
+                            self._valid_pack = True
 
         pack_icon_path = os.path.join(resource_pack_path, "pack_icon.png")
         if os.path.isfile(pack_icon_path):

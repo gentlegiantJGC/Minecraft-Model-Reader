@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Union, Iterable, Generator, Optional
+from typing import Union, Iterable, Generator, Optional, TypedDict, Literal, Any
 from PIL import Image
 import numpy
 
@@ -11,19 +11,44 @@ from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
 from .blockshapes import BlockShapeClasses
 
 
+class NumericalProperty(TypedDict):
+    name: str
+    type: Union[Literal["byte"], Literal["int"]]
+    value: int
+
+
+class StrProperty(TypedDict):
+    name: str
+    type: Literal["string"]
+    value: str
+
+
+class StateDict(TypedDict):
+    name: str
+    data: int
+    states: list[Union[NumericalProperty, StrProperty]]
+
+
+class BlockPaletteDict(TypedDict):
+    blocks: list[StateDict]
+
+
 def _load_data() -> tuple[
     dict[str, str],
     dict[
         str,
-        tuple[tuple[tuple[str, str], ...], dict[tuple[Union[str, int], ...], int]],
+        tuple[tuple[tuple[str, Union[int, str]], ...], dict[tuple[Union[str, int], ...], int]],
     ],
 ]:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
-        _block_shapes = comment_json.load(f)
+        _block_shapes: dict[str, str] = comment_json.load(f)  # type: ignore
 
-    _aux_values = {}
+    _aux_values: dict[
+        str,
+        tuple[tuple[tuple[str, Union[int, str]], ...], dict[tuple[Union[str, int], ...], int]],
+    ] = {}
     with open(os.path.join(os.path.dirname(__file__), "block_palette.json")) as f:
-        _block_palette = comment_json.load(f)
+        _block_palette: BlockPaletteDict = comment_json.load(f)  # type: ignore
     for block in _block_palette["blocks"]:
         data = block["data"]
         name = block["name"]
@@ -65,8 +90,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
     def __init__(
         self,
         resource_packs: Union[BedrockResourcePack, Iterable[BedrockResourcePack]],
-        load=True,
-    ):
+        load: bool = True,
+    ) -> None:
         super().__init__()
         self._block_shapes: dict[str, str] = {}  # block string to block shape
         self._blocks: dict[str, Union[dict[str, str], str, None]] = (
@@ -78,7 +103,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         self._textures: dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
 
-        self._texture_is_transparent: dict[str, tuple[int, bool]] = {}
+        self._texture_is_transparent: dict[str, tuple[float, bool]] = {}
 
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
@@ -92,7 +117,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
             for _ in self.reload():
                 pass
 
-    def _unload(self):
+    def _unload(self) -> None:
         """Clear all loaded resources."""
         super()._unload()
         self._block_shapes.clear()
@@ -109,18 +134,18 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         else:
             texture_path = self.missing_no
         if (
-            os.stat(texture_path)[8]
+            os.stat(texture_path).st_mtime
             != self._texture_is_transparent.get(texture_path, [0])[0]
         ):
             im: Image.Image = Image.open(texture_path)
             if im.mode == "RGBA":
                 alpha = numpy.array(im.getchannel("A").getdata())
-                texture_is_transparent = numpy.any(alpha != 255)
+                texture_is_transparent = bool(numpy.any(alpha != 255))
             else:
                 texture_is_transparent = False
 
             self._texture_is_transparent[texture_path] = (
-                os.stat(texture_path)[8],
+                os.stat(texture_path).st_mtime,
                 bool(texture_is_transparent),
             )
         return texture_path
@@ -163,11 +188,12 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                             sub_progress = pack_progress
                             image_count = len(terrain_texture["texture_data"])
 
-                            def get_texture(_relative_path):
+                            def get_texture(_relative_path: Any) -> str:
                                 if isinstance(_relative_path, dict):
                                     _relative_path = _relative_path.get(
                                         "path", "misssingno"
                                     )
+                                    assert isinstance(_relative_path, str)
                                 if isinstance(_relative_path, str):
                                     full_path = self._check_texture(
                                         os.path.join(pack.root_dir, _relative_path)
@@ -177,6 +203,8 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                             self._textures[_relative_path] = full_path
                                     else:
                                         self._textures[_relative_path] = full_path
+                                else:
+                                    raise TypeError
                                 return _relative_path
 
                             for image_index, (texture_id, data) in enumerate(
@@ -218,7 +246,14 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                 if isinstance(block_id, str) and isinstance(data, dict):
                                     if ":" not in block_id:
                                         block_id = "minecraft:" + block_id
-                                    self._blocks[block_id] = data.get("textures")
+                                    textures = data.get("textures")
+                                    if textures is None or isinstance(textures, str):
+                                        self._blocks[block_id] = textures
+                                    elif isinstance(textures, dict) and all(isinstance(v, str) for v in textures.values()):
+                                        self._blocks[block_id] = textures  # type: ignore  # TODO: improve this with TypeGuard
+                                    else:
+                                        raise TypeError
+
                                 yield sub_progress + (model_index) / (
                                     model_count * pack_count * 2
                                 )
@@ -308,7 +343,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
 
         return self.missing_block
 
-    def _get_texture(self, texture_id: str, index: int):
+    def _get_texture(self, texture_id: str, index: int) -> str:
         texture = self.missing_no
         if texture_id in self._terrain_texture:
             texture_list = self._terrain_texture[texture_id]

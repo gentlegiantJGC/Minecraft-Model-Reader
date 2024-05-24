@@ -1,6 +1,6 @@
 import numpy
 
-from minecraft_model_reader.api.mesh.block import BlockMesh
+from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, Transparency
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.base_blockshape import (
     BaseBlockShape,
@@ -179,7 +179,7 @@ class Cross(BaseBlockShape):
                 )
             },
             (up,),
-            2,
+            Transparency.Partial,
         )
 
 

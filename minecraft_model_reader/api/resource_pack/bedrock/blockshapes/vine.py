@@ -29,7 +29,7 @@ class Vine(FlatWall):
         south: str,
         west: str,
         transparency: tuple[bool, bool, bool, bool, bool, bool],
-        modify_uv=True,
+        modify_uv: bool = True,
     ) -> BlockMesh:
         models = []
         data: int = block.properties["vine_direction_bits"].py_data

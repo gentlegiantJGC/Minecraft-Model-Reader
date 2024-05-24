@@ -1,5 +1,4 @@
-from typing import Generator, Optional
-import os
+from typing import Optional, Iterator, TypeVar, Generic
 import json
 import copy
 
@@ -8,37 +7,39 @@ from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseReso
 from minecraft_model_reader.api.image import missing_no_path
 from minecraft_model_reader.api.mesh.block.missing_block import get_missing_block
 
+PackT = TypeVar('PackT', bound=BaseResourcePack)
 
-class BaseResourcePackManager:
+
+class BaseResourcePackManager(Generic[PackT]):
     """The base class that all resource pack managers must inherit from. Defines the base api."""
 
-    def __init__(self):
-        self._packs: list[BaseResourcePack] = []
-        self._missing_block = None
-        self._texture_is_transparent = {}
+    def __init__(self) -> None:
+        self._packs: list[PackT] = []
+        self._missing_block: Optional[BlockMesh] = None
+        self._texture_is_transparent: dict[str, tuple[float, bool]] = {}
         self._cached_models: dict[Block, BlockMesh] = {}
 
     @property
-    def pack_paths(self):
+    def pack_paths(self) -> list[str]:
         return [pack.root_dir for pack in self._packs]
 
-    def _unload(self):
+    def _unload(self) -> None:
         """Clear all loaded resources."""
         self._texture_is_transparent.clear()
         self._cached_models.clear()
 
-    def _load_transparency_cache(self, path: str):
+    def _load_transparency_cache(self, path: str) -> None:
         try:
             with open(path) as f:
                 self._texture_is_transparent = json.load(f)
         except:
             pass
 
-    def _load_iter(self) -> Generator[float, None, None]:
+    def _load_iter(self) -> Iterator[float]:
         """Load resources."""
         raise NotImplementedError
 
-    def reload(self) -> Generator[float, None, None]:
+    def reload(self) -> Iterator[float]:
         """Unload and reload resources"""
         self._unload()
         yield from self._load_iter()
