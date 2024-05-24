@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -17,14 +15,14 @@ class PressurePlate(PartialBlock):
 
     def bounds(
         self, block: Block
-    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         if block.properties["redstone_signal"].py_data >= 1:
             return (1 / 16, 15 / 16), (0, 1 / 32), (1 / 16, 15 / 16)
         else:
             return (1 / 16, 15 / 16), (0, 1 / 16), (1 / 16, 15 / 16)
 
     @property
-    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+    def do_not_cull(self) -> tuple[bool, bool, bool, bool, bool, bool]:
         return False, True, True, True, True, True
 
 

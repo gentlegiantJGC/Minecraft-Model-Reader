@@ -1,7 +1,7 @@
 import os
 import json
 import copy
-from typing import Union, Dict, Tuple, Iterable, Generator
+from typing import Union, Iterable, Generator
 from PIL import Image
 import numpy
 import glob
@@ -46,10 +46,10 @@ class JavaResourcePackManager(BaseResourcePackManager):
         load=True,
     ):
         super().__init__()
-        self._blockstate_files: Dict[Tuple[str, str], dict] = {}
-        self._textures: Dict[Tuple[str, str], str] = {}
-        self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
-        self._model_files: Dict[Tuple[str, str], dict] = {}
+        self._blockstate_files: dict[tuple[str, str], dict] = {}
+        self._textures: dict[tuple[str, str], str] = {}
+        self._texture_is_transparent: dict[str, tuple[int, bool]] = {}
+        self._model_files: dict[tuple[str, str], dict] = {}
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
                 rp for rp in resource_packs if isinstance(rp, JavaResourcePack)
@@ -71,8 +71,8 @@ class JavaResourcePackManager(BaseResourcePackManager):
         self._model_files.clear()
 
     def _load_iter(self) -> Generator[float, None, None]:
-        blockstate_file_paths: Dict[Tuple[str, str], str] = {}
-        model_file_paths: Dict[Tuple[str, str], str] = {}
+        blockstate_file_paths: dict[tuple[str, str], str] = {}
+        model_file_paths: dict[tuple[str, str], str] = {}
 
         transparency_cache_path = os.path.join(
             os.environ["CACHE_DIR"], "resource_packs", "java", "transparency_cache.json"
@@ -194,7 +194,7 @@ class JavaResourcePackManager(BaseResourcePackManager):
                     log.error(f"Failed to parse model file file {path}")
 
     @property
-    def textures(self) -> Tuple[str, ...]:
+    def textures(self) -> tuple[str, ...]:
         """Returns a tuple of all the texture paths in the resource pack."""
         return tuple(self._textures.values())
 

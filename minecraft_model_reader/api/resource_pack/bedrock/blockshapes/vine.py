@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.flat_wall import (
     FlatWall,
 )
@@ -18,7 +16,7 @@ class Vine(FlatWall):
         return "vine"
 
     @property
-    def tint(self) -> Tuple[float, float, float]:
+    def tint(self) -> tuple[float, float, float]:
         return 0, 1, 0
 
     def get_block_model(
@@ -30,7 +28,7 @@ class Vine(FlatWall):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
         modify_uv=True,
     ) -> BlockMesh:
         models = []

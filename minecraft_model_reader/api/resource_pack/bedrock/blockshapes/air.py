@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.base_blockshape import (
@@ -29,7 +27,7 @@ class Air(BaseBlockShape):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         return BlockMesh(3, {}, {}, {}, {}, {}, (), 2)
 

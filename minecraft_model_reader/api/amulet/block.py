@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sys import getsizeof
 import re
-from typing import Dict, Iterable, Tuple, Union, Optional, Any
+from typing import Iterable, Union, Optional, Any
 import amulet_nbt
 
 PropertyValueType = Union[
@@ -12,7 +12,7 @@ PropertyValueType = Union[
     amulet_nbt.TAG_Long,
     amulet_nbt.TAG_String,
 ]
-PropertyType = Dict[str, PropertyValueType]
+PropertyType = dict[str, PropertyValueType]
 
 PropertyDataTypes = (
     amulet_nbt.TAG_Byte,
@@ -249,7 +249,7 @@ class Block:
             )
 
     @property
-    def extra_blocks(self) -> Tuple[Block, ...]:
+    def extra_blocks(self) -> tuple[Block, ...]:
         """
         Returns a tuple of the extra blocks contained in the Block instance
 
@@ -258,7 +258,7 @@ class Block:
         return self._extra_blocks
 
     @property
-    def block_tuple(self) -> Tuple[Block, ...]:
+    def block_tuple(self) -> tuple[Block, ...]:
         """
         Returns the stack of blocks represented by this object as a tuple.
         This is a tuple of base_block and extra_blocks
@@ -269,7 +269,7 @@ class Block:
     @staticmethod
     def parse_blockstate_string(
         blockstate: str, snbt: bool = False
-    ) -> Tuple[str, str, PropertyType]:
+    ) -> tuple[str, str, PropertyType]:
         """Parse a blockstate string and return the data.
 
         :param blockstate: The blockstate to parse

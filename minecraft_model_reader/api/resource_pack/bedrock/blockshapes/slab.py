@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -21,14 +19,14 @@ class Slab(PartialBlock):
 
     def bounds(
         self, block: Block
-    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         if block.properties["top_slot_bit"].py_data:
             return (0, 1), (1 / 2, 1), (0, 1)
         else:
             return (0, 1), (0, 1 / 2), (0, 1)
 
     @property
-    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+    def do_not_cull(self) -> tuple[bool, bool, bool, bool, bool, bool]:
         return False, True, False, False, False, False
 
 

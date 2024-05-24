@@ -1,5 +1,3 @@
-from typing import Dict
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.furnace import Furnace
 
 
@@ -9,7 +7,7 @@ class FurnaceLit(Furnace):
         return "furnace_lit"
 
     @property
-    def rotation_map(self) -> Dict[int, int]:
+    def rotation_map(self) -> dict[int, int]:
         return {2: 3, 3: 1, 4: 2, 5: 0}
 
 

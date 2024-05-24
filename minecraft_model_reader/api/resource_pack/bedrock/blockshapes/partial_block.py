@@ -1,12 +1,10 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.mesh.block.cube import get_cube
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.default import Default
 
-BoundsType = Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]
-DoNotCullType = Tuple[bool, bool, bool, bool, bool, bool]
+BoundsType = tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
+DoNotCullType = tuple[bool, bool, bool, bool, bool, bool]
 
 
 class PartialBlock(Default):
@@ -26,7 +24,7 @@ class PartialBlock(Default):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
         modify_uv=True,
         bounds: BoundsType = None,
         do_not_cull: DoNotCullType = None,

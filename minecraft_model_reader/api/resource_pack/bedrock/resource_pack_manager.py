@@ -1,6 +1,6 @@
 import os
 import json
-from typing import Union, Dict, Tuple, Iterable, Generator, Optional
+from typing import Union, Iterable, Generator, Optional
 from PIL import Image
 import numpy
 
@@ -11,11 +11,11 @@ from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh
 from .blockshapes import BlockShapeClasses
 
 
-def _load_data() -> Tuple[
-    Dict[str, str],
-    Dict[
+def _load_data() -> tuple[
+    dict[str, str],
+    dict[
         str,
-        Tuple[Tuple[Tuple[str, str], ...], Dict[Tuple[Union[str, int], ...], int]],
+        tuple[tuple[tuple[str, str], ...], dict[tuple[Union[str, int], ...], int]],
     ],
 ]:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
@@ -68,17 +68,17 @@ class BedrockResourcePackManager(BaseResourcePackManager):
         load=True,
     ):
         super().__init__()
-        self._block_shapes: Dict[str, str] = {}  # block string to block shape
-        self._blocks: Dict[str, Union[Dict[str, str], str, None]] = (
+        self._block_shapes: dict[str, str] = {}  # block string to block shape
+        self._blocks: dict[str, Union[dict[str, str], str, None]] = (
             {}
         )  # block string to short texture ids
-        self._terrain_texture: Dict[str, Tuple[str, ...]] = (
+        self._terrain_texture: dict[str, tuple[str, ...]] = (
             {}
         )  # texture ids to list of relative paths. Each relates to a different data value.
-        self._textures: Dict[str, str] = {}  # relative path to texture path
+        self._textures: dict[str, str] = {}  # relative path to texture path
         self._all_textures = None
 
-        self._texture_is_transparent: Dict[str, Tuple[int, bool]] = {}
+        self._texture_is_transparent: dict[str, tuple[int, bool]] = {}
 
         if isinstance(resource_packs, (list, tuple)):
             self._packs = [
@@ -229,7 +229,7 @@ class BedrockResourcePackManager(BaseResourcePackManager):
             json.dump(self._texture_is_transparent, f)
 
     @property
-    def textures(self) -> Tuple[str, ...]:
+    def textures(self) -> tuple[str, ...]:
         """Returns a tuple of all the texture paths in the resource pack."""
         return tuple(self._textures.values())
 

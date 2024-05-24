@@ -1,17 +1,17 @@
-from typing import Dict, Tuple, Optional
+from typing import Optional
 import numpy
 import itertools
 
 from minecraft_model_reader.api.mesh.block.block_mesh import FACE_KEYS, BlockMesh
 
-BoundsType = Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]
-TextureUVType = Tuple[
-    Tuple[float, float, float, float],
-    Tuple[float, float, float, float],
-    Tuple[float, float, float, float],
-    Tuple[float, float, float, float],
-    Tuple[float, float, float, float],
-    Tuple[float, float, float, float],
+BoundsType = tuple[tuple[float, float], tuple[float, float], tuple[float, float]]
+TextureUVType = tuple[
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
+    tuple[float, float, float, float],
 ]
 
 
@@ -71,10 +71,10 @@ def get_cube(
     south: str,
     west: str,
     transparency=0,
-    tint: Tuple[int, int, int] = (1, 1, 1),
+    tint: tuple[int, int, int] = (1, 1, 1),
     bounds: BoundsType = ((0, 1), (0, 1), (0, 1)),
     texture_uv: TextureUVType = ((0, 0, 1, 1),) * 6,
-    do_not_cull: Tuple[bool, bool, bool, bool, bool, bool] = (
+    do_not_cull: tuple[bool, bool, bool, bool, bool, bool] = (
         False,
         False,
         False,
@@ -84,13 +84,13 @@ def get_cube(
     ),
 ):
     box_coordinates = numpy.array(list(itertools.product(*bounds)))
-    _texture_uv: Dict[Optional[str], numpy.ndarray] = {
+    _texture_uv: dict[Optional[str], numpy.ndarray] = {
         face: numpy.array(texture_uv[i], float) for i, face in enumerate(cube_face_lut)
     }
-    _verts: Dict[Optional[str], numpy.ndarray] = {}
-    _texture_coords: Dict[Optional[str], numpy.ndarray] = {}
-    _tint_verts: Dict[Optional[str], numpy.ndarray] = {}
-    _tri_faces: Dict[Optional[str], numpy.ndarray] = {}
+    _verts: dict[Optional[str], numpy.ndarray] = {}
+    _texture_coords: dict[Optional[str], numpy.ndarray] = {}
+    _tint_verts: dict[Optional[str], numpy.ndarray] = {}
+    _tri_faces: dict[Optional[str], numpy.ndarray] = {}
     for _face_dir in cube_face_lut:
         _verts[_face_dir] = box_coordinates[
             cube_face_lut[_face_dir]
@@ -105,7 +105,7 @@ def get_cube(
         (down, up, north, east, south, west), return_inverse=True
     )
     texture_paths = tuple(texture_paths)
-    _tri_texture_index: Dict[str, numpy.ndarray] = {
+    _tri_texture_index: dict[Optional[str], numpy.ndarray] = {
         side: numpy.full(2, texture_index[side_index], dtype=numpy.uint32)
         for side_index, side in enumerate(cube_face_lut)
     }
@@ -144,6 +144,6 @@ def get_unit_cube(
     south: str,
     west: str,
     transparency: int = 0,
-    tint: Tuple[int, int, int] = (1, 1, 1),
+    tint: tuple[int, int, int] = (1, 1, 1),
 ) -> BlockMesh:
     return get_cube(down, up, north, east, south, west, transparency, tint)

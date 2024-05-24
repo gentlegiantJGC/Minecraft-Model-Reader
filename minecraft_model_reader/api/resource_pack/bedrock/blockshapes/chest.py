@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -14,14 +12,14 @@ class Chest(PartialBlock):
 
     def bounds(
         self, block: Block
-    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         return (1 / 16, 15 / 16), (0, 14 / 16), (1 / 16, 15 / 16)
 
     def texture_index(self, block: Block, aux_value: int) -> int:
         return 0
 
     @property
-    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+    def do_not_cull(self) -> tuple[bool, bool, bool, bool, bool, bool]:
         return False, True, True, True, True, True
 
     def get_block_model(
@@ -33,7 +31,7 @@ class Chest(PartialBlock):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
         modify_uv=True,
     ) -> BlockMesh:
         rotation = {2: 2, 3: 0, 4: 1, 5: 3}.get(

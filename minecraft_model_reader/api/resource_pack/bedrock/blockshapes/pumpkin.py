@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cube import Cube
 from minecraft_model_reader.api import Block, BlockMesh
 import amulet_nbt
@@ -25,7 +23,7 @@ class Pumpkin(Cube):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         return (
             super()

@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import (
     Cross,
 )
@@ -20,7 +18,7 @@ class BubbleColumn(Cross):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         return super().get_block_model(
             block, north, north, north, north, north, north, transparency

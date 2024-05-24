@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.flat import Flat
 
 
@@ -9,7 +7,7 @@ class RedDust(Flat):
         return "red_dust"
 
     @property
-    def tint(self) -> Tuple[float, float, float]:
+    def tint(self) -> tuple[float, float, float]:
         return 1, 0, 0
 
 

@@ -1,4 +1,4 @@
-from typing import List, Dict, Tuple, Generator, Optional
+from typing import Generator, Optional
 import os
 import json
 import copy
@@ -13,10 +13,10 @@ class BaseResourcePackManager:
     """The base class that all resource pack managers must inherit from. Defines the base api."""
 
     def __init__(self):
-        self._packs: List[BaseResourcePack] = []
+        self._packs: list[BaseResourcePack] = []
         self._missing_block = None
         self._texture_is_transparent = {}
-        self._cached_models: Dict[Block, BlockMesh] = {}
+        self._cached_models: dict[Block, BlockMesh] = {}
 
     @property
     def pack_paths(self):
@@ -55,7 +55,7 @@ class BaseResourcePackManager:
         return self._missing_block
 
     @property
-    def textures(self) -> Tuple[str, ...]:
+    def textures(self) -> tuple[str, ...]:
         """Returns a tuple of all the texture paths in the resource pack."""
         raise NotImplementedError
 

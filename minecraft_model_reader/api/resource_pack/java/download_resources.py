@@ -4,7 +4,7 @@ import zipfile
 import json
 from urllib.request import urlopen, Request
 import io
-from typing import Generator, List
+from typing import Generator
 import logging
 
 from minecraft_model_reader.api.resource_pack import JavaResourcePack
@@ -176,7 +176,7 @@ def download_resources_iter(
             data = e.value
 
         client = zipfile.ZipFile(io.BytesIO(data))
-        paths: List[str] = [
+        paths: list[str] = [
             fpath for fpath in client.namelist() if fpath.startswith("assets/")
         ]
         path_count = len(paths)
