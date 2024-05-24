@@ -1,5 +1,5 @@
 from json import JSONDecodeError, loads as json_loads
-from typing import TextIO, TypeAlias
+from typing import TextIO, Union
 
 """
 Some of the Bedrock json files contain comments which is not valid JSON and the standard json parser
@@ -7,9 +7,9 @@ will throw errors. This will first try and use the vanilla json parser and fall 
 """
 
 
-JSONValue: TypeAlias = str | int | float | bool | None | "JSONDict" | "JSONList"
-JSONDict: TypeAlias = dict[str, JSONValue]
-JSONList: TypeAlias = list[JSONValue]
+JSONValue = Union[str, int, float, bool, None, "JSONDict", "JSONList"]
+JSONDict = dict[str, JSONValue]
+JSONList = list[JSONValue]
 
 
 class CommentJSONDecodeError(JSONDecodeError):
