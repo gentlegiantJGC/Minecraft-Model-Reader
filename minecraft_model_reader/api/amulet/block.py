@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from sys import getsizeof
 import re
-from typing import Dict, Iterable, Tuple, Union
+from typing import Dict, Iterable, Tuple, Union, Optional, Any
 import amulet_nbt
 
 PropertyValueType = Union[
@@ -108,8 +108,8 @@ class Block:
         self,
         namespace: str,
         base_name: str,
-        properties: PropertyType = None,
-        extra_blocks: Union[Block, Iterable[Block]] = None,
+        properties: Optional[PropertyType] = None,
+        extra_blocks: Union[Block, Iterable[Block], None] = None,
     ):
         assert (isinstance(namespace, str) or namespace is None) and isinstance(
             base_name, str
@@ -118,9 +118,9 @@ class Block:
         self._base_name = base_name
         self._namespaced_name = f"{namespace}:{base_name}"
 
-        self._blockstate = None
-        self._snbt_blockstate = None
-        self._full_blockstate = None
+        self._blockstate: Optional[str] = None
+        self._snbt_blockstate: Optional[str] = None
+        self._full_blockstate: Optional[str] = None
 
         if properties is None:
             properties = {}
@@ -129,20 +129,20 @@ class Block:
         ), properties
 
         self._properties = properties
-        self._extra_blocks = ()
+        self._extra_blocks: tuple[Block, ...] = ()
         if extra_blocks:
             if isinstance(extra_blocks, Block):
                 extra_blocks = [extra_blocks]
             self._extra_blocks = tuple(extra_blocks)
 
     @classmethod
-    def from_string_blockstate(cls, blockstate: str):
+    def from_string_blockstate(cls, blockstate: str) -> Block:
         """Parse a Java format blockstate where values are all strings and populate a Block class with the data."""
         namespace, block_name, properties = cls.parse_blockstate_string(blockstate)
         return cls(namespace, block_name, properties)
 
     @classmethod
-    def from_snbt_blockstate(cls, blockstate: str):
+    def from_snbt_blockstate(cls, blockstate: str) -> Block:
         """Parse a blockstate where values are SNBT of any type and populate a Block class with the data."""
         namespace, block_name, properties = cls.parse_blockstate_string(
             blockstate, True
@@ -193,14 +193,15 @@ class Block:
         :return: The blockstate string
         """
         if self._blockstate is None:
-            self._blockstate = self.namespaced_name
+            blockstate = self.namespaced_name
             if self.properties:
                 props = [
                     f"{key}={value.py_data}"
                     for key, value in sorted(self.properties.items())
                     if isinstance(value, amulet_nbt.TAG_String)
                 ]
-                self._blockstate += f"[{','.join(props)}]"
+                blockstate += f"[{','.join(props)}]"
+            self._blockstate = blockstate
         return self._blockstate
 
     @property
@@ -279,6 +280,8 @@ class Block:
             match = Block.snbt_blockstate_regex.match(blockstate)
         else:
             match = Block.blockstate_regex.match(blockstate)
+        if match is None:
+            raise ValueError
         namespace = match.group("namespace") or "minecraft"
         base_name = match.group("base_name")
 
@@ -324,18 +327,18 @@ class Block:
         """
         return f"Block({', '.join([str(b) for b in (self, *self.extra_blocks)])})"
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._extra_blocks) + 1
 
-    def __eq__(self, other: Block) -> bool:
+    def __eq__(self, other: Any) -> bool:
         """
         Checks the equality of this Block object to another Block object
 
         :param other: The Block object to check against
         :return: True if the Blocks objects are equal, False otherwise
         """
-        if self.__class__ != other.__class__:
-            return False
+        if not isinstance(other, Block):
+            return NotImplemented
 
         return (
             self.namespaced_name == other.namespaced_name
@@ -347,7 +350,7 @@ class Block:
         """
         Allows blocks to be sorted so numpy.unique can be used on them
         """
-        if self.__class__ != other.__class__:
+        if not isinstance(other, Block):
             return NotImplemented
         return hash(self).__gt__(hash(other))
 
@@ -481,21 +484,6 @@ class Block:
             properties=self.properties,
             extra_blocks=[*self.extra_blocks[: layer - 1], *self.extra_blocks[layer:]],
         )
-
-    def __sizeof__(self):
-        size = (
-            getsizeof(self._namespace)
-            + getsizeof(self._base_name)
-            + getsizeof(self._namespaced_name)
-            + getsizeof(self._properties)
-            + getsizeof(self._blockstate)
-            + getsizeof(self._extra_blocks)
-            + getsizeof(self._snbt_blockstate)
-            + getsizeof(self._full_blockstate)
-        )
-        for eb in self.extra_blocks:
-            size += getsizeof(eb)
-        return size
 
 
 # some blocks that probably will not change. Keeping these in one place will make them easier to change if they do.

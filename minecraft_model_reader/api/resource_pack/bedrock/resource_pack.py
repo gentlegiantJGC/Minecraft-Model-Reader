@@ -29,8 +29,8 @@ class BedrockResourcePack(BaseResourcePack):
             self._pack_icon = pack_icon_path
 
     @staticmethod
-    def is_valid(pack_path: str):
+    def is_valid(pack_path: str) -> bool:
         return os.path.isfile(os.path.join(pack_path, "manifest.json"))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"BedrockResourcePack({self._root_dir})"

@@ -2,7 +2,7 @@ import os
 import json
 
 
-def main():
+def main() -> None:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
         shapes = json.load(f)
         shapes_tuple = tuple(sorted(shapes.items(), key=lambda i: (i[1], i[0])))

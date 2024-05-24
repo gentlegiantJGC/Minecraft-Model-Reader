@@ -10,11 +10,11 @@ class BaseResourcePack:
         self._pack_description = ""
         self._pack_icon = default_pack_icon_path
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         raise NotImplementedError
 
     @staticmethod
-    def is_valid(pack_path: str):
+    def is_valid(pack_path: str) -> bool:
         raise NotImplementedError
 
     @property
