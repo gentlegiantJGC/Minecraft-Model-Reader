@@ -62,9 +62,7 @@ def _loads(text: str) -> JSONValue:
                 index += 2
                 index = strip_whitespace(index)
             else:
-                raise JSONDecodeError(
-                    f"unexpected / at index {index}", text, index
-                )
+                raise JSONDecodeError(f"unexpected / at index {index}", text, index)
         return index
 
     def parse_json_recursive(index: int = 0) -> tuple[JSONValue, int]:
@@ -110,9 +108,7 @@ def _loads(text: str) -> JSONValue:
                     repeat = False
 
             if index >= len(text):
-                raise JSONDecodeError(
-                    "expected } but reached end of file", text, index
-                )
+                raise JSONDecodeError("expected } but reached end of file", text, index)
             elif text[index] == "}":
                 index += 1
             else:
@@ -140,9 +136,7 @@ def _loads(text: str) -> JSONValue:
                 index = strip_whitespace(index)
 
             if index >= len(text):
-                raise JSONDecodeError(
-                    "expected ] but reached end of file", text, index
-                )
+                raise JSONDecodeError("expected ] but reached end of file", text, index)
             elif text[index] == "]":
                 index += 1
             else:

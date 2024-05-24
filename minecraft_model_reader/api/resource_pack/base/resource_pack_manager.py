@@ -7,7 +7,7 @@ from minecraft_model_reader.api.resource_pack.base.resource_pack import BaseReso
 from minecraft_model_reader.api.image import missing_no_path
 from minecraft_model_reader.api.mesh.block.missing_block import get_missing_block
 
-PackT = TypeVar('PackT', bound=BaseResourcePack)
+PackT = TypeVar("PackT", bound=BaseResourcePack)
 
 
 class BaseResourcePackManager(Generic[PackT]):

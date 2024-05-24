@@ -36,7 +36,9 @@ cull_remap_all = _create_cull_map()
 
 class Transparency(IntEnum):
     FullOpaque = 0  # the block is a full block with opaque textures
-    FullTranslucent = 1  # the block is a full block with transparent/translucent textures
+    FullTranslucent = (
+        1  # the block is a full block with transparent/translucent textures
+    )
     Partial = 2  # the block is not a full block
 
 
@@ -48,11 +50,21 @@ class BlockMesh:
         textures_src: list[str] = []
         texture_count = 0
         vert_count: dict[Optional[str], int] = {side: 0 for side in FACE_KEYS}
-        verts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        tverts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        tint_verts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        faces_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        texture_indexes_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
+        verts_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        tverts_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        tint_verts_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        faces_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        texture_indexes_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
         transparent: Transparency = Transparency.Partial
 
         cull_dir: Optional[str]
@@ -100,7 +112,9 @@ class BlockMesh:
                 ]
                 if verts_src[cull_dir]:
                     verts[cull_dir] = numpy.concatenate(verts_src[cull_dir], axis=None)
-                    tverts[cull_dir] = numpy.concatenate(tverts_src[cull_dir], axis=None)
+                    tverts[cull_dir] = numpy.concatenate(
+                        tverts_src[cull_dir], axis=None
+                    )
                     tint_verts[cull_dir] = numpy.concatenate(
                         tint_verts_src[cull_dir], axis=None
                     )

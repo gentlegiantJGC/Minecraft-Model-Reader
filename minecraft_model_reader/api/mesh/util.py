@@ -1,7 +1,9 @@
 import numpy
 
 
-def rotate_3d(verts: numpy.ndarray, x: float, y: float, z: float, dx: float, dy: float, dz: float) -> numpy.ndarray:
+def rotate_3d(
+    verts: numpy.ndarray, x: float, y: float, z: float, dx: float, dy: float, dz: float
+) -> numpy.ndarray:
     sb, sh, sa = numpy.sin(numpy.radians([x, y, z]))
     cb, ch, ca = numpy.cos(numpy.radians([x, y, z]))
     trmtx = numpy.array(

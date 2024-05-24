@@ -37,7 +37,10 @@ def _load_data() -> tuple[
     dict[str, str],
     dict[
         str,
-        tuple[tuple[tuple[str, Union[int, str]], ...], dict[tuple[Union[str, int], ...], int]],
+        tuple[
+            tuple[tuple[str, Union[int, str]], ...],
+            dict[tuple[Union[str, int], ...], int],
+        ],
     ],
 ]:
     with open(os.path.join(os.path.dirname(__file__), "blockshapes.json")) as f:
@@ -45,7 +48,10 @@ def _load_data() -> tuple[
 
     _aux_values: dict[
         str,
-        tuple[tuple[tuple[str, Union[int, str]], ...], dict[tuple[Union[str, int], ...], int]],
+        tuple[
+            tuple[tuple[str, Union[int, str]], ...],
+            dict[tuple[Union[str, int], ...], int],
+        ],
     ] = {}
     with open(os.path.join(os.path.dirname(__file__), "block_palette.json")) as f:
         _block_palette: BlockPaletteDict = comment_json.load(f)  # type: ignore
@@ -249,7 +255,9 @@ class BedrockResourcePackManager(BaseResourcePackManager):
                                     textures = data.get("textures")
                                     if textures is None or isinstance(textures, str):
                                         self._blocks[block_id] = textures
-                                    elif isinstance(textures, dict) and all(isinstance(v, str) for v in textures.values()):
+                                    elif isinstance(textures, dict) and all(
+                                        isinstance(v, str) for v in textures.values()
+                                    ):
                                         self._blocks[block_id] = textures  # type: ignore  # TODO: improve this with TypeGuard
                                     else:
                                         raise TypeError

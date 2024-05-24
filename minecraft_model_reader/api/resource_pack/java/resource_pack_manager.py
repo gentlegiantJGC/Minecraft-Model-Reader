@@ -13,7 +13,11 @@ import amulet_nbt
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack import BaseResourcePackManager
 from minecraft_model_reader.api.resource_pack.java import JavaResourcePack
-from minecraft_model_reader.api.mesh.block.block_mesh import BlockMesh, FACE_KEYS, Transparency
+from minecraft_model_reader.api.mesh.block.block_mesh import (
+    BlockMesh,
+    FACE_KEYS,
+    Transparency,
+)
 from minecraft_model_reader.api.mesh.util import rotate_3d
 from minecraft_model_reader.api.mesh.block.cube import (
     cube_face_lut,
@@ -296,7 +300,9 @@ class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
 
         return self.missing_block
 
-    def _load_blockstate_model(self, blockstate_value: Union[dict, list[dict]]) -> BlockMesh:
+    def _load_blockstate_model(
+        self, blockstate_value: Union[dict, list[dict]]
+    ) -> BlockMesh:
         """Load the model(s) associated with a block state and apply rotations if needed."""
         if isinstance(blockstate_value, list):
             blockstate_value = blockstate_value[0]
@@ -322,12 +328,22 @@ class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
         textures = []
         texture_count = 0
         vert_count = {side: 0 for side in FACE_KEYS}
-        verts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        tverts_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
-        tint_verts_src: dict[Optional[str], list[float]] = {side: [] for side in FACE_KEYS}
-        faces_src: dict[Optional[str], list[numpy.ndarray]] = {side: [] for side in FACE_KEYS}
+        verts_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        tverts_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
+        tint_verts_src: dict[Optional[str], list[float]] = {
+            side: [] for side in FACE_KEYS
+        }
+        faces_src: dict[Optional[str], list[numpy.ndarray]] = {
+            side: [] for side in FACE_KEYS
+        }
 
-        texture_indexes_src: dict[Optional[str], list[int]] = {side: [] for side in FACE_KEYS}
+        texture_indexes_src: dict[Optional[str], list[int]] = {
+            side: [] for side in FACE_KEYS
+        }
         transparent = Transparency.Partial
 
         if java_model.get("textures", {}) and not java_model.get("elements"):
@@ -487,7 +503,14 @@ class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
                 )
 
         return BlockMesh(
-            3, verts, tverts, tint_verts, faces, texture_indexes, tuple(textures), transparent
+            3,
+            verts,
+            tverts,
+            tint_verts,
+            faces,
+            texture_indexes,
+            tuple(textures),
+            transparent,
         )
 
     def _recursive_load_block_model(self, model_path: str) -> dict:

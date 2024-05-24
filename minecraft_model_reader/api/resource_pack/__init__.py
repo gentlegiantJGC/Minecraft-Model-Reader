@@ -44,9 +44,19 @@ def load_resource_pack_manager(
     resource_packs = resource_packs_out
     if resource_packs:
         if isinstance(resource_packs[0], JavaResourcePack):
-            return JavaResourcePackManager([pack for pack in resource_packs if isinstance(pack, JavaResourcePack)], load)
+            return JavaResourcePackManager(
+                [pack for pack in resource_packs if isinstance(pack, JavaResourcePack)],
+                load,
+            )
         elif isinstance(resource_packs[0], BedrockResourcePack):
-            return BedrockResourcePackManager([pack for pack in resource_packs if isinstance(pack, BedrockResourcePack)], load)
+            return BedrockResourcePackManager(
+                [
+                    pack
+                    for pack in resource_packs
+                    if isinstance(pack, BedrockResourcePack)
+                ],
+                load,
+            )
 
     raise NotImplementedError
     # return UnknownResourcePackManager()

@@ -27,7 +27,11 @@ class Water(Cube):
             down,
             down,
             down,
-            Transparency.FullTranslucent if transparency[0] else Transparency.FullOpaque,
+            (
+                Transparency.FullTranslucent
+                if transparency[0]
+                else Transparency.FullOpaque
+            ),
         )
 
 

@@ -20,7 +20,19 @@ class Cube(Default):
         west: str,
         transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
-        return get_unit_cube(down, up, north, east, south, west, Transparency.FullTranslucent if any(transparency) else Transparency.FullOpaque)
+        return get_unit_cube(
+            down,
+            up,
+            north,
+            east,
+            south,
+            west,
+            (
+                Transparency.FullTranslucent
+                if any(transparency)
+                else Transparency.FullOpaque
+            ),
+        )
 
 
 BlockShape = Cube()
