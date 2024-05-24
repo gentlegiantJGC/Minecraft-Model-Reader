@@ -1,5 +1,5 @@
 import json
-from typing import TextIO
+from typing import TextIO, TypeAlias
 
 """
 Some of the Bedrock json files contain comments which is not valid JSON and the standard json parser
@@ -7,27 +7,32 @@ will throw errors. This will first try and use the vanilla json parser and fall 
 """
 
 
+JSONValue: TypeAlias = str | int | float | bool | None | "JSONDict" | "JSONList"
+JSONDict: TypeAlias = dict[str, JSONValue]
+JSONList: TypeAlias = list[JSONValue]
+
+
 class CommentJSONDecodeError(json.JSONDecodeError):
     pass
 
 
-def from_file(path: str):
+def from_file(path: str) -> JSONValue:
     with open(path) as f:
         return load(f)
 
 
-def load(obj: TextIO):
+def load(obj: TextIO) -> JSONValue:
     return loads(obj.read())
 
 
-def loads(s: str):
+def loads(s: str) -> JSONValue:
     try:
-        return json.loads(s)
+        return json.loads(s)  # type: ignore
     except json.JSONDecodeError:
         return _loads(s)
 
 
-def _loads(_json):
+def _loads(_json: str) -> JSONValue:
     # given a valid MinecraftJSON string will return the values as python objects
     # in this context MinecraftJSON is standard JSON but with comment blocks and
     # line comments that would normally be illegal in standard JSON
@@ -35,7 +40,7 @@ def _loads(_json):
     _float = set("0123456789-.")
     _whitespace = set(" \t\r\n")
 
-    def strip_whitespace(_json, index):
+    def strip_whitespace(index: int) -> int:
         # skips whitespace characters (<space>, <tab>, <charrage return> and <newline>)
         # as well as block comments and line comments
         while _json[index] in _whitespace:
@@ -45,7 +50,7 @@ def _loads(_json):
                 index += 2
                 while _json[index] != "\n":
                     index += 1
-                index = strip_whitespace(_json, index)
+                index = strip_whitespace(index)
             elif _json[index + 1] == "*":
                 index += 2
                 while _json[index : index + 2] != "*/":
@@ -55,22 +60,22 @@ def _loads(_json):
                             "expected */ but reached the end of file", _json, index
                         )
                 index += 2
-                index = strip_whitespace(_json, index)
+                index = strip_whitespace(index)
             else:
                 raise json.JSONDecodeError(
                     f"unexpected / at index {index}", _json, index
                 )
         return index
 
-    def parse_json_recursive(_json, index=0):
-        index = strip_whitespace(_json, index)
+    def parse_json_recursive(index: int = 0) -> tuple[JSONValue, int]:
+        index = strip_whitespace(index)
         if _json[index] == "{":
             index += 1
             # dictionary
             json_obj = {}
             repeat = True
             while repeat:
-                index = strip_whitespace(_json, index)
+                index = strip_whitespace(index)
                 # }"
                 if _json[index] == '"':
                     index += 1
@@ -80,7 +85,7 @@ def _loads(_json):
                         index += 1
                     index += 1
 
-                    index = strip_whitespace(_json, index)
+                    index = strip_whitespace(index)
 
                     if _json[index] == ":":
                         index += 1
@@ -91,11 +96,11 @@ def _loads(_json):
                             index,
                         )
 
-                    index = strip_whitespace(_json, index)
+                    index = strip_whitespace(index)
 
-                    json_obj[key], index = parse_json_recursive(_json, index)
+                    json_obj[key], index = parse_json_recursive(index)
 
-                    index = strip_whitespace(_json, index)
+                    index = strip_whitespace(index)
 
                     if _json[index] == ",":
                         index += 1
@@ -119,20 +124,20 @@ def _loads(_json):
         elif _json[index] == "[":
             index += 1
             # list
-            json_obj = []
-            index = strip_whitespace(_json, index)
+            json_array = []
+            index = strip_whitespace(index)
             repeat = _json[index] != "]"
             while repeat:
-                val, index = parse_json_recursive(_json, index)
-                json_obj.append(val)
+                val, index = parse_json_recursive(index)
+                json_array.append(val)
 
-                index = strip_whitespace(_json, index)
+                index = strip_whitespace(index)
 
                 if _json[index] == ",":
                     index += 1
                 else:
                     repeat = False
-                index = strip_whitespace(_json, index)
+                index = strip_whitespace(index)
 
             if index >= len(_json):
                 raise json.JSONDecodeError(
@@ -144,7 +149,7 @@ def _loads(_json):
                 raise json.JSONDecodeError(
                     f"expected ] got {_json[index]} at index {index}", _json, index
                 )
-            return json_obj, index
+            return json_array, index
 
         elif _json[index] == '"':
             index += 1
@@ -186,4 +191,4 @@ def _loads(_json):
             )
 
     # call recursive function and pass back python object
-    return parse_json_recursive(_json)[0]
+    return parse_json_recursive()[0]
