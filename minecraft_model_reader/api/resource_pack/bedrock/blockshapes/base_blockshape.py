@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 
@@ -20,12 +18,12 @@ class BaseBlockShape:
     def get_block_model(
         self,
         block: Block,
-        up: str,
         down: str,
+        up: str,
         north: str,
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         raise NotImplementedError

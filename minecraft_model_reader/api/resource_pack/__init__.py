@@ -15,7 +15,7 @@ from minecraft_model_reader.api.resource_pack.bedrock import (
 from .unknown_resource_pack import UnknownResourcePack
 
 
-def load_resource_pack(resource_pack_path: str):
+def load_resource_pack(resource_pack_path: str) -> BaseResourcePack:
     if JavaResourcePack.is_valid(resource_pack_path):
         return JavaResourcePack(resource_pack_path)
     elif BedrockResourcePack.is_valid(resource_pack_path):
@@ -25,9 +25,9 @@ def load_resource_pack(resource_pack_path: str):
 
 
 def load_resource_pack_manager(
-    resource_packs: Iterable[Union[str, BaseResourcePack]], load=True
+    resource_packs: Iterable[Union[str, BaseResourcePack]], load: bool = True
 ) -> BaseResourcePackManager:
-    resource_packs_out = []
+    resource_packs_out: list[BaseResourcePack] = []
     for resource_pack in resource_packs:
         if isinstance(resource_pack, str):
             resource_pack = load_resource_pack(resource_pack)
@@ -44,9 +44,19 @@ def load_resource_pack_manager(
     resource_packs = resource_packs_out
     if resource_packs:
         if isinstance(resource_packs[0], JavaResourcePack):
-            return JavaResourcePackManager(resource_packs, load)
+            return JavaResourcePackManager(
+                [pack for pack in resource_packs if isinstance(pack, JavaResourcePack)],
+                load,
+            )
         elif isinstance(resource_packs[0], BedrockResourcePack):
-            return BedrockResourcePackManager(resource_packs, load)
+            return BedrockResourcePackManager(
+                [
+                    pack
+                    for pack in resource_packs
+                    if isinstance(pack, BedrockResourcePack)
+                ],
+                load,
+            )
 
     raise NotImplementedError
     # return UnknownResourcePackManager()

@@ -1,14 +1,13 @@
 import importlib
 import pkgutil
-import minecraft_model_reader
 
 from .base_blockshape import BaseBlockShape
 
-BlockShapeClasses = {}
+BlockShapeClasses: dict[str, BaseBlockShape] = {}
 _class_names = set()
 
 
-def _load_blockshape(module_name: str):
+def _load_blockshape(module_name: str) -> None:
     blockshape_module = importlib.import_module(module_name)
     if hasattr(blockshape_module, "BlockShape"):
         blockshape = getattr(blockshape_module, "BlockShape")
@@ -22,7 +21,7 @@ def _load_blockshape(module_name: str):
             BlockShapeClasses[blockshape.blockshape] = blockshape
 
 
-def _load_blockshapes():
+def _load_blockshapes() -> None:
     package_prefix = __name__ + "."
 
     for _, name, _ in pkgutil.walk_packages(__path__, package_prefix):

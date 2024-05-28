@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cross_texture import (
     Cross,
 )
@@ -27,7 +25,7 @@ class DoublePlant(Cross):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         if block.properties["upper_block_bit"].py_data:
             return super().get_block_model(block, up, up, up, up, up, up, transparency)

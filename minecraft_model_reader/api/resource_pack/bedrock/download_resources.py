@@ -5,20 +5,22 @@ import os
 # import json
 # from urllib.request import urlopen
 # import io
-from typing import Generator, Optional
+from typing import Generator, Optional, TypeVar, Any
 import logging
 
 from minecraft_model_reader.api.resource_pack import BedrockResourcePack
 
+T = TypeVar("T")
+
 log = logging.getLogger(__name__)
 
 
-def generator_unpacker(gen: Generator):
+def generator_unpacker(gen: Generator[Any, Any, T]) -> T:
     try:
         while True:
             next(gen)
     except StopIteration as e:
-        return e.value
+        return e.value  # type: ignore
 
 
 def get_latest() -> BedrockResourcePack:
@@ -67,7 +69,7 @@ def get_bedrock_vanilla_fix() -> BedrockResourcePack:
     return _bedrock_vanilla_fix
 
 
-def get_bedrock_vanilla_latest():
+def get_bedrock_vanilla_latest() -> BedrockResourcePack:
     global _bedrock_vanilla_latest
     if _bedrock_vanilla_latest is None:
         _bedrock_vanilla_latest = get_latest()

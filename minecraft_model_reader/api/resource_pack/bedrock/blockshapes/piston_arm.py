@@ -1,5 +1,4 @@
-from typing import Tuple, Dict
-
+from typing import Any
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
@@ -20,7 +19,7 @@ class PistonArm(PartialBlock):
         return 0
 
     @property
-    def rotation_map(self) -> Dict[int, Tuple[int, int]]:
+    def rotation_map(self) -> dict[int, tuple[int, int]]:
         return {0: (2, 0), 1: (0, 0), 2: (1, 2), 3: (1, 0), 4: (1, 1), 5: (1, 3)}
 
     def get_block_model(
@@ -32,7 +31,9 @@ class PistonArm(PartialBlock):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
+        *args: Any,
+        **kwargs: Any
     ) -> BlockMesh:
         rotation = self.rotation_map.get(
             block.properties["facing_direction"].py_data, (0, 0)

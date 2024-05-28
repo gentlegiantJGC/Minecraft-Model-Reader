@@ -4,14 +4,16 @@ import zipfile
 import json
 from urllib.request import urlopen, Request
 import io
-from typing import Generator, List
+from typing import Generator, TypeVar, Any, Optional
 import logging
 
 from minecraft_model_reader.api.resource_pack import JavaResourcePack
 
+T = TypeVar("T")
+
 log = logging.getLogger(__name__)
 
-launcher_manifest = None
+launcher_manifest: Optional[dict] = None
 INCLUDE_SNAPSHOT = False
 
 
@@ -27,12 +29,12 @@ def get_launcher_manifest() -> dict:
     return launcher_manifest
 
 
-def generator_unpacker(gen: Generator):
+def generator_unpacker(gen: Generator[Any, Any, T]) -> T:
     try:
         while True:
             next(gen)
     except StopIteration as e:
-        return e.value
+        return e.value  # type: ignore
 
 
 def get_latest() -> JavaResourcePack:
@@ -73,11 +75,11 @@ def get_latest_iter() -> Generator[float, None, JavaResourcePack]:
     return JavaResourcePack(vanilla_rp_path)
 
 
-_java_vanilla_fix = None
-_java_vanilla_latest = None
+_java_vanilla_fix: Optional[JavaResourcePack] = None
+_java_vanilla_latest: Optional[JavaResourcePack] = None
 
 
-def get_java_vanilla_fix():
+def get_java_vanilla_fix() -> JavaResourcePack:
     global _java_vanilla_fix
     if _java_vanilla_fix is None:
         _java_vanilla_fix = JavaResourcePack(
@@ -86,7 +88,7 @@ def get_java_vanilla_fix():
     return _java_vanilla_fix
 
 
-def get_java_vanilla_latest():
+def get_java_vanilla_latest() -> JavaResourcePack:
     global _java_vanilla_latest
     if _java_vanilla_latest is None:
         _java_vanilla_latest = get_latest()
@@ -100,12 +102,12 @@ def get_java_vanilla_latest_iter() -> Generator[float, None, JavaResourcePack]:
     return _java_vanilla_latest
 
 
-def _remove_and_download(path, version):
+def _remove_and_download(path: str, version: str) -> None:
     for _ in _remove_and_download_iter(path, version):
         pass
 
 
-def _remove_and_download_iter(path, version) -> Generator[float, None, None]:
+def _remove_and_download_iter(path: str, version: str) -> Generator[float, None, None]:
     # try downloading the new resources to a temporary location
     temp_path = os.path.join(os.path.dirname(path), "_temp_")
     # clear the temporary location
@@ -148,12 +150,12 @@ def download_with_retry(
     return b"".join(content)
 
 
-def download_resources(path, version):
+def download_resources(path: str, version: str) -> None:
     generator_unpacker(download_resources_iter(path, version))
 
 
 def download_resources_iter(
-    path, version, chunk_size=4096
+    path: str, version: str, chunk_size: int = 4096
 ) -> Generator[float, None, None]:
     log.info(f"Downloading Java resource pack for version {version}")
     version_url = next(
@@ -176,7 +178,7 @@ def download_resources_iter(
             data = e.value
 
         client = zipfile.ZipFile(io.BytesIO(data))
-        paths: List[str] = [
+        paths: list[str] = [
             fpath for fpath in client.namelist() if fpath.startswith("assets/")
         ]
         path_count = len(paths)

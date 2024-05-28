@@ -1,5 +1,4 @@
-from typing import Tuple
-
+from typing import Any
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -24,11 +23,11 @@ class Repeater(PartialBlock):
 
     def bounds(
         self, block: Block
-    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         return (0, 1), (0, 2 / 16), (0, 1)
 
     @property
-    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+    def do_not_cull(self) -> tuple[bool, bool, bool, bool, bool, bool]:
         return False, True, False, False, False, False
 
     def get_block_model(
@@ -40,7 +39,9 @@ class Repeater(PartialBlock):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
+        *args: Any,
+        **kwargs: Any
     ) -> BlockMesh:
         return (
             super()

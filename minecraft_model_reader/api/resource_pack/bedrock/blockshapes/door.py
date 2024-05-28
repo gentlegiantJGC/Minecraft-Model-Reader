@@ -1,5 +1,3 @@
-from typing import Tuple, Dict
-
 from minecraft_model_reader.api.mesh.block import BlockMesh
 from minecraft_model_reader.api import Block
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.cube import Cube
@@ -26,7 +24,7 @@ class Door(Cube):
         east: str,
         south: str,
         west: str,
-        transparency: Tuple[bool, bool, bool, bool, bool, bool],
+        transparency: tuple[bool, bool, bool, bool, bool, bool],
     ) -> BlockMesh:
         if block.properties["upper_block_bit"].py_data:
             return super().get_block_model(

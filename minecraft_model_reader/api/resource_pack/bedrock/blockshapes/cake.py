@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from minecraft_model_reader.api.resource_pack.bedrock.blockshapes.partial_block import (
     PartialBlock,
 )
@@ -18,18 +16,20 @@ class Cake(PartialBlock):
 
     def bounds(
         self, block: Block
-    ) -> Tuple[Tuple[float, float], Tuple[float, float], Tuple[float, float]]:
+    ) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
         return (
-            (1 / 16 + block.properties["bite_counter"].py_data * 2 / 16, 15 / 16),
+            (1 / 16 + block.properties["bite_counter"].py_int * 2 / 16, 15 / 16),
             (0, 0.5),
             (1 / 16, 15 / 16),
         )
 
     def texture_index(self, block: Block, aux_value: int) -> int:
-        return min(block.properties["bite_counter"].py_data, 1)
+        bite_counter = block.properties["bite_counter"]
+        assert isinstance(bite_counter, amulet_nbt.AbstractBaseIntTag)
+        return min(1, bite_counter.py_int)
 
     @property
-    def do_not_cull(self) -> Tuple[bool, bool, bool, bool, bool, bool]:
+    def do_not_cull(self) -> tuple[bool, bool, bool, bool, bool, bool]:
         return False, True, True, True, True, True
 
 
