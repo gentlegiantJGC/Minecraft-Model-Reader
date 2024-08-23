@@ -276,6 +276,16 @@ class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
                                     for prop_match in case["when"]["OR"]
                                 ):
                                     continue
+                            elif "AND" in case["when"]:
+                                if not all(
+                                    all(
+                                        block.properties.get(prop, None)
+                                        in self.parse_state_val(val)
+                                        for prop, val in prop_match.items()
+                                    )
+                                    for prop_match in case["when"]["AND"]
+                                ):
+                                    continue
                             elif not all(
                                 block.properties.get(prop, None)
                                 in self.parse_state_val(val)
