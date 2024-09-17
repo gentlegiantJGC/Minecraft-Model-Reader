@@ -4,6 +4,7 @@ from sys import getsizeof
 import re
 from typing import Iterable, Union, Optional, Any
 import amulet_nbt
+
 if amulet_nbt.__major__ >= 4:
     from amulet_nbt import read_snbt  # type: ignore
 else:
@@ -305,9 +306,7 @@ class Block:
             properties = {}
 
         if snbt:
-            properties_dict = {
-                k: read_snbt(v) for k, v in sorted(properties.items())
-            }
+            properties_dict = {k: read_snbt(v) for k, v in sorted(properties.items())}
         else:
             properties_dict = {
                 k: amulet_nbt.TAG_String(v) for k, v in sorted(properties.items())
