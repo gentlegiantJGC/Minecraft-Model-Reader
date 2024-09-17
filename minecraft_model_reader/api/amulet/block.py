@@ -4,6 +4,10 @@ from sys import getsizeof
 import re
 from typing import Iterable, Union, Optional, Any
 import amulet_nbt
+if amulet_nbt.__major__ >= 4:
+    from amulet_nbt import read_snbt  # type: ignore
+else:
+    from amulet_nbt import from_snbt as read_snbt  # type: ignore
 
 PropertyValueType = Union[
     amulet_nbt.TAG_Byte,
@@ -302,7 +306,7 @@ class Block:
 
         if snbt:
             properties_dict = {
-                k: amulet_nbt.from_snbt(v) for k, v in sorted(properties.items())
+                k: read_snbt(v) for k, v in sorted(properties.items())
             }
         else:
             properties_dict = {
