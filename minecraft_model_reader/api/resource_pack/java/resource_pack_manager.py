@@ -356,7 +356,9 @@ class JavaResourcePackManager(BaseResourcePackManager[JavaResourcePack]):
         }
         transparent = Transparency.Partial
 
-        if java_model.get("textures", {}) and not java_model.get("elements"):
+        if set(java_model.get("textures", {})).difference(
+            {"particle"}
+        ) and not java_model.get("elements"):
             return self.missing_block
 
         for element in java_model.get("elements", {}):
